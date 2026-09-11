@@ -1,0 +1,10 @@
+build/
+.dart_tool/
+.gradle/
+key.properties
+*.jks
+*.keystore
+android/key.properties
+debug-info/
+assets/adhan/
+assets/data/quran_full.json
