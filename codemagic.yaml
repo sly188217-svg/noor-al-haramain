@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: stable
-      java: "zulu-21.jdk"
+      java: 21
     cache:
       cache_paths:
         - ~/.pub-cache
