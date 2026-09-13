@@ -5,8 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: stable
-      java: 21×
-
+      java: "zulu-21.jdk"
     cache:
       cache_paths:
         - ~/.pub-cache
@@ -30,9 +29,11 @@ workflows:
           storeFile=$CM_BUILD_DIR/android/app/keystore.jks
           EOF
       - name: Get Flutter packages
-        script: flutter pub get
+        script: |
+          flutter pub get
       - name: Build APK
-        script: flutter build apk --release
+        script: |
+          flutter build apk --release
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
     publishing:
