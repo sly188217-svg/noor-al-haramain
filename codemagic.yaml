@@ -6,8 +6,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      groups:
-        - "Noor Al-Haramain"
     cache:
       cache_paths:
         - ~/.pub-cache
