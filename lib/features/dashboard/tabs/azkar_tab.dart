@@ -81,20 +81,6 @@ class _AzkarTabState extends State<AzkarTab>
       'url':
           'https://www.youtube.com/embed/live_stream?channel=UC5f6FygRcnVm5NKMGNsVGwQ',
     },
-    {
-      'name': 'قناة القرآن الكريم',
-      'nameEn': 'Quran TV',
-      'icon': '📖',
-      'url':
-          'https://www.youtube.com/embed/live_stream?channel=UC4UVn5kYW3wEcIvY9N-Hrhw',
-    },
-    {
-      'name': 'قناة السنة النبوية',
-      'nameEn': 'Sunnah TV',
-      'icon': '🌟',
-      'url':
-          'https://www.youtube.com/embed/live_stream?channel=UC5f6FygRcnVm5NKMGNsVGwQ',
-    },
   ];
 
   // ===== السبحة =====

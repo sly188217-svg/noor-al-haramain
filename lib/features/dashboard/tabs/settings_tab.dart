@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../../../core/providers/language_provider.dart';
 import '../../../core/services/adhan_download_service.dart';
+import '../../../core/services/background_service.dart';
 import '../../../core/data/muezzins.dart';
 
 class SettingsTab extends StatefulWidget {
@@ -15,7 +14,8 @@ class SettingsTab extends StatefulWidget {
   State<SettingsTab> createState() => _SettingsTabState();
 }
 
-class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStateMixin {
+class _SettingsTabState extends State<SettingsTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   String _userName = 'مستخدم';
@@ -31,14 +31,8 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
   double _soundVolume = 0.8;
   String _appVersion = '1.0.0';
 
-  final List<Map<String, dynamic>> _backgrounds = [
-    {'name': 'الحرم المكي', 'color': 0xFF0B132B},
-    {'name': 'المدينة المنورة', 'color': 0xFF1C2541},
-    {'name': 'قبة الصخرة', 'color': 0xFF2D1B00},
-    {'name': 'المسجد الأقصى', 'color': 0xFF1A2B3C},
-    {'name': 'زخرفة إسلامية 1', 'color': 0xFF1C2541},
-    {'name': 'زخرفة إسلامية 2', 'color': 0xFF2C1810},
-  ];
+  // ✅ استخدام BackgroundService.backgrounds
+  List<Map<String, dynamic>> get _backgrounds => BackgroundService.backgrounds;
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
@@ -109,7 +103,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     }
   }
 
-  // ===== البحث عن الموقع =====
+  // ═══════════════════════════════════════════════════════════
+  // البحث عن الموقع
+  // ═══════════════════════════════════════════════════════════
   Future<void> _searchLocation(String query) async {
     if (query.isEmpty || query.length < 2) {
       setState(() {
@@ -124,7 +120,8 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     });
     try {
       final encodedQuery = Uri.encodeComponent(query);
-      final url = 'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&addressdetails=1&limit=20&accept-language=ar';
+      final url =
+          'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&addressdetails=1&limit=20&accept-language=ar';
       final response = await http.get(
         Uri.parse(url),
         headers: {'User-Agent': 'NoorAlHaramain/1.0'},
@@ -137,7 +134,10 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
             'name': item['display_name']?.toString() ?? '',
             'lat': double.tryParse(item['lat']?.toString() ?? '0') ?? 0.0,
             'lon': double.tryParse(item['lon']?.toString() ?? '0') ?? 0.0,
-            'city': address['city'] ?? address['town'] ?? address['village'] ?? '',
+            'city': address['city'] ??
+                address['town'] ??
+                address['village'] ??
+                '',
             'state': address['state'] ?? '',
             'country': address['country'] ?? '',
           };
@@ -201,16 +201,21 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
                       color: Color(0xFF1C2541),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, color: Color(0xFFD4AF37)),
+                        const Icon(Icons.location_on,
+                            color: Color(0xFFD4AF37)),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
                             '🔍 اختر موقعك',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
@@ -234,7 +239,8 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                       decoration: InputDecoration(
                         hintText: '🔍 ابحث عن مدينة، قرية، دولة...',
                         hintStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                        prefixIcon: const Icon(Icons.search,
+                            color: Color(0xFFD4AF37)),
                         filled: true,
                         fillColor: const Color(0xFF0B132B),
                         border: OutlineInputBorder(
@@ -246,22 +252,34 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                   ),
                   Expanded(
                     child: _isSearching
-                        ? const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                                color: Color(0xFFD4AF37)))
                         : ListView.builder(
                             controller: scrollController,
                             itemCount: _searchResults.length,
                             itemBuilder: (context, index) {
                               final location = _searchResults[index];
                               return Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1C2541).withOpacity(0.6),
+                                  color: const Color(0xFF1C2541)
+                                      .withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ListTile(
-                                  leading: const Icon(Icons.location_city, color: Color(0xFFD4AF37)),
-                                  title: Text(location['name'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                  subtitle: Text('${location['city']} ${location['country']}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                  leading: const Icon(Icons.location_city,
+                                      color: Color(0xFFD4AF37)),
+                                  title: Text(location['name'] ?? '',
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
+                                  subtitle: Text(
+                                      '${location['city']} ${location['country']}',
+                                      style: const TextStyle(
+                                          color: Colors.grey, fontSize: 11)),
                                   onTap: () => _selectLocation(location),
                                 ),
                               );
@@ -277,6 +295,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🖼️ اختيار الخلفية (مع صور حقيقية + حفظ في BackgroundService)
+  // ═══════════════════════════════════════════════════════════
   void _showBackgroundPicker() {
     showModalBottomSheet(
       context: context,
@@ -286,45 +307,121 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        height: 350,
+        height: 400,
         child: Column(
           children: [
-            const Text('اختر خلفية التطبيق', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('اختر خلفية التطبيق',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 0.9,
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.3,
                 ),
                 itemCount: _backgrounds.length,
                 itemBuilder: (context, index) {
                   final bg = _backgrounds[index];
                   final isSelected = _selectedBackground == index;
                   return GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       setState(() => _selectedBackground = index);
+                      await BackgroundService.setBackground(index);
                       _saveSettings();
+                      if (!mounted) return;
                       Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text('✅ تم تطبيق: ${bg['name']}')),
+                      );
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Color(bg['color']),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFFD4AF37) : Colors.transparent,
+                          color: isSelected
+                              ? const Color(0xFFD4AF37)
+                              : Colors.transparent,
                           width: 3,
                         ),
                       ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            Icon(Icons.image, color: isSelected ? const Color(0xFFD4AF37) : Colors.grey, size: 28),
-                            const SizedBox(height: 6),
-                            Text(bg['name'] ?? '', textAlign: TextAlign.center, style: TextStyle(color: isSelected ? const Color(0xFFD4AF37) : Colors.white70, fontSize: 10)),
+                            Image.asset(
+                              bg['image'] as String? ?? '',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: (bg['gradient']
+                                              as List<Color>?) ??
+                                          [
+                                            const Color(0xFF0B132B),
+                                            const Color(0xFF1C2541),
+                                          ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.mosque,
+                                      color: Color(0xFFD4AF37),
+                                      size: 40,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 6, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.8),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        bg['name'] as String? ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      const Icon(Icons.check_circle,
+                                          color: Color(0xFFD4AF37),
+                                          size: 16),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -345,13 +442,17 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C2541),
         title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.red)),
-        content: const Text('هل أنت متأكد من إعادة تعيين جميع الإعدادات؟', style: TextStyle(color: Colors.white70)),
+        content: const Text('هل أنت متأكد من إعادة تعيين جميع الإعدادات؟',
+            style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
+              if (!mounted) return;
               Navigator.pop(context);
               if (mounted) {
                 setState(() {
@@ -368,9 +469,11 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                   _soundVolume = 0.8;
                 });
               }
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم إعادة التعيين')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ تم إعادة التعيين')));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('تأكيد'),
           ),
         ],
@@ -378,37 +481,59 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
-  // ===== تحميل الأذان =====
+  // ═══════════════════════════════════════════════════════════
+  // تحميل الأذان
+  // ═══════════════════════════════════════════════════════════
   Future<void> _startDownload() async {
-    double totalProgress = 0;
+    final ids = AdhanDownloadService.muezzinUrls.keys
+        .where((id) => !AdhanDownloadService.isBundled(id))
+        .toList();
+    final total = ids.length;
+
+    double currentProgress = 0;
     String currentMuezzin = 'جاري التحضير...';
     int completed = 0;
-    final total = AdhanDownloadService.muezzinUrls.length;
+    bool isCancelled = false;
 
-    // عرض حوار التقدم
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (dialogContext.mounted && !isCancelled) {
+                setDialogState(() {});
+              }
+            });
+
+            final overallProgress =
+                total > 0 ? (completed + currentProgress) / total : 0.0;
+
             return AlertDialog(
               backgroundColor: const Color(0xFF1C2541),
-              title: const Text('📥 جاري تحميل الأذان', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 16)),
+              title: const Text('📥 جاري تحميل الأذان',
+                  style: TextStyle(
+                      color: Color(0xFFD4AF37), fontSize: 16)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   LinearProgressIndicator(
-                    value: totalProgress,
+                    value: overallProgress.clamp(0.0, 1.0),
                     backgroundColor: Colors.white12,
                     color: const Color(0xFFD4AF37),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   const SizedBox(height: 12),
-                  Text('$completed / $total', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  Text('$completed / $total',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 16)),
                   const SizedBox(height: 8),
-                  Text(currentMuezzin, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(currentMuezzin,
+                      style: const TextStyle(
+                          color: Colors.grey, fontSize: 12),
+                      textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -418,27 +543,32 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
 
     try {
-      final ids = AdhanDownloadService.muezzinUrls.keys.toList();
       for (int i = 0; i < ids.length; i++) {
         final id = ids[i];
         currentMuezzin = MuezzinData.getMuezzinName(id);
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
-          await _startDownload();
-          return;
-        }
+        currentProgress = 0;
+
         await AdhanDownloadService.downloadMuezzin(id, (p) {
-          totalProgress = (i + p) / total;
+          currentProgress = p;
         });
+
         completed = i + 1;
+        currentProgress = 0;
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('❌ خطأ في التحميل: $e');
+    }
+
+    isCancelled = true;
 
     if (mounted) {
       Navigator.of(context, rootNavigator: true).pop();
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ تم تحميل جميع الأذان بنجاح!'), duration: Duration(seconds: 3)),
+        const SnackBar(
+          content: Text('✅ تم تحميل جميع الأذان بنجاح!'),
+          duration: Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -449,7 +579,8 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.3)),
+        side: BorderSide(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
       ),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
@@ -466,7 +597,11 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
           children: [
             Icon(Icons.settings, color: Color(0xFFD4AF37)),
             SizedBox(width: 8),
-            Text('⚙️ الإعدادات', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('⚙️ الإعدادات',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
         bottom: TabBar(
@@ -494,11 +629,14 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
-  // ===== 1. الدينية =====
+  // ═══════════════════════════════════════════════════════════
+  // 1. الدينية
+  // ═══════════════════════════════════════════════════════════
   Widget _buildReligiousSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // ─── الموقع ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,37 +645,63 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 children: [
                   Icon(Icons.location_on, color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
-                  Text('📍 الموقع الحالي', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('📍 الموقع الحالي',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B132B).withOpacity(0.5),
+                  color: const Color(0xFF0B132B).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('🏙️ $_userCity', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('🏙️ $_userCity',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('📍 ${_userLat.toStringAsFixed(4)}, ${_userLng.toStringAsFixed(4)}', style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
+                    Text(
+                        '📍 ${_userLat.toStringAsFixed(4)}, ${_userLng.toStringAsFixed(4)}',
+                        style: const TextStyle(
+                            color: Color(0xFFD4AF37), fontSize: 12)),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(_isLocationReady ? Icons.gps_fixed : Icons.gps_off, color: _isLocationReady ? Colors.green : Colors.red, size: 14),
+                  Icon(
+                      _isLocationReady
+                          ? Icons.gps_fixed
+                          : Icons.gps_off,
+                      color: _isLocationReady ? Colors.green : Colors.red,
+                      size: 14),
                   const SizedBox(width: 4),
-                  Text(_isLocationReady ? '✅ الموقع مفعل' : '❌ الموقع غير مفعل', style: TextStyle(color: _isLocationReady ? Colors.green : Colors.red, fontSize: 12)),
+                  Text(
+                      _isLocationReady
+                          ? '✅ الموقع مفعل'
+                          : '❌ الموقع غير مفعل',
+                      style: TextStyle(
+                          color: _isLocationReady
+                              ? Colors.green
+                              : Colors.red,
+                          fontSize: 12)),
                   const Spacer(),
                   ElevatedButton.icon(
                     onPressed: _showLocationPicker,
                     icon: const Icon(Icons.edit, size: 16),
                     label: const Text('تغيير'),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: Colors.black),
                   ),
                 ],
               ),
@@ -546,6 +710,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
         ),
         const SizedBox(height: 12),
 
+        // ─── المؤذن ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,20 +719,29 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 children: [
                   Icon(Icons.volume_up, color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
-                  Text('🎙️ المؤذن', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('🎙️ المؤذن',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedMuezzin,
+                initialValue: _selectedMuezzin,
                 dropdownColor: const Color(0xFF1C2541),
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: const Color(0xFF0B132B),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
                 ),
-                items: MuezzinData.muezzins.map((m) => DropdownMenuItem(value: m['id'], child: Text(m['name']!))).toList(),
+                items: MuezzinData.muezzins.map((m) => DropdownMenuItem<String>(
+                      value: m['id'] as String,
+                      child: Text(m['name'] as String),
+                    )).toList(),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _selectedMuezzin = value);
@@ -580,7 +754,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
         ),
         const SizedBox(height: 12),
 
-        // ===== تحميل الأذان =====
+        // ─── الأذان ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,54 +763,143 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 children: [
                   Icon(Icons.download, color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
-                  Text('📥 تحميل الأذان', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('📥 الأذان',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text('حمّل الأذان مرة واحدة ليعمل بدون إنترنت', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const Text('3 مؤذنين متوفرين دائماً، والبقية يمكن تحميلها',
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.check_circle,
+                            color: Colors.green, size: 16),
+                        SizedBox(width: 6),
+                        Text('مضمّن في التطبيق (بدون إنترنت)',
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...MuezzinData.bundledMuezzins.map((m) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.volume_up,
+                                color: Colors.green, size: 14),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                m['name'] as String,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
+                              ),
+                            ),
+                            Text(
+                              m['country'] as String? ?? '',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
               FutureBuilder<int>(
-                future: AdhanDownloadService.downloadedCount(),
+                future: AdhanDownloadService.onlyDownloadedCount(),
                 builder: (context, snapshot) {
-                  final count = snapshot.data ?? 0;
-                  final isComplete = count >= AdhanDownloadService.muezzinUrls.length;
+                  final downloaded = snapshot.data ?? 0;
+                  final total = AdhanDownloadService.downloadableCount;
+                  final isComplete = downloaded >= total;
+
                   return Column(
                     children: [
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('قابلون للتحميل',
+                            style: TextStyle(
+                                color: Color(0xFFD4AF37),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 6),
                       LinearProgressIndicator(
-                        value: count / AdhanDownloadService.muezzinUrls.length,
+                        value: total > 0 ? downloaded / total : 0,
                         backgroundColor: Colors.white12,
                         color: const Color(0xFFD4AF37),
                         minHeight: 6,
                         borderRadius: BorderRadius.circular(3),
                       ),
                       const SizedBox(height: 6),
-                      Text('$count / ${AdhanDownloadService.muezzinUrls.length} مؤذن محمّل', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('$downloaded / $total مؤذن محمّل',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: isComplete ? null : _startDownload,
+                              onPressed:
+                                  isComplete ? null : _startDownload,
                               icon: const Icon(Icons.download, size: 16),
-                              label: Text(isComplete ? 'محمّل ✅' : 'تحميل الآن'),
+                              label: Text(isComplete
+                                  ? 'محمّل الكل ✅'
+                                  : 'تحميل المتبقي'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD4AF37),
+                                backgroundColor: isComplete
+                                    ? Colors.grey
+                                    : const Color(0xFFD4AF37),
                                 foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          if (count > 0)
+                          if (downloaded > 0)
                             ElevatedButton.icon(
                               onPressed: () async {
                                 await AdhanDownloadService.clearAll();
                                 setState(() {});
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🗑️ تم الحذف')));
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          '🗑️ تم حذف الأذانات المحمّلة')),
+                                );
                               },
                               icon: const Icon(Icons.delete, size: 16),
                               label: const Text('حذف'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
+                              ),
                             ),
                         ],
                       ),
@@ -653,17 +916,23 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('🔔 الإشعارات', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('🔔 الإشعارات',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               SwitchListTile(
-                title: const Text('تفعيل الإشعارات', style: TextStyle(color: Colors.white70)),
+                title: const Text('تفعيل الإشعارات',
+                    style: TextStyle(color: Colors.white70)),
                 value: _notificationsEnabled,
                 onChanged: (value) {
                   setState(() => _notificationsEnabled = value);
                   _saveSettings();
                 },
-                activeColor: const Color(0xFFD4AF37),
+                activeThumbColor: const Color(0xFFD4AF37),
                 tileColor: const Color(0xFF0B132B),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ],
           ),
@@ -672,7 +941,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
-  // ===== 2. العامة =====
+  // ═══════════════════════════════════════════════════════════
+  // 2. العامة
+  // ═══════════════════════════════════════════════════════════
   Widget _buildGeneralSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -685,18 +956,56 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 children: [
                   Icon(Icons.image, color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
-                  Text('🖼️ خلفية التطبيق', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('🖼️ خلفية التطبيق',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: Text(_backgrounds[_selectedBackground]['name'] ?? '', style: const TextStyle(color: Colors.white70))),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        height: 60,
+                        child: Image.asset(
+                          _backgrounds[_selectedBackground]['image']
+                                  as String? ??
+                              '',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: (_backgrounds[_selectedBackground]
+                                              ['gradient'] as List<Color>?) ??
+                                      [
+                                        const Color(0xFF0B132B),
+                                        const Color(0xFF1C2541),
+                                      ],
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.mosque,
+                                    color: Color(0xFFD4AF37)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _showBackgroundPicker,
                     icon: const Icon(Icons.image, size: 16),
                     label: const Text('تغيير'),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: Colors.black),
                   ),
                 ],
               ),
@@ -709,11 +1018,20 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('⏰ تنسيق الوقت', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('⏰ تنسيق الوقت',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: Text(_selectedTimeFormat == '24h' ? '24 ساعة' : '12 ساعة', style: const TextStyle(color: Colors.white70))),
+                  Expanded(
+                      child: Text(
+                          _selectedTimeFormat == '24h'
+                              ? '24 ساعة'
+                              : '12 ساعة',
+                          style: const TextStyle(color: Colors.white70))),
                   SegmentedButton<String>(
                     segments: const [
                       ButtonSegment(value: '24h', label: Text('24')),
@@ -724,7 +1042,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                       setState(() => _selectedTimeFormat = s.first);
                       _saveSettings();
                     },
-                    style: SegmentedButton.styleFrom(selectedForegroundColor: Colors.black, selectedBackgroundColor: const Color(0xFFD4AF37)),
+                    style: SegmentedButton.styleFrom(
+                        selectedForegroundColor: Colors.black,
+                        selectedBackgroundColor: const Color(0xFFD4AF37)),
                   ),
                 ],
               ),
@@ -741,7 +1061,11 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 children: [
                   Icon(Icons.restore, color: Colors.red, size: 24),
                   SizedBox(width: 8),
-                  Text('🔄 إعادة التعيين', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('🔄 إعادة التعيين',
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -749,7 +1073,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                 onPressed: _showResetDialog,
                 icon: const Icon(Icons.warning, size: 16),
                 label: const Text('إعادة التعيين'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white),
               ),
             ],
           ),
@@ -758,7 +1084,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
-  // ===== 3. الصوت =====
+  // ═══════════════════════════════════════════════════════════
+  // 3. الصوت
+  // ═══════════════════════════════════════════════════════════
   Widget _buildSoundSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -767,19 +1095,25 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('🔊 الصوت', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('🔊 الصوت',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               SwitchListTile(
-                title: const Text('تفعيل الصوت', style: TextStyle(color: Colors.white70)),
+                title: const Text('تفعيل الصوت',
+                    style: TextStyle(color: Colors.white70)),
                 value: _soundEnabled,
                 onChanged: (v) {
                   setState(() => _soundEnabled = v);
                   _saveSettings();
                 },
-                activeColor: const Color(0xFFD4AF37),
+                activeThumbColor: const Color(0xFFD4AF37),
               ),
               Row(
                 children: [
-                  const Icon(Icons.volume_down, color: Color(0xFFD4AF37), size: 20),
+                  const Icon(Icons.volume_down,
+                      color: Color(0xFFD4AF37), size: 20),
                   Expanded(
                     child: Slider(
                       value: _soundVolume,
@@ -790,7 +1124,8 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                       },
                     ),
                   ),
-                  Text('${(_soundVolume * 100).toInt()}%', style: const TextStyle(color: Colors.white70)),
+                  Text('${(_soundVolume * 100).toInt()}%',
+                      style: const TextStyle(color: Colors.white70)),
                 ],
               ),
             ],
@@ -800,7 +1135,9 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     );
   }
 
-  // ===== 4. المعلومات =====
+  // ═══════════════════════════════════════════════════════════
+  // 4. المعلومات
+  // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -810,12 +1147,18 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
             children: [
               const Icon(Icons.mosque, color: Color(0xFFD4AF37), size: 80),
               const SizedBox(height: 16),
-              const Text('نور الحرمين', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text('نور الحرمين',
+                  style: TextStyle(
+                      color: Color(0xFFD4AF37),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              const Text('تطبيق إسلامي عالمي', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              const Text('تطبيق إسلامي عالمي',
+                  style: TextStyle(color: Colors.grey, fontSize: 14)),
               const Divider(color: Colors.grey, height: 32),
               _buildInfoRow('الإصدار', _appVersion),
-              _buildInfoRow('الحزمة', 'com.apexsec.noor_al_haramain_global'),
+              _buildInfoRow(
+                  'الحزمة', 'com.apexsec.noor_al_haramain_global'),
               _buildInfoRow('المنصة', 'Android'),
               _buildInfoRow('اللغة', 'العربية'),
             ],
@@ -831,8 +1174,10 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+          Text(label,
+              style: const TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(value,
+              style: const TextStyle(color: Colors.white, fontSize: 14)),
         ],
       ),
     );

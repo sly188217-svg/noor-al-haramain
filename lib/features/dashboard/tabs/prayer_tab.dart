@@ -451,8 +451,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                       style: const TextStyle(color: Colors.white),
                       underline: const SizedBox(),
                       items: MuezzinData.muezzins.map((m) {
-                        return DropdownMenuItem(
-                            value: m['id'], child: Text(m['name']!));
+                        return DropdownMenuItem<String>(
+                          value: m['id'] as String,
+                          child: Text(m['name'] as String),
+                        );
                       }).toList(),
                       onChanged: (value) {
                         if (value != null) {

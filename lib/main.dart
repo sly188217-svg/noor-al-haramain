@@ -32,7 +32,7 @@ Future<void> main() async {
     debugPrint('❌ فشل تهيئة Firebase: $e');
   }
 
-  // 3. تسجيل دخول مجهول
+  // 3. تسجيل دخول مجهول (مطلوب لـ Firebase AI Logic)
   try {
     if (FirebaseAuth.instance.currentUser == null) {
       await FirebaseAuth.instance.signInAnonymously();
@@ -45,13 +45,16 @@ Future<void> main() async {
     debugPrint('❌ فشل تسجيل الدخول المجهول: $e');
   }
 
-  // 4. تفعيل App Check
+  // 4. تفعيل Firebase App Check
+  // ⚠️ ملاحظة: Debug Mode للتطوير
+  // قبل النشر على Google Play: غيّر إلى AndroidProvider.playIntegrity
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
-    debugPrint('✅ تم تفعيل App Check');
+    debugPrint('✅ تم تفعيل App Check (Debug Mode)');
+    debugPrint('🔑 Debug Token: noor-haramain-debug-token-fixed-12345678');
   } catch (e) {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
@@ -64,7 +67,7 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
 
-  // 6. ErrorWidget
+  // 6. ErrorWidget لعرض الأخطاء بدلاً من الشاشة الرمادية
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,

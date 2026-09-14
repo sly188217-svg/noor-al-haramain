@@ -5,7 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../quran/models/surah_model.dart';
 import '../../quran/models/ayah_model.dart';
+import '../../quran/mushaf_screen.dart';
 import '../../quran/services/quran_service.dart';
+import '../../quran/mushaf_screen.dart';
 
 class QuranTab extends StatefulWidget {
   const QuranTab({super.key});
@@ -246,6 +248,18 @@ class _QuranTabState extends State<QuranTab> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MushafScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFFD4AF37),
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.menu_book),
+        label: const Text('المصحف', style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
       body: Column(
         children: [
           Container(

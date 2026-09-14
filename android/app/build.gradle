@@ -48,11 +48,15 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+
+        // ✅ Firebase App Check Debug Token ثابت
+        manifestPlaceholders["firebaseAppCheckDebugToken"] = "noor-haramain-debug-token-fixed-12345678"
     }
 
     buildTypes {
         release {
             // ✅ استخدام debug signing مؤقتاً للاختبار
+            // سيتم التبديل إلى release signing قبل النشر على Google Play
             signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false

@@ -1,55 +1,132 @@
+/// ═══════════════════════════════════════════════════════════
+/// بيانات المؤذنين
+/// ═══════════════════════════════════════════════════════════
+/// 
+/// 📦 مضمّن (bundled): 3 مؤذنين في التطبيق — يعملون بدون إنترنت
+/// 📥 للتحميل: 9 مؤذنين من الإنترنت
 class MuezzinData {
-  /// قائمة المؤذنين المتوفرين
-  static final List<Map<String, String>> muezzins = [
-    {'id': 'marwan', 'name': 'الشيخ محمد مروان القصاص'},
-    {'id': 'yasser', 'name': 'الشيخ ياسر القطامي'},
-    {'id': 'afasy', 'name': 'الشيخ مشاري العفاسي'},
-    {'id': 'sudais', 'name': 'الشيخ عبد الرحمن السديس'},
-    {'id': 'ali_jaber', 'name': 'الشيخ علي جابر'},
-    {'id': 'ahmad_hajjim', 'name': 'الشيخ أحمد الحجيمي'},
-    {'id': 'basir_dosari', 'name': 'الشيخ ياسر الدوسري'},
-    {'id': 'abdullah_juhani', 'name': 'الشيخ عبد الله عواد الجهني'},
-    {'id': 'abdullah_busfar', 'name': 'الشيخ عبد الله بصفر'},
-    {'id': 'khalid_qahdani', 'name': 'الشيخ خالد القحطاني'},
-    {'id': 'salah_budair', 'name': 'الشيخ صلاح البدير'},
-    {'id': 'husary', 'name': 'الشيخ محمود خليل الحصري'},
+  static final List<Map<String, dynamic>> muezzins = [
+    // ═══════════════════════════════════════════════════════════
+    // 📦 المؤذنون المضمّنون (يعملون بدون إنترنت)
+    // ═══════════════════════════════════════════════════════════
+    {
+      'id': 'marwan',
+      'name': 'الشيخ محمد مروان القصاص',
+      'country': '🇸🇾 سوريا',
+      'bundled': true,
+    },
+    {
+      'id': 'yasser',
+      'name': 'الشيخ ياسر القطامي',
+      'country': '🇸🇦 السعودية',
+      'bundled': true,
+    },
+    {
+      'id': 'salah_budair',
+      'name': 'الشيخ صلاح البدير',
+      'country': '🇸🇦 المدينة المنورة',
+      'bundled': true,
+    },
+
+    // ═══════════════════════════════════════════════════════════
+    // 📥 المؤذنون القابلون للتحميل
+    // ═══════════════════════════════════════════════════════════
+    {
+      'id': 'afasy',
+      'name': 'الشيخ مشاري العفاسي',
+      'country': '🇰🇼 الكويت',
+      'bundled': false,
+    },
+    {
+      'id': 'sudais',
+      'name': 'الشيخ عبد الرحمن السديس',
+      'country': '🇸🇦 مكة المكرمة',
+      'bundled': false,
+    },
+    {
+      'id': 'ali_jaber',
+      'name': 'الشيخ علي جابر',
+      'country': '🇸🇦 مكة المكرمة',
+      'bundled': false,
+    },
+    {
+      'id': 'ahmad_hajjim',
+      'name': 'الشيخ أحمد الحجيمي',
+      'country': '🇸🇦 السعودية',
+      'bundled': false,
+    },
+    {
+      'id': 'basir_dosari',
+      'name': 'الشيخ ياسر الدوسري',
+      'country': '🇸🇦 السعودية',
+      'bundled': false,
+    },
+    {
+      'id': 'abdullah_juhani',
+      'name': 'الشيخ عبد الله عواد الجهني',
+      'country': '🇸🇦 السعودية',
+      'bundled': false,
+    },
+    {
+      'id': 'abdullah_busfar',
+      'name': 'الشيخ عبد الله بصفر',
+      'country': '🇾🇪 اليمن',
+      'bundled': false,
+    },
+    {
+      'id': 'khalid_qahdani',
+      'name': 'الشيخ خالد القحطاني',
+      'country': '🇸🇦 السعودية',
+      'bundled': false,
+    },
+    {
+      'id': 'husary',
+      'name': 'الشيخ محمود خليل الحصري',
+      'country': '🇪🇬 مصر',
+      'bundled': false,
+    },
   ];
 
-  /// ✅ روابط التحميل (نفس الموجودة في AdhanDownloadService)
-  static final Map<String, String> _urls = {
-    'marwan': 'https://www.islamcan.com/audio/adhan/azan1.mp3',
-    'yasser': 'https://www.islamcan.com/audio/adhan/azan2.mp3',
-    'afasy': 'https://www.islamcan.com/audio/adhan/azan3.mp3',
-    'sudais': 'https://www.islamcan.com/audio/adhan/azan4.mp3',
-    'ali_jaber': 'https://www.islamcan.com/audio/adhan/azan5.mp3',
-    'ahmad_hajjim': 'https://www.islamcan.com/audio/adhan/azan6.mp3',
-    'basir_dosari': 'https://www.islamcan.com/audio/adhan/azan7.mp3',
-    'abdullah_juhani': 'https://www.islamcan.com/audio/adhan/azan8.mp3',
-    'abdullah_busfar': 'https://www.islamcan.com/audio/adhan/azan9.mp3',
-    'khalid_qahdani': 'https://www.islamcan.com/audio/adhan/azan10.mp3',
-    'salah_budair': 'https://www.islamcan.com/audio/adhan/azan11.mp3',
-    'husary': 'https://www.islamcan.com/audio/adhan/azan12.mp3',
-  };
-
-  /// مسار الأذان المحلي (يُستخدم إذا وُجد في assets)
-  static String getLocalAdhanPath(String muezzinId, String prayerName) {
-    return 'assets/adhan/$muezzinId/$prayerName.mp3';
-  }
-
-  /// رابط الإنترنت
-  static String getAdhanUrl(String muezzinId) {
-    return _urls[muezzinId] ?? _urls['marwan']!;
-  }
-
-  /// اسم المؤذن من معرفه
   static String getMuezzinName(String muezzinId) {
     try {
-      return muezzins.firstWhere((m) => m['id'] == muezzinId)['name'] ?? 'مؤذن';
+      final m = muezzins.firstWhere((m) => m['id'] == muezzinId);
+      return m['name'] as String;
     } catch (e) {
       return 'مؤذن';
     }
   }
 
-  /// قائمة المؤذنين الذين يحتاجون تحميلاً
-  static List<String> get allIds => muezzins.map((m) => m['id']!).toList();
+  static String getMuezzinCountry(String muezzinId) {
+    try {
+      final m = muezzins.firstWhere((m) => m['id'] == muezzinId);
+      return m['country'] as String? ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  static bool isBundled(String muezzinId) {
+    try {
+      final m = muezzins.firstWhere((m) => m['id'] == muezzinId);
+      return m['bundled'] as bool? ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static List<Map<String, dynamic>> get bundledMuezzins =>
+      muezzins.where((m) => m['bundled'] == true).toList();
+
+  static List<Map<String, dynamic>> get downloadableMuezzins =>
+      muezzins.where((m) => m['bundled'] == false).toList();
+
+  static int get bundledCount =>
+      muezzins.where((m) => m['bundled'] == true).length;
+
+  static int get downloadableCount =>
+      muezzins.where((m) => m['bundled'] == false).length;
+
+  static String getLocalAdhanPath(String muezzinId, String prayerName) {
+    return 'assets/adhan/$muezzinId/adhan.mp3';
+  }
 }

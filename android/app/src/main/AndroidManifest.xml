@@ -48,6 +48,13 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 🔐 Firebase App Check Debug Token                   -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <meta-data
+            android:name="com.google.firebase.appcheck.DEBUG_TOKEN"
+            android:value="noor-haramain-debug-token-fixed-12345678" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -69,7 +76,7 @@
         </activity>
 
         <!-- ═══════════════════════════════════════════════════ -->
-        <!-- 🔔 استقبال الإشعارات المجدولة بعد إعادة تشغيل الجهاز  -->
+        <!-- 🔔 استقبال الإشعارات المجدولة بعد إعادة التشغيل     -->
         <!-- ═══════════════════════════════════════════════════ -->
         <receiver
             android:exported="false"
@@ -91,6 +98,11 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
+        </intent>
+        <!-- ✅ مطلوب لـ Google Sign-In -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="com.google.android.gms.auth.api.signin.RevocationBoundService" />
         </intent>
     </queries>
 </manifest>

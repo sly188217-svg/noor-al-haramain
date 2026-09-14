@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- ✅ منع R8 من حذف مورد Google Sign-In الضروري -->
+    <string name="default_web_client_id" tools:keep="@string/default_web_client_id" translatable="false">placeholder</string>
+</resources>
