@@ -43,16 +43,12 @@ class AdhanDownloadService {
     'husary': 'https://www.islamcan.com/audio/adhan/azan12.mp3',
   };
 
-  /// ═══════════════════════════════════════════════════════════
-  /// هل المؤذن مضمّن في التطبيق؟
-  /// ═══════════════════════════════════════════════════════════
+  /// هل المؤذن مضمّن؟
   static bool isBundled(String muezzinId) {
     return bundledMuezzins.contains(muezzinId);
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// الحصول على مجلد تخزين الأذان المُحمَّل
-  /// ═══════════════════════════════════════════════════════════
+  /// مجلد تخزين الأذان المُحمَّل
   static Future<Directory> _getAdhanDir() async {
     final dir = await getApplicationDocumentsDirectory();
     final adhanDir = Directory('${dir.path}/adhan_files');
@@ -62,33 +58,25 @@ class AdhanDownloadService {
     return adhanDir;
   }
 
-  /// ═══════════════════════════════════════════════════════════
   /// مسار ملف الأذان المحلي (للمُحمَّل)
-  /// ═══════════════════════════════════════════════════════════
   static Future<String> getLocalPath(String muezzinId) async {
     final dir = await _getAdhanDir();
     return '${dir.path}/$muezzinId.mp3';
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// مسار الأذان المضمّن في assets
+  /// ✅ المسار النهائي — يبحث في assets أولاً
   /// ═══════════════════════════════════════════════════════════
-  static String getBundledAssetPath(String muezzinId) {
-    return 'assets/adhan/$muezzinId/adhan.mp3';
-  }
-
-  /// ═══════════════════════════════════════════════════════════
-  /// الحصول على المسار النهائي للأذان:
-  /// 1. إذا مضمّن → asset path
-  /// 2. إذا مُحمّل → local file path
-  /// 3. إذا لا → null
-  /// ═══════════════════════════════════════════════════════════
-  static Future<String?> getAdhanPath(String muezzinId) async {
+  /// يُرجع:
+  /// - 'assets/adhan/{id}/adhan.mp3' إذا كان مضمّناً
+  /// - '/path/to/{id}.mp3' إذا كان محمّلاً
+  /// - null إذا لم يكن متوفراً
+  static Future<String?> getPlayablePath(String muezzinId) async {
     // 1. مضمّن؟
     if (isBundled(muezzinId)) {
-      return getBundledAssetPath(muezzinId);
+      return 'assets/adhan/$muezzinId/adhan.mp3';
     }
-    // 2. مُحمّل؟
+    // 2. محمّل محلياً؟
     if (await isDownloaded(muezzinId)) {
       return await getLocalPath(muezzinId);
     }
@@ -96,9 +84,12 @@ class AdhanDownloadService {
     return null;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// التحقق من تحميل أذان مؤذن معين
-  /// ═══════════════════════════════════════════════════════════
+  /// مسار الأذان المضمّن في assets
+  static String getBundledAssetPath(String muezzinId) {
+    return 'assets/adhan/$muezzinId/adhan.mp3';
+  }
+
+  /// هل تحمّل أذان مؤذن معين؟
   static Future<bool> isDownloaded(String muezzinId) async {
     try {
       final path = await getLocalPath(muezzinId);
@@ -109,30 +100,20 @@ class AdhanDownloadService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// التحقق من توفر الأذان (مضمّن أو مُحمّل)
-  /// ═══════════════════════════════════════════════════════════
+  /// هل الأذان متاح (مضمّن أو محمّل)؟
   static Future<bool> isAvailable(String muezzinId) async {
     if (isBundled(muezzinId)) return true;
     return await isDownloaded(muezzinId);
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// ✅ عدد المؤذنين المُحمَّلين (متوافق مع الكود القديم)
-  /// يُرجع عدد المؤذنين المتاحين (مضمّن + محمّل)
-  /// ═══════════════════════════════════════════════════════════
+  /// عدد المتاحين (مضمّن + محمّل)
   static Future<int> downloadedCount() async {
     return await availableCount();
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// عدد المؤذنين المتاحين (مضمّن + محمّل)
-  /// ═══════════════════════════════════════════════════════════
+  /// عدد المتاحين
   static Future<int> availableCount() async {
-    // المؤذنون المضمّنون دائماً متاحون
     int count = bundledMuezzins.length;
-
-    // المؤذنون المُحمَّلون
     for (final id in muezzinUrls.keys) {
       if (isBundled(id)) continue;
       if (await isDownloaded(id)) count++;
@@ -140,9 +121,7 @@ class AdhanDownloadService {
     return count;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// عدد المؤذنين المُحمَّلين فقط (بدون المضمّنين)
-  /// ═══════════════════════════════════════════════════════════
+  /// عدد المُحمَّلين فقط
   static Future<int> onlyDownloadedCount() async {
     int count = 0;
     for (final id in muezzinUrls.keys) {
@@ -152,23 +131,18 @@ class AdhanDownloadService {
     return count;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// عدد المؤذنين القابلين للتحميل (غير المضمّنين)
-  /// ═══════════════════════════════════════════════════════════
+  /// عدد القابلين للتحميل
   static int get downloadableCount {
     return muezzinUrls.keys.where((id) => !isBundled(id)).length;
   }
 
-  /// ═══════════════════════════════════════════════════════════
   /// تحميل أذان مؤذن واحد
-  /// ═══════════════════════════════════════════════════════════
   static Future<bool> downloadMuezzin(
     String muezzinId,
     void Function(double progress) onProgress,
   ) async {
     File? tempFile;
     try {
-      // إذا مضمّن → لا يحتاج تحميل
       if (isBundled(muezzinId)) {
         onProgress(1.0);
         return true;
@@ -180,7 +154,6 @@ class AdhanDownloadService {
         return false;
       }
 
-      // إذا محمّل مسبقاً
       if (await isDownloaded(muezzinId)) {
         onProgress(1.0);
         return true;
@@ -242,16 +215,12 @@ class AdhanDownloadService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// تحميل جميع المؤذنين (9 فقط — المضمّنون يُتخطّون)
-  /// ═══════════════════════════════════════════════════════════
+  /// تحميل جميع المؤذنين (9 فقط)
   static Future<Map<String, bool>> downloadAll({
     required void Function(String muezzinId, double progress) onMuezzinProgress,
     required void Function(int completed, int total) onOverallProgress,
   }) async {
-    // فقط المؤذنون غير المضمّنين
     final ids = muezzinUrls.keys.where((id) => !isBundled(id)).toList();
-
     final results = <String, bool>{};
     int completed = 0;
 
@@ -271,9 +240,7 @@ class AdhanDownloadService {
     return results;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// حذف أذان مؤذن (غير مضمّن)
-  /// ═══════════════════════════════════════════════════════════
+  /// حذف أذان (غير مضمّن)
   static Future<void> deleteMuezzin(String muezzinId) async {
     if (isBundled(muezzinId)) return;
     try {
@@ -285,9 +252,7 @@ class AdhanDownloadService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// حذف جميع الملفات المُحمَّلة (لا يحذف المضمّن)
-  /// ═══════════════════════════════════════════════════════════
+  /// حذف جميع المُحمَّلين
   static Future<void> clearAll() async {
     try {
       final dir = await _getAdhanDir();
@@ -299,9 +264,7 @@ class AdhanDownloadService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// التحقق من تحميل جميع المؤذنين
-  /// ═══════════════════════════════════════════════════════════
+  /// هل تم تحميل جميع المؤذنين؟
   static Future<bool> isAllDownloaded() async {
     for (final id in muezzinUrls.keys) {
       if (isBundled(id)) continue;

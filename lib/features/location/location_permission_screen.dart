@@ -7,48 +7,71 @@ class LocationPermissionScreen extends StatefulWidget {
   const LocationPermissionScreen({super.key});
 
   @override
-  State<LocationPermissionScreen> createState() => _LocationPermissionScreenState();
+  State<LocationPermissionScreen> createState() =>
+      _LocationPermissionScreenState();
 }
 
 class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
   bool _isLoading = false;
   Map<String, dynamic>? _locationData;
+  String? _errorMessage;
 
   Future<void> _requestLocationPermission() async {
-    setState(() => _isLoading = true);
-
-    // جلب الموقع الحقيقي (GPS أو IP)
-    final location = await LocationService.getCurrentLocation();
     setState(() {
-      _locationData = location;
-      _isLoading = false;
+      _isLoading = true;
+      _errorMessage = null;
     });
 
-    // حفظ الموقع في SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('user_lat', location['latitude']);
-    await prefs.setDouble('user_lng', location['longitude']);
-    await prefs.setString('user_city', location['city']);
-    await prefs.setBool('location_enabled', true);
+    try {
+      final location = await LocationService.getCurrentLocation();
 
-    if (mounted) {
+      if (!mounted) return;
+
+      setState(() {
+        _locationData = location;
+        _isLoading = false;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('user_lat', location['latitude']);
+      await prefs.setDouble('user_lng', location['longitude']);
+      await prefs.setString('user_city', location['city']);
+      await prefs.setBool('location_enabled', true);
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ تم تحديد موقعك: ${location['city']} (${location['source']})'),
+          content: Text('✅ تم تحديد موقعك: ${location['city']}'),
           backgroundColor: Colors.green,
         ),
       );
-      // ننتقل للوحة التحكم
+
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ $_errorMessage'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
 
   void _skipLocation() async {
     final prefs = await SharedPreferences.getInstance();
-    // استخدام مكة كقيمة افتراضية
     await prefs.setDouble('user_lat', 21.4225);
     await prefs.setDouble('user_lng', 39.8262);
     await prefs.setString('user_city', 'مكة المكرمة (افتراضي)');
@@ -62,6 +85,10 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     }
   }
 
+  Future<void> _openSettings() async {
+    await LocationService.openLocationSettings();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +99,6 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // الشعار
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -106,7 +132,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              // عرض الموقع إذا تم جلبها
+
+              // عرض الموقع إذا تم جلبه
               if (_locationData != null) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -119,23 +146,58 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                     children: [
                       Text(
                         '📍 ${_locationData!['city']}',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         'الإحداثيات: ${_locationData!['latitude'].toStringAsFixed(4)}, ${_locationData!['longitude'].toStringAsFixed(4)}',
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'المصدر: ${_locationData!['source']}',
-                        style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 11),
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
+
+              // رسالة الخطأ
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.orange),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                              color: Colors.orange, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _openSettings,
+                  child: const Text(
+                    '⚙️ فتح إعدادات الموقع',
+                    style: TextStyle(color: Color(0xFFD4AF37)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               _isLoading
                   ? const CircularProgressIndicator(color: Color(0xFFD4AF37))
                   : SizedBox(

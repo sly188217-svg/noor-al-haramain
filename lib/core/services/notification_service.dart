@@ -11,24 +11,21 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
+  static const int _persistentId = 9999;
 
-  /// تهيئة الإشعارات + طلب الأذونات
+  /// تهيئة الإشعارات
   static Future<void> initialize() async {
     if (_initialized) return;
 
-    // 1. تهيئة قاعدة بيانات المناطق الزمنية
     tz.initializeTimeZones();
 
-    // 2. ضبط المنطقة الزمنية من الجهاز
     try {
       final String tzName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(tzName));
-      debugPrint('🌍 Timezone set to: $tzName');
     } catch (e) {
       debugPrint('⚠️ فشل ضبط المنطقة الزمنية: $e');
     }
 
-    // 3. إعدادات المنصات
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/launcher_icon');
 
@@ -48,7 +45,6 @@ class NotificationService {
       linux: linuxSettings,
     );
 
-    // 4. تهيئة
     try {
       await _notifications.initialize(settings);
     } catch (e) {
@@ -56,7 +52,6 @@ class NotificationService {
       if (!Platform.isLinux) rethrow;
     }
 
-    // 5. طلب الأذونات على Android
     if (Platform.isAndroid) {
       await _requestAndroidPermissions();
     }
@@ -69,14 +64,12 @@ class NotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     if (androidImpl == null) return;
 
-    // إذن الإشعارات (Android 13+)
     try {
       await androidImpl.requestNotificationsPermission();
     } catch (e) {
       debugPrint('⚠️ requestNotificationsPermission: $e');
     }
 
-    // إذن الإشعارات المجدولة بدقة (Android 12+)
     try {
       await androidImpl.requestExactAlarmsPermission();
     } catch (e) {
@@ -84,7 +77,61 @@ class NotificationService {
     }
   }
 
+  /// ═══════════════════════════════════════════════════════════
+  /// 🔔 إشعار ثابت دائم — العد التنازلي + التاريخ الهجري
+  /// ═══════════════════════════════════════════════════════════
+  static Future<void> showPersistentNotification({
+    required String nextPrayer,
+    required String timeRemaining,
+    required String hijriDate,
+    required String city,
+  }) async {
+    if (Platform.isLinux) return;
+    if (!_initialized) await initialize();
+
+    const androidDetails = AndroidNotificationDetails(
+      'prayer_persistent_channel',
+      'الإشعار الدائم',
+      channelDescription: 'يعرض العد التنازلي للصلاة القادمة',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true,
+      autoCancel: false,
+      playSound: false,
+      enableVibration: false,
+      onlyAlertOnce: true,
+      showWhen: false,
+      category: AndroidNotificationCategory.service,
+      styleInformation: BigTextStyleInformation(''),
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(presentAlert: false),
+    );
+
+    try {
+      await _notifications.show(
+        _persistentId,
+        '🕌 $nextPrayer — $timeRemaining',
+        '$hijriDate • $city',
+        details,
+      );
+    } catch (e) {
+      debugPrint('⚠️ فشل الإشعار الدائم: $e');
+    }
+  }
+
+  /// إلغاء الإشعار الدائم
+  static Future<void> cancelPersistent() async {
+    try {
+      await _notifications.cancel(_persistentId);
+    } catch (e) {}
+  }
+
+  /// ═══════════════════════════════════════════════════════════
   /// جدولة إشعارات الأذان لكل صلاة
+  /// ═══════════════════════════════════════════════════════════
   static Future<void> schedulePrayerNotifications(
     Map<String, String> prayerTimes,
     String cityName,
@@ -98,17 +145,12 @@ class NotificationService {
 
       final prefs = await SharedPreferences.getInstance();
       final enabled = prefs.getBool('notifications_enabled') ?? true;
-      if (!enabled) {
-        debugPrint('⏸️ الإشعارات معطلة من الإعدادات');
-        return;
-      }
+      if (!enabled) return;
 
       final now = DateTime.now();
 
       for (final entry in prayerTimes.entries) {
         final prayerName = entry.key;
-
-        // تجاهل الشروق (ليس صلاة)
         if (prayerName == 'Sunrise') continue;
 
         final prayerNameAr = _translatePrayerName(prayerName);
@@ -119,7 +161,6 @@ class NotificationService {
             ? scheduledTime
             : scheduledTime.add(const Duration(days: 1));
 
-        // الإشعار الرئيسي عند وقت الأذان
         try {
           await _notifications.zonedSchedule(
             prayerName.hashCode,
@@ -133,10 +174,10 @@ class NotificationService {
                 UILocalNotificationDateInterpretation.absoluteTime,
           );
         } catch (e) {
-          debugPrint('⚠️ فشل جدولة إشعار $prayerName: $e');
+          debugPrint('⚠️ فشل جدولة $prayerName: $e');
         }
 
-        // إشعار تذكيري قبل 15 دقيقة (اختياري)
+        // إشعار تذكيري قبل 15 دقيقة
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
@@ -150,25 +191,21 @@ class NotificationService {
               uiLocalNotificationDateInterpretation:
                   UILocalNotificationDateInterpretation.absoluteTime,
             );
-          } catch (e) {
-            debugPrint('⚠️ فشل جدولة تذكير $prayerName: $e');
-          }
+          } catch (e) {}
         }
       }
-
-      debugPrint('✅ تم جدولة إشعارات الصلاة');
     } catch (e) {
       debugPrint('⚠️ فشل جدولة الإشعارات: $e');
     }
   }
 
-  /// إشعار فوري (للاختبار من الإعدادات)
+  /// إشعار فوري (للاختبار)
   static Future<void> showTestNotification() async {
     if (Platform.isLinux) return;
     if (!_initialized) await initialize();
 
     await _notifications.show(
-      9999,
+      8888,
       '🔔 اختبار الإشعارات',
       'إذا وصلتك هذه الرسالة، فالإشعارات تعمل بنجاح!',
       _notificationDetails(),
@@ -180,9 +217,9 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // مساعدات داخلية
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
 
   static NotificationDetails _notificationDetails() {
     return const NotificationDetails(

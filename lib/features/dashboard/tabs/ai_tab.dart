@@ -37,7 +37,7 @@ class _AiTabState extends State<AiTab>
     final isArabic = lang == 'ar';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C2541),
         elevation: 0,

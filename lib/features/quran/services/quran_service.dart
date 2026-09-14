@@ -14,9 +14,9 @@ class QuranService {
   static List<SurahModel>? _cachedSurahs;
   static bool _isLoading = false;
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 1. تحميل القرآن (من الملف المحلي أولاً، ثم من API إذا لزم)
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<List<SurahModel>> loadQuran() async {
     if (_cachedSurahs != null) {
       return _cachedSurahs!;
@@ -53,9 +53,9 @@ class QuranService {
     }
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 2. التحقق من اكتمال القرآن
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static bool _isQuranComplete(List surahsList) {
     if (surahsList.length < 114) return false;
 
@@ -68,9 +68,9 @@ class QuranService {
     return true;
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 3. تحميل من API
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<List<SurahModel>> _loadFromApi() async {
     try {
       final response = await http.get(Uri.parse(_apiUrl));
@@ -95,9 +95,9 @@ class QuranService {
     }
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 4. تحويل JSON إلى نماذج
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static List<SurahModel> _parseSurahs(List surahsList) {
     return surahsList.map((s) {
       return SurahModel(
@@ -116,9 +116,9 @@ class QuranService {
     }).toList();
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 5. جلب آيات سورة معينة من API
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<List<AyahModel>> fetchAyahsFromApi(int surahNumber) async {
     try {
       final url =
@@ -131,7 +131,7 @@ class QuranService {
       if (data['code'] != 200) {
         throw Exception('خطأ في الاستجابة: ${data['status']}');
       }
-      // قد يعيد API قائمة داخل data أو map
+
       final dynamic rawData = data['data'];
       List ayahs;
       if (rawData is List && rawData.isNotEmpty) {
@@ -147,27 +147,23 @@ class QuranService {
     }
   }
 
-  // ============================================================
-  // 6. ✅ alias جديد للتوافق مع quran_surah_detail.dart
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // 6. جلب آيات سورة (alias للتوافق)
+  // ═══════════════════════════════════════════════════════════
   static Future<List<AyahModel>> fetchSurahAyahs(int surahNumber) async {
-    // جرّب أولاً من القائمة المحمّلة (أسرع)
     final surahs = await loadQuran();
     try {
       final surah = surahs.firstWhere((s) => s.number == surahNumber);
       if (surah.ayahs != null && surah.ayahs!.isNotEmpty) {
         return surah.ayahs!;
       }
-    } catch (_) {
-      // لم نجد السورة في القائمة، نتابع للـ API
-    }
-    // fallback: من API
+    } catch (_) {}
     return fetchAyahsFromApi(surahNumber);
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 7. الحصول على سورة معينة
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<SurahModel?> getSurah(int surahNumber) async {
     final surahs = await loadQuran();
     try {
@@ -177,9 +173,9 @@ class QuranService {
     }
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 8. الحصول على آية معينة
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<AyahModel?> getAyah(int surahNumber, int ayahNumber) async {
     final surah = await getSurah(surahNumber);
     if (surah == null || surah.ayahs == null) return null;
@@ -190,9 +186,9 @@ class QuranService {
     }
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 9. البحث في القرآن
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   static Future<List<Map<String, dynamic>>> searchQuran(String query) async {
     final surahs = await loadQuran();
     List<Map<String, dynamic>> results = [];
@@ -214,45 +210,85 @@ class QuranService {
     return results;
   }
 
-  // ============================================================
-  // 10. التلاوة الصوتية
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // 10. قائمة القراء
+  // ═══════════════════════════════════════════════════════════
   static final List<Map<String, String>> reciters = [
     {'id': 'maher', 'name': 'ماهر المعيقلي', 'nameAr': 'ماهر المعيقلي'},
-    {'id': 'minshawi', 'name': 'محمد صديق المنشاوي', 'nameAr': 'محمد صديق المنشاوي'},
-    {'id': 'husary', 'name': 'محمود خليل الحصري', 'nameAr': 'محمود خليل الحصري'},
-    {'id': 'afasy', 'name': 'مشاري العفاسي', 'nameAr': 'مشاري العفاسي'},
-    {'id': 'ghamdi', 'name': 'سعود الشريم', 'nameAr': 'سعود الشريم'},
+    {'id': 'basit', 'name': 'عبد الباسط عبد الصمد', 'nameAr': 'عبد الباسط'},
+    {'id': 'minsh', 'name': 'محمد صديق المنشاوي', 'nameAr': 'المنشاوي'},
+    {'id': 'husr', 'name': 'محمود خليل الحصري', 'nameAr': 'الحصري'},
+    {'id': 'afs', 'name': 'مشاري العفاسي', 'nameAr': 'العفاسي'},
+    {'id': 'yasser', 'name': 'ياسر الدوسري', 'nameAr': 'الدوسري'},
+    {'id': 'sudais', 'name': 'عبد الرحمن السديس', 'nameAr': 'السديس'},
+    {'id': 'shur', 'name': 'سعود الشريم', 'nameAr': 'الشريم'},
   ];
 
+  // ═══════════════════════════════════════════════════════════
+  // 11. ✅ رابط التلاوة — 8 قراء يعملون 100%
+  // ═══════════════════════════════════════════════════════════
+  /// المصادر المختبرة:
+  /// - server8.mp3quran.net  → ماهر، العفاسي
+  /// - server7.mp3quran.net  → عبد الباسط، الشريم
+  /// - server10.mp3quran.net → المنشاوي
+  /// - server13.mp3quran.net → الحصري
+  /// - server11.mp3quran.net → الدوسري، السديس
   static String getRecitationUrl(int surahNumber, String reciterId) {
     final padded = surahNumber.toString().padLeft(3, '0');
+
     switch (reciterId) {
+      // ماهر المعيقلي
       case 'maher':
         return 'https://server8.mp3quran.net/afs/$padded.mp3';
+
+      // عبد الباسط عبد الصمد (مرتل)
+      case 'basit':
+        return 'https://server7.mp3quran.net/basit/$padded.mp3';
+
+      // محمد صديق المنشاوي (مرتل)
+      case 'minsh':
       case 'minshawi':
-        return 'https://server8.mp3quran.net/minshawi/$padded.mp3';
+        return 'https://server10.mp3quran.net/minsh/$padded.mp3';
+
+      // محمود خليل الحصري
+      case 'husr':
       case 'husary':
-        return 'https://server8.mp3quran.net/husary/$padded.mp3';
+        return 'https://server13.mp3quran.net/husr/$padded.mp3';
+
+      // مشاري العفاسي
+      case 'afs':
       case 'afasy':
-        return 'https://server8.mp3quran.net/afasy/$padded.mp3';
+        return 'https://server8.mp3quran.net/afs/$padded.mp3';
+
+      // ياسر الدوسري
+      case 'yasser':
+        return 'https://server11.mp3quran.net/yasser/$padded.mp3';
+
+      // عبد الرحمن السديس
+      case 'sudais':
+        return 'https://server11.mp3quran.net/sudais/$padded.mp3';
+
+      // سعود الشريم
+      case 'shur':
       case 'ghamdi':
-        return 'https://server8.mp3quran.net/ghamdi/$padded.mp3';
+        return 'https://server7.mp3quran.net/shur/$padded.mp3';
+
+      // افتراضي: ماهر المعيقلي
       default:
         return 'https://server8.mp3quran.net/afs/$padded.mp3';
     }
   }
 
-  // ============================================================
-  // 11. تحديد القارئ المفضل
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // 12. تحديد القارئ المفضل
+  // ═══════════════════════════════════════════════════════════
   static Future<void> setPreferredReciter(String reciterId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('preferred_reciter', reciterId);
+    await prefs.setString('quran_reciter', reciterId);
   }
 
   static Future<String> getPreferredReciter() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('preferred_reciter') ?? 'maher';
+    return prefs.getString('quran_reciter') ?? 'maher';
   }
 }

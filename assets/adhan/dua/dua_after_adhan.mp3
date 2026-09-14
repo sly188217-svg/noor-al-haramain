@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Error Page - IslamCan.com</title>
+<!-- InstanceBegin template="/Templates/Template.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta charset="UTF-8">
+<!-- InstanceBeginEditable name="doctitle" -->
+<!-- InstanceEndEditable -->
+<!-- InstanceBeginEditable name="head" -->
+<!-- InstanceEndEditable -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/w3.css">
+<link rel="stylesheet" href="/w3-theme-black.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+html,body,h1,h2,h3,h4,h5,h6 {font-family: "Roboto", sans-serif;}
+</style>
+<script data-ad-client="ca-pub-4745934916585187" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+</head>
+
+<body>
+<!-- Navbar -->
+<div class="w3-top">
+ <div class="w3-bar w3-theme-d2 w3-left-align">
+  <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-hover-white w3-theme-d2" href="javascript:void(0);" onclick="openNav()"><i class="fa fa-bars"></i></a>
+  <a href="https://islamcan.com" class="w3-bar-item w3-button w3-teal"><i class="fa fa-home w3-margin-right"></i>IslamCan.com</a>
+<a class="w3-bar-item w3-button w3-hide-small w3-hover-white" href="/increaseiman/index.shtml">Islamic Stories</a>
+<a class="w3-bar-item w3-button w3-hide-small w3-hover-white" href="/audio/adhan/index.shtml">Azan MP3</a>
+<a class="w3-bar-item w3-button w3-hide-small w3-hover-white" href="/blog/">Blog</a>
+
+    <div class="w3-dropdown-hover w3-hide-small">
+    <button class="w3-button" title="Notifications">Articles <i class="fa fa-caret-down"></i></button>     
+    <div class="w3-dropdown-content w3-card-4 w3-bar-block">
+      <a href="/salat/duas/index.shtml" class="w3-bar-item w3-button">Salat Duas</a>
+      <a href="/names/index.shtml" class="w3-bar-item w3-button">Muslim Baby Names</a>
+      <a href="/common-questions-people-ask-about-islam.shtml" class="w3-bar-item w3-button">Questions and Answers</a>
+      <a href="/99names/index.shtml" class="w3-bar-item w3-button">99 Names of Allah</a>
+      <a href="/signsofallah/index.shtml" class="w3-bar-item w3-button">Signs of Allah</a>
+      <a href="/hadith-qudsi/index.shtml" class="w3-bar-item w3-button">40 Hadith Qudsi</a>
+      <a href="/women-in-islam.shtml" class="w3-bar-item w3-button">Women in Islam</a>
+      <a href="/jumah-khutbah/" class="w3-bar-item w3-button">Jumah Khutbah Collection</a>
+      <a href="/dayofjudgement/index.shtml" class="w3-bar-item w3-button">Signs of Qiyamah</a>
+      <a href="/islamic-history.shtml" class="w3-bar-item w3-button">Islamic History</a>
+      <a href="/paradise-jannah.shtml" class="w3-bar-item w3-button">Paradise-Jannah</a>
+      <a href="/hell-jahannam.shtml" class="w3-bar-item w3-button">Hell-Jahannam</a>
+      <a href="/reflections/index.shtml" class="w3-bar-item w3-button">Ever Wonder?</a>
+      <a href="/youthissues.shtml" class="w3-bar-item w3-button">Youth Issues and Advice</a>
+      
+    </div>
+  </div>
+  <div class="w3-dropdown-hover w3-hide-small">
+    <button class="w3-button" title="Notifications">Multimedia <i class="fa fa-caret-down"></i></button>     
+    <div class="w3-dropdown-content w3-card-4 w3-bar-block">
+     
+      <a href="/miracles/index.shtml" class="w3-bar-item w3-button">Miracle Pictures</a>
+     
+      <a href="/islamic-pictures.shtml" class="w3-bar-item w3-button">Islamic Pictures</a>
+      <a href="/quran-mp3/mishary-al-afasy-quran-mp3-download.shtml" class="w3-bar-item w3-button">Quran MP3</a>      
+      <a href="/free-islamic-ringtones.shtml" class="w3-bar-item w3-button">Islamic Ringtones</a>        
+      <a href="/dua/index.shtml" class="w3-bar-item w3-button">Dua MP3</a>
+      <a href="/wallpapers/index.shtml" class="w3-bar-item w3-button">Free Wallpapers</a>
+      <a href="/free-islamic-wallpapers.shtml" class="w3-bar-item w3-button">Free Islamic Wallpapers</a>
+    </div>
+  </div>
+  <div class="w3-dropdown-hover w3-hide-small">
+    <button class="w3-button" title="Notifications">Fun <i class="fa fa-caret-down"></i></button>     
+    <div class="w3-dropdown-content w3-card-4 w3-bar-block">
+      <a href="/islamic-jokes.shtml" class="w3-bar-item w3-button">Islamic Jokes</a>
+      <a href="/islamic-riddles.shtml" class="w3-bar-item w3-button">Islamic Riddles</a>
+      <a href="/quiz/index.shtml" class="w3-bar-item w3-button">Islamic Quizzes</a>
+    </div>
+  </div>
+  <div class="w3-dropdown-hover w3-hide-small">
+    <button class="w3-button" title="Notifications">Resources <i class="fa fa-caret-down"></i></button>     
+    <div class="w3-dropdown-content w3-card-4 w3-bar-block">
+      <a href="/masjid/index.shtml" class="w3-bar-item w3-button">Masjid Directory</a>
+      <a href="/dictionary/index.shtml" class="w3-bar-item w3-button">Arabic to English Dictionary</a>
+      
+      <a href="/webdesign/index.shtml" class="w3-bar-item w3-button">Website Design</a>      
+    </div>
+  </div>
+ </div>
+
+  <!-- Navbar on small screens -->
+  <div id="navDemo" class="w3-bar-block w3-theme-d2 w3-hide w3-hide-large w3-hide-medium">
+    <a class="w3-bar-item w3-button" href="/index.shtml">Home</a>
+<a class="w3-bar-item w3-button" href="/increaseiman/index.shtml">Islamic Stories</a>
+<a class="w3-bar-item w3-button" href="/islamic-store/index.shtml">Islamic Store</a>
+<a class="w3-bar-item w3-button" href="/miracles/index.shtml">Miracle Pictures</a>
+<a class="w3-bar-item w3-button" href="/names/index.shtml">Muslim Baby Names</a>
+<a class="w3-bar-item w3-button" href="/islamic-jokes.shtml">Islamic Jokes</a>
+<a class="w3-bar-item w3-button" href="/islamic-riddles.shtml">Islamic Riddles</a>
+<a class="w3-bar-item w3-button" href="/common-questions-people-ask-about-islam.shtml">Questions and Answers</a>
+<a class="w3-bar-item w3-button" href="/99names/index.shtml">99 Names of Allah</a>
+<a class="w3-bar-item w3-button" href="/quiz/index.shtml">Islamic Quizzes</a>
+<a class="w3-bar-item w3-button" href="/salat/duas/index.shtml">Salat Duas</a>
+<a class="w3-bar-item w3-button" href="/audio/adhan/index.shtml">Azan MP3</a>
+<a class="w3-bar-item w3-button" href="/index.shtml">More Services...</a>
+  </div>
+</div>
+<!-- InstanceBeginEditable name="EditRegionBelowMenu" --><!-- InstanceEndEditable -->
+<!-- Main content: shift it to the right by 250 pixels when the sidebar is visible -->
+<div class="w3-main" style="margin-left:0px;margin-top:10px">
+<!-- InstanceBeginEditable name="EditRegionGrid" -->
+<!-- InstanceEndEditable -->
+
+  <div class="w3-row w3-padding-64">
+    <div class="w3-twothird w3-container">
+	
+	<!-- InstanceBeginEditable name="EditRegionBody" -->
+<div class="w3-center">
+  <h2>Oops! It seems the page you are looking for is no longer here. May be you will find it within one of the sections listed below?</h2>
+</div>
+
+<div class="w3-row-padding">
+
+<div class="w3-half">
+<div class="w3-card white">
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic Stories" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/increaseiman/index.shtml"><h4>Islamic Stories</h4></a><br>
+        <p>Huge selection of Islamic stories for children in English. There is a bed time story for every night! <a href="/increaseiman/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Azan MP3" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/audio/adhan/index.shtml"><h4>Azan MP3</h4></a><br>
+        <p>Download beautiful Azan in MP3 format. Great for soothing the heart with the call to prayer. <a href="/audio/adhan/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Salat Duas" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/salat/duas/index.shtml"><h4>Salat Duas</h4></a><br>
+        <p>Learn what to say in salah (prayer) with sound, transliteration and meaning in English. <a href="/salat/duas/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Muslim Baby Names" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/names/index.shtml"><h4>Muslim Baby Names</h4></a><br>
+        <p>Expecting a baby? Our name database can help you choose a meaningful Islamic name for your child. <a href="/names/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Signs of Allah" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/signsofallah/index.shtml"><h4>Signs of Allah</h4></a><br>
+        <p>Allah's signs are everywhere. Explore the amazing signs of Allah in nature and within us. <a href="/signsofallah/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="40 Hadith Qudsi" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/hadith-qudsi/index.shtml"><h4>40 Hadith Qudsi</h4></a><br>
+        <p>Hadith Qudsi are those hadith attributed to Allah but narrated by the Prophet (SAW). <a href="/hadith-qudsi/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Women in Islam" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/women-in-islam.shtml"><h4>Women in Islam</h4></a><br>
+        <p>A section devoted to the honourable women of Islam, their rights, roles and contribution to hamanity. <a href="/women-in-islam.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Jumah Khutbah" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/jumah-khutbah/"><h4>Jumah Khutbah</h4></a><br>
+        <p>Learn to give Jumah khutbah in English and Arabic. Great for leading Jumah at school and work. <a href="/jumah-khutbah/">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islam and Youth" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/youthissues.shtml"><h4>Youth Issues</h4></a><br>
+        <p>Young people face many challenges in life. This section discusses some common issues youths encounter. <a href="/youthissues.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Hell or Jahannam" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/hell-jahannam.shtml"><h4>Hell or Jahannam</h4></a><br>
+        <p>Hell is the recompense for evil. The description of hell is given in detail in this section. <a href="/hell-jahannam.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic History" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/islamic-history.shtml"><h4>Islamic History</h4></a><br>
+        <p>A collection of articles on the rich history of Islam, from the beginning to the modern day. <a href="/islamic-history.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Learn Arabic alphabets" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/learn-arabic/arabic-alphabets.shtml"><h4>Learn Arabic Alphabets</h4></a><br>
+        <p>Learn Arabic alphabets using MP3 audio and proper puncutation. It's easy to learn Arabic alphabets. <a href="/learn-arabic/arabic-alphabets.shtml">Click to View</a></p>
+</div>
+
+
+
+</div>
+</div>
+
+<div class="w3-half">
+<div class="w3-card white">
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islam" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/raising-children-islamic-parenting.shtml"><h4>Raising Children in Islam</h4></a><br>
+        <p>Parental resources for Muslims parents. Includes articles, audio lectures and more. <a href="/raising-children-islamic-parenting.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic Jokes" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/islamic-jokes.shtml"><h4>Islamic Jokes</h4></a><br>
+        <p>Read these jokes to bring a little laughter in your life. These jokes are fun! <a href="/islamic-jokes.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic Riddles" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/islamic-riddles.shtml"><h4>Islamic Riddles</h4></a><br>
+        <p>You think you know everything about Islam? It's possible you do. Let's find out using these riddles. <a href="/islamic-riddles.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Miracle Pictures" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/miracles/index.shtml"><h4>Miracle Pictures</h4></a><br>
+        <p>The universe is full of mysteries. Here are some amazing pictures which show Allah's sign in nature. <a href="/miracles/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic Pictures" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/islamic-pictures.shtml"><h4>Islamic Pictures</h4></a><br>
+        <p>Islamic picture gallery covering a wide variety of topics, including masjids and Islamic art. <a href="/islamic-pictures.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Share Facebook Images" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/facebook-watsapp-images.shtml"><h4>Facebook Images to Share</h4></a><br>
+        <p>Do you do dawah using the Internet? Here are some motivations images you can share over Facebook and social media. <a href="/facebook-watsapp-images.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islamic quizzes" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/quiz/index.shtml"><h4>Islamic Quiz</h4></a><br>
+        <p>Islamic quiz on various topics. Great for kids and adults. Test your Islamic knowledge. <a href="/quiz/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Masjid Directory" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/masjid/index.shtml"><h4>Masjid Directory</h4></a><br>
+        <p>Canada and USA mosque directory covering all provinces and states. Add your masjid for free. <a href="/masjid/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Arabic to English Dictionary" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/dictionary/index.shtml"><h4>Arabic to English Dictionary</h4></a><br>
+        <p>A dictionary containing translation of some common Arabic words to English. <a href="/dictionary/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Muslim Convert Stories" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/muslim-convert-stories-story.shtml"><h4>Convert Stories</h4></a><br>
+        <p>Islam is the fastest growing religion in the world. Read amazing stories of converts. <a href="/muslim-convert-stories-story.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Ramadan Section" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/ramadan/index.shtml"><h4>Ramadan Section</h4></a><br>
+        <p>Ramadan is a blessed month of Islam. This section has articles, dua, stories and more about Ramadan. <a href="/ramadan/index.shtml">Click to View</a></p>
+</div>
+
+<div class="w3-container w3-card w3-white w3-round w3-margin"><br>
+        <img src="images/prayer.jpg" alt="Islam" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <a href="/islamic-articles/interest-free-islamic-mortgages-halal-mortgages.shtml"><h4>Interest Free Mortgages</h4></a><br>
+        <p>A list of companies providing interest free mortgages to the Muslim communities in UK, Canada and USA. <a href="/islamic-articles/interest-free-islamic-mortgages-halal-mortgages.shtml">Click to View</a></p>
+</div>
+
+</div>
+</div>
+</div>    
+
+<!-- InstanceEndEditable -->
+       
+    
+          <!-- Partner -->
+  <div class="w3-card-4 w3-margin w3-white">
+    <a href="https://www.youtube.com/@jannahvideos" target="_blank"><img src="/jannah-videos.jpg" alt="jannah videos channel" style="width:100%"></a>
+   </div>
+  <hr>
+
+<header class="w3-container w3-blue-grey">
+  <div class="w3-center">Like Us on <a href="https://www.facebook.com/islamcanofficial" class="w3-button w3-blue">Facebook</a> <a href="https://instagram.com/islamcanofficial" class="w3-button w3-red">Instagram</a></div>
+</header>
+
+<!-- Blog Begin -->
+<div class="w3-center"><h3>Check Out Our Blog Posts</h3></div>
+<div class="w3-row-padding"> 
+
+<div class="w3-third">
+<div class="w3-card">
+   <a href="/blog/2019/12/dua-for-children-for-them-to-be-pious-and-successful/"><img src="/images/blog-dua-for-children.jpg" alt="Dua for pious children" style="width:100%"></a>
+  <div class="w3-container">
+  <p><a href="/blog/2019/12/dua-for-children-for-them-to-be-pious-and-successful/">Dua for Good Children</a></p>
+  </div>
+</div>
+</div>
+
+<div class="w3-third">
+<div class="w3-card-4">
+  <a href="/blog/2019/12/10-authentic-dua-to-recite-when-facing-difficulties-and-problems-in-life/"><img src="/images/blog-dua-for-problems.jpg" alt="Dua for problems" style="width:100%"></a>
+  <div class="w3-container">
+  <p><a href="/blog/2019/12/10-authentic-dua-to-recite-when-facing-difficulties-and-problems-in-life/">Dua for Problems</a></p>
+  </div>
+</div>
+</div>
+
+<div class="w3-third">
+<div class="w3-card-4">
+  <a href="/blog/2019/12/10-beautiful-verses-of-the-quran-about-hope/"><img src="/images/blog-verses-on-hope.jpg" alt="Quran verses on hope" style="width:100%"></a>
+  <div class="w3-container">
+  <p><a href="/blog/2019/12/10-beautiful-verses-of-the-quran-about-hope/">Quran Verses on Hope</a></p>
+  </div>
+</div>
+</div>
+</div>
+<!-- Blog End -->
+    </div>
+    <div class="w3-third w3-container">
+
+<!-- Right Grid-->
+
+<!-- Posts -->
+ 
+      <div class="w3-white w3-margin">
+        <div class="w3-container w3-padding w3-green">
+          <h4>Most Popular</h4>
+        </div>
+        
+         <ul class="w3-ul w3-hoverable w3-white">
+          <li class="w3-padding-16">
+            <a href="/stop-complaining.shtml"><img src="/images/stop-complaining.jpg" alt="Stop Complaining" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="/stop-complaining.shtml"><span class="w3-large">Stop Complaining</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/allahs-pharmacy.shtml"><img src="/images/allahs-pharmacy.jpg" alt="Allah's Pharmacy" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="/allahs-pharmacy.shtml"><span class="w3-large">Allah's Pharmacy</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/how-big-are-you-space.shtml"><img src="/images/how-big-are-you.jpg" alt="How Big Are You?" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="/how-big-are-you-space.shtml"><span class="w3-large">How Big Are You?</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/why-dont-you-pray.shtml"><img src="/images/why-dont-pray.jpg" alt="Why don't you pray?" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="/why-dont-you-pray.shtml"><span class="w3-large">Why Don't You Pray?</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/7-wonders.shtml"><img src="/images/7wonders.jpg" alt="7 wonders of the world" class="w3-left w3-margin-right w3-sepia" style="width:50px"></a>
+            <a href="/7-wonders.shtml"><span class="w3-large">7 Wonders of the World</span></a>
+          </li>          
+          <li class="w3-padding-16">
+            <a href="/miracles/index.shtml"><img src="/images/miracle-pictures-islam.jpg" alt="Miracle pictures of Islam" class="w3-left w3-margin-right w3-sepia" style="width:50px"></a>
+            <a href="/miracles/index.shtml"><span class="w3-large">Miracle Pictures</span></a>
+          </li>		  
+          <li class="w3-padding-16">
+            <a href="/webdesign/index.shtml"><img src="/images/webdesign.jpg" alt="Muslim website design" class="w3-left w3-margin-right w3-sepia" style="width:50px"></a>
+            <a href="/webdesign/index.shtml"><span class="w3-large">Need a Website? We can help!</span></a>
+          </li>          
+        </ul>
+      </div>
+
+<!-- Store -->
+ 
+      <div class="w3-white w3-margin">
+        <div class="w3-container w3-padding w3-green">
+          <h4>Islamic Shopping</h4>
+        </div>
+        
+         <ul class="w3-ul w3-hoverable w3-white">
+          <li class="w3-padding-16">
+            <a href="https://amzn.to/4pmRNVw" target="_blank"><img src="/images/buy-hijab.jpg" alt="Shop for Hijab" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="https://amzn.to/4pmRNVw" target="_blank"><span class="w3-large">Hijab for Women</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="https://amzn.to/3K1EvPw" target="_blank"><img src="/images/buy-islamic-gifts.jpg" alt="Islamic Gifts" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="https://amzn.to/3K1EvPw" target="_blank"><span class="w3-large">Islamic Gifts</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="https://amzn.to/4ocs3dQ" target="_blank"><img src="/images/buy-azan-clocks.jpg" alt="Azan Clocks" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="https://amzn.to/4ocs3dQ" target="_blank"><span class="w3-large">Buy Azan Clocks</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="https://amzn.to/3Xajq8s" target="_blank"><img src="/images/shop-abayas.jpg" alt="Stylish Abaya" class="w3-left w3-margin-right" style="width:50px"></a>
+            <a href="https://amzn.to/3Xajq8s" target="_blank"><span class="w3-large">Shop Abayas</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="https://amzn.to/4rsVsTU" target="_blank"><img src="/images/buy-islamic-wall-decor.jpg" alt="Islamic Wall Decor" class="w3-left w3-margin-right w3-sepia" style="width:50px"></a>
+            <a href="https://amzn.to/4rsVsTU" target="_blank"><span class="w3-large">Buy Islamic Wall Decor</span></a>
+          </li>          
+          
+        </ul>
+      </div>
+
+      
+<!-- Menu -->
+
+      <div class="w3-white w3-margin">
+        <div class="w3-container w3-padding w3-green">
+          <h4>Menu Bar</h4>
+        </div>
+        
+         <ul class="w3-ul w3-hoverable w3-white">
+          <li class="w3-padding-16">
+            <a href="/increaseiman/index.shtml"><span class="w3-large">Islamic Stories</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/audio/adhan/index.shtml"><span class="w3-large">Azan MP3</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/quran-mp3/mishary-al-afasy-quran-mp3-download.shtml"><span class="w3-large">Quran MP3</span></a>
+          </li>  
+          <li class="w3-padding-16">
+            <a href="/free-islamic-ringtones.shtml"><span class="w3-large">Islamic Ringtones</span></a>
+          </li>                    
+          <li class="w3-padding-16">
+            <a href="/blog/questions-answers/"><span class="w3-large">Ask Questions</span></a>
+          </li> 
+          <li class="w3-padding-16">
+            <a href="/hajjratings/"><span class="w3-large">Hajj Agent Reviews</span></a>
+          </li>   
+         
+          <li class="w3-padding-16">
+            <a href="/blog/2020/01/halal-and-haram-ingredient-database/"><span class="w3-large">Halal Haram Ingredients</span></a>
+          </li>                    
+          <li class="w3-padding-16">
+            <a href="/salat/duas/index.shtml"><span class="w3-large">Salat Duas</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/names/index.shtml"><span class="w3-large">Muslim Baby Names</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/dua/index.shtml"><span class="w3-large">Dua MP3</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/signsofallah/index.shtml"><span class="w3-large">Signs of Allah</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/miracles/index.shtml"><span class="w3-large">Miracle Pictures</span></a>
+          </li>  
+          <li class="w3-padding-16">
+            <a href="/mufti-menk-lectures.shtml"><span class="w3-large">Mufti Menk Lectures</span></a>
+          </li>            
+          <li class="w3-padding-16">
+            <a href="/common-questions-people-ask-about-islam.shtml"><span class="w3-large">Answers to Common Questions</span></a>
+          </li>             
+		  <li class="w3-padding-16">
+            <a href="/blog/"><span class="w3-large">IslamCan Blog</span></a>
+          </li> 
+		  <li class="w3-padding-16">
+            <a href="/blog/holy-quran-in-29-languages-with-audio/"><span class="w3-large">Full Quran with Audio</span></a>
+          </li>                     
+          <li class="w3-padding-16">
+            <a href="/women-in-islam.shtml"><span class="w3-large">Women in Islam</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/jumah-khutbah/"><span class="w3-large">English Jumah Khutbah</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/islamic-history.shtml"><span class="w3-large">Islamic History</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/islamic-jokes.shtml"><span class="w3-large">Islamic Jokes</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/islamic-riddles.shtml"><span class="w3-large">Islamic Riddles</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/hadith-qudsi/index.shtml"><span class="w3-large">40 Hadith Qudsi</span></a>
+          </li>     
+          <li class="w3-padding-16">
+            <a href="/masjid/index.shtml"><span class="w3-large">Masjid Directory</span></a>
+          </li>   
+          <li class="w3-padding-16">
+            <a href="/quiz/index.shtml"><span class="w3-large">Islamic Quiz</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/dictionary/index.shtml"><span class="w3-large">Arabic to English Dictionary</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/learn-arabic/arabic-alphabets.shtml"><span class="w3-large">Arabic Alphabets</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/islamic-pictures.shtml"><span class="w3-large">Islamic Pictures</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/facebook-watsapp-images.shtml"><span class="w3-large">Facebook Images to Share</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/free-islamic-wallpapers.shtml"><span class="w3-large">Islamic Wallpapers</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/reflections/index.shtml"><span class="w3-large">Ever Wonder?</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/youthissues.shtml"><span class="w3-large">Youth Issues</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/ramadan/index.shtml"><span class="w3-large">Ramadan Section</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/muslim-convert-stories-story.shtml"><span class="w3-large">Stories of Converts</span></a>
+          </li>
+          <li class="w3-padding-16">
+            <a href="/wallpapers/index.shtml"><span class="w3-large">Free Desktop Wallpapers</span></a>
+          </li>                                    
+        </ul>
+      </div>      
+      
+      
+<!-- Followus -->      
+
+      <div class="w3-white w3-margin">
+        <div class="w3-container w3-padding w3-green">
+          <h4>Follow Us!</h4>
+        </div>
+        
+         <ul class="w3-ul w3-hoverable w3-white">
+          <li class="w3-padding-16">
+            <i class="fa fa-facebook-official" style="font-size:48px;color:navy"></i><span class="w3-large"> <a href="https://www.facebook.com/islamcanofficial">Facebook 12K+ Followers</a></span>
+          </li>
+          <li class="w3-padding-16">
+            <i class="fa fa-twitter" style="font-size:48px;color:blue"></i><span class="w3-large"> <a href="https://twitter.com/islamcandotcom">Twitter 2.5K+ Followers</a></span>
+          </li>
+          <li class="w3-padding-16">
+          <i class="fa fa-instagram" style="font-size:48px;color:red"></i><span class="w3-large"> <a href="https://instagram.com/islamcanofficial">Instagram (New)</span>         </li>
+          
+        </ul>
+      </div>
+      
+
+
+
+   
+    </div>
+  </div>
+
+  <footer id="myFooter">
+    <div class="w3-container w3-theme-l2 w3-padding-32">
+	<a href="/increaseiman/index.shtml" class="w3-bar-item w3-button w3-hover-white">Islamic Stories</a>
+    <a href="/salat/duas/index.shtml" class="w3-bar-item w3-button w3-hover-white">Salat Duas</a>  
+    <a href="/contactus.shtml" class="w3-bar-item w3-button w3-hover-white">Contact Us</a>
+    <a href="/copyright.shtml" class="w3-bar-item w3-button w3-hover-white">Copyright Information</a>
+    <a href="/privacy-policy.shtml" class="w3-bar-item w3-button w3-hover-white">Privacy Policy</a>
+    <a href="/terms-and-conditions.shtml" class="w3-bar-item w3-button w3-hover-white">Terms and Conditions</a>
+    </div>
+
+    <div class="w3-container w3-theme-l1">
+      <p><a href="http://islamcan.com">IslamCan.com</a> | <a href="https://www.w3schools.com/w3css/default.asp" rel="nofollow" target="_blank">W3.CSS</a></p>
+    </div>
+  </footer>
+  
+ 
+
+
+<!-- END MAIN -->
+</div>
+
+<script>
+
+// Used to toggle the menu on smaller screens when clicking on the menu button
+function openNav() {
+  var x = document.getElementById("navDemo");
+  if (x.className.indexOf("w3-show") == -1) {
+    x.className += " w3-show";
+  } else { 
+    x.className = x.className.replace(" w3-show", "");
+  }
+}
+</script>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=islamcan"></script>
+<!-- InstanceBeginEditable name="EditRegionEnd" --><!-- InstanceEndEditable -->
+
+</body>
+<!-- InstanceEnd --></html>

@@ -47,8 +47,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _skipSignIn() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_name', 'زائر');
-    await prefs.setString('user_uid', 'guest_local');
+    // ✅ "مستخدم" بدلاً من "زائر" أو "(Mock)"
+    await prefs.setString('user_name', 'مستخدم');
+    await prefs.setString('user_email', '');
+    await prefs.setString('user_uid', 'local_user');
     await prefs.setBool('is_logged_in', true);
 
     if (!mounted) return;
@@ -119,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> {
               TextButton(
                 onPressed: _isLoading ? null : _skipSignIn,
                 child: const Text(
-                  'تخطي (المتابعة كزائر) →',
+                  'تخطي (المتابعة كمستخدم) →',
                   style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),

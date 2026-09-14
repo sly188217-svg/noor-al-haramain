@@ -23,6 +23,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   String _userName = 'مستخدم';
+  String? _userPhoto;
   String _userCity = 'مكة المكرمة';
   bool _isLocationReady = false;
   int _currentBackground = 0;
@@ -39,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     setState(() {
       _userName = prefs.getString('user_name') ?? 'مستخدم';
+      _userPhoto = prefs.getString('user_photo');
       _userCity = prefs.getString('user_city') ?? 'مكة المكرمة';
       _isLocationReady = prefs.getBool('location_enabled') ?? false;
     });
@@ -60,11 +62,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _onTabSelected(int index) {
     if (!mounted) return;
     setState(() => _currentIndex = index);
-    // إعادة تحميل الخلفية عند تغيير التبويب
     _loadBackground();
   }
 
-  // ✅ بناء تبويب واحد فقط حسب الاختيار (Lazy Loading)
   Widget _buildCurrentTab() {
     switch (_currentIndex) {
       case 0:
@@ -94,7 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         preferredSize: const Size.fromHeight(70),
         child: _buildCustomAppBar(),
       ),
-      // ✅ استخدام BackgroundService.buildBackground
       body: BackgroundService.buildBackground(
         index: _currentBackground,
         child: _buildCurrentTab(),
@@ -103,9 +102,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 🎨 الشريط العلوي
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   Widget _buildCustomAppBar() {
     return Container(
       decoration: BoxDecoration(
@@ -204,8 +203,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.person,
-                          color: Color(0xFFD4AF37), size: 11),
+                      // ✅ صورة Google أو أيقونة person
+                      _userPhoto != null && _userPhoto!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                _userPhoto!,
+                                width: 14,
+                                height: 14,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    color: Color(0xFFD4AF37),
+                                    size: 11),
+                              ),
+                            )
+                          : const Icon(Icons.person,
+                              color: Color(0xFFD4AF37), size: 11),
                       const SizedBox(width: 3),
                       Text(
                         _userName,
@@ -220,9 +233,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Icon(
                         _isLocationReady ? Icons.gps_fixed : Icons.gps_off,
-                        color: _isLocationReady
-                            ? Colors.green
-                            : Colors.redAccent,
+                        color:
+                            _isLocationReady ? Colors.green : Colors.redAccent,
                         size: 11,
                       ),
                       const SizedBox(width: 3),
@@ -294,9 +306,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // 📱 الشريط السفلي
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   Widget _buildBottomNav(String lang) {
     return Container(
       decoration: BoxDecoration(

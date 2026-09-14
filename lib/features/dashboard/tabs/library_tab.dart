@@ -60,7 +60,7 @@ class _LibraryTabState extends State<LibraryTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
           // شريط البحث والتصفية
@@ -249,7 +249,7 @@ class _LibraryTabState extends State<LibraryTab> {
         ),
         selected: isSelected,
         selectedColor: const Color(0xFFD4AF37),
-        backgroundColor: const Color(0xFF0B132B),
+        backgroundColor: Colors.transparent,
         side: BorderSide(
           color: isSelected
               ? const Color(0xFFD4AF37)

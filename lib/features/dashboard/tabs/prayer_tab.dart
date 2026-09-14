@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/hijri_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -37,35 +38,12 @@ class IslamicBackgroundPainter extends CustomPainter {
       canvas.drawLine(center, point, paint);
       canvas.drawCircle(point, 4, paint);
     }
-
-    for (int i = 0; i < 8; i++) {
-      final angle1 = i * (pi / 4);
-      final angle2 = (i + 1) * (pi / 4);
-      final dx1 = radius * cos(angle1);
-      final dy1 = radius * sin(angle1);
-      final dx2 = radius * cos(angle2);
-      final dy2 = radius * sin(angle2);
-      final p1 = Offset(center.dx + dx1, center.dy + dy1);
-      final p2 = Offset(center.dx + dx2, center.dy + dy2);
-      final midAngle = (angle1 + angle2) / 2;
-      final midRadius = radius * 1.2;
-      final midDx = midRadius * cos(midAngle);
-      final midDy = midRadius * sin(midAngle);
-      final midPoint = Offset(center.dx + midDx, center.dy + midDy);
-      final path = Path()
-        ..moveTo(p1.dx, p1.dy)
-        ..quadraticBezierTo(midPoint.dx, midPoint.dy, p2.dx, p2.dy);
-      canvas.drawPath(path, paint);
-    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ==============================================
-// PrayerTab
-// ==============================================
 class PrayerTab extends StatefulWidget {
   const PrayerTab({super.key});
 
@@ -100,6 +78,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   bool _showDua = false;
 
   Timer? _timer;
+  Timer? _persistentTimer;
+  String? _lastAdhanTriggeredPrayer;
   DateTime _lastFetchTime =
       DateTime.now().subtract(const Duration(hours: 1));
 
@@ -112,12 +92,14 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     _loadPrayerOffsets();
     _loadLocationAndFetchTimes();
     _startCountdownTimer();
+    _startPersistentNotificationUpdates();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    _persistentTimer?.cancel();
     _audioPlayer.dispose();
     _timeRemainingNotifier.dispose();
     super.dispose();
@@ -129,9 +111,13 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       if (DateTime.now().difference(_lastFetchTime).inHours >= 1) {
         _loadLocationAndFetchTimes();
       }
+      _updatePersistentNotification();
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // بيانات المستخدم
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
@@ -158,8 +144,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       try {
         final decoded = jsonDecode(savedOffsets);
         _prayerOffsets = Map<String, int>.from(
-          decoded.map(
-              (key, value) => MapEntry(key, int.tryParse(value.toString()) ?? 0)),
+          decoded.map((key, value) =>
+              MapEntry(key, int.tryParse(value.toString()) ?? 0)),
         );
       } catch (e) {
         _prayerOffsets = {};
@@ -167,6 +153,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // جلب أوقات الصلاة
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadLocationAndFetchTimes() async {
     final prefs = await SharedPreferences.getInstance();
     final cachedTimes = prefs.getString('cached_prayer_times');
@@ -220,18 +209,18 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           final timings = data['data']['timings'];
           _prayerTimes = {
             'Fajr': _applyOffset('Fajr', timings['Fajr']?.toString() ?? '00:00'),
-            'Sunrise':
-                _applyOffset('Sunrise', timings['Sunrise']?.toString() ?? '00:00'),
+            'Sunrise': _applyOffset(
+                'Sunrise', timings['Sunrise']?.toString() ?? '00:00'),
             'Dhuhr':
                 _applyOffset('Dhuhr', timings['Dhuhr']?.toString() ?? '00:00'),
             'Asr': _applyOffset('Asr', timings['Asr']?.toString() ?? '00:00'),
-            'Maghrib':
-                _applyOffset('Maghrib', timings['Maghrib']?.toString() ?? '00:00'),
+            'Maghrib': _applyOffset(
+                'Maghrib', timings['Maghrib']?.toString() ?? '00:00'),
             'Isha': _applyOffset('Isha', timings['Isha']?.toString() ?? '00:00'),
           };
           _buildPrayerListFromTimes();
 
-          // ✅ جدولة إشعارات الأذان لكل صلاة
+          // ✅ جدولة إشعارات الأذان
           await NotificationService.schedulePrayerNotifications(
             _prayerTimes.map((k, v) => MapEntry(k, v.toString())),
             _cityName,
@@ -239,9 +228,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           );
         }
       }
-    } catch (e) {
-      // تجاهل — سنستخدم البيانات المخزنة
-    }
+    } catch (e) {}
   }
 
   String _applyOffset(String prayerName, String timeStr) {
@@ -287,13 +274,16 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           if (data['code'] == 200) {
             final timings = data['data']['timings'];
             weekly[DateFormat('EEEE', 'ar').format(date)] = {
-              'Fajr': _applyOffset('Fajr', timings['Fajr']?.toString() ?? '00:00'),
-              'Dhuhr':
-                  _applyOffset('Dhuhr', timings['Dhuhr']?.toString() ?? '00:00'),
-              'Asr': _applyOffset('Asr', timings['Asr']?.toString() ?? '00:00'),
+              'Fajr':
+                  _applyOffset('Fajr', timings['Fajr']?.toString() ?? '00:00'),
+              'Dhuhr': _applyOffset(
+                  'Dhuhr', timings['Dhuhr']?.toString() ?? '00:00'),
+              'Asr':
+                  _applyOffset('Asr', timings['Asr']?.toString() ?? '00:00'),
               'Maghrib': _applyOffset(
                   'Maghrib', timings['Maghrib']?.toString() ?? '00:00'),
-              'Isha': _applyOffset('Isha', timings['Isha']?.toString() ?? '00:00'),
+              'Isha':
+                  _applyOffset('Isha', timings['Isha']?.toString() ?? '00:00'),
             };
           }
         }
@@ -394,6 +384,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // المؤقت (كل ثانية)
+  // ═══════════════════════════════════════════════════════════
   void _startCountdownTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -402,7 +395,184 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       } else {
         _loadLocationAndFetchTimes();
       }
+
+      // ✅ فحص وقت الأذان كل ثانية
+      _checkAdhanTime();
     });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔔 الإشعار الدائم
+  // ═══════════════════════════════════════════════════════════
+  void _startPersistentNotificationUpdates() {
+    _persistentTimer?.cancel();
+    _updatePersistentNotification();
+    _persistentTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _updatePersistentNotification();
+    });
+  }
+
+  Future<void> _updatePersistentNotification() async {
+    try {
+      if (!mounted) return;
+
+      final hijri = HijriService.getHijriDate(DateTime.now());
+      final remaining = _timeRemainingNotifier.value;
+
+      final hours = remaining.inHours.toString().padLeft(2, '0');
+      final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+      final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+
+      await NotificationService.showPersistentNotification(
+        nextPrayer: _nextPrayer,
+        timeRemaining: '$hours:$minutes:$seconds',
+        hijriDate: hijri,
+        city: _cityName,
+      );
+    } catch (e) {
+      debugPrint('⚠️ تحديث الإشعار الدائم فشل: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🕌 مراقبة وقت الأذان — تشغيل تلقائي
+  // ═══════════════════════════════════════════════════════════
+  void _checkAdhanTime() {
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    final currentTime = DateFormat('HH:mm').format(now);
+
+    for (var prayer in _prayerList) {
+      final name = prayer['name'] as String;
+      final time = (prayer['time'] ?? '').toString();
+
+      final cleanTime = time
+          .replaceAll(RegExp(r'\(.*\)'), '')
+          .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
+          .trim();
+
+      if (cleanTime == currentTime &&
+          _lastAdhanTriggeredPrayer != '$name-$currentTime') {
+        if (name.contains('الشروق')) continue;
+
+        _lastAdhanTriggeredPrayer = '$name-$currentTime';
+        _triggerAdhanAutomatically(name);
+        break;
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎧 تشغيل الأذان تلقائياً + الدعاء بعده
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _triggerAdhanAutomatically(String prayerName) async {
+    try {
+      debugPrint('🔔 وقت صلاة $prayerName — تشغيل الأذان');
+
+      // 1. المسار المحلي
+      final localPath =
+          await AdhanDownloadService.getLocalPath(_selectedMuezzinId);
+      final localFile = File(localPath);
+
+      if (!await localFile.exists()) {
+        debugPrint('⚠️ الأذان غير محمّل');
+        return;
+      }
+
+      // 2. تشغيل الأذان
+      await _audioPlayer.play(DeviceFileSource(localPath));
+      if (mounted) setState(() => _isPlaying = true);
+
+      // 3. انتظار انتهاء الأذان
+      await _audioPlayer.onPlayerComplete.first;
+      if (mounted) setState(() => _isPlaying = false);
+
+      debugPrint('✅ انتهى الأذان — تشغيل الدعاء');
+
+      // 4. تشغيل الدعاء
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _playDuaAfterAdhan();
+    } catch (e) {
+      debugPrint('❌ خطأ في تشغيل الأذان: $e');
+    }
+  }
+
+  Future<void> _playDuaAfterAdhan() async {
+    try {
+      final duaPlayer = AudioPlayer();
+      await duaPlayer.play(
+        AssetSource('adhan/dua/dua_after_adhan.mp3'),
+      );
+      await duaPlayer.onPlayerComplete.first;
+      await duaPlayer.dispose();
+      debugPrint('✅ انتهى الدعاء');
+    } catch (e) {
+      debugPrint('⚠️ فشل الدعاء من assets: $e — استخدام TTS');
+      await _speakDuaWithTts();
+    }
+  }
+
+  Future<void> _speakDuaWithTts() async {
+    try {
+      final tts = FlutterTts();
+      await tts.setLanguage('ar');
+      await tts.setSpeechRate(0.4);
+      await tts.speak(
+        'اللهم رب هذه الدعوة التامة، والصلاة القائمة، '
+        'آت محمداً الوسيلة والفضيلة، وابعثه مقاماً محموداً الذي وعدته',
+      );
+    } catch (e) {
+      debugPrint('⚠️ فشل TTS: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // تشغيل يدوي للأذان
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _playAdhan(String prayerName) async {
+    try {
+      final localPath =
+          await AdhanDownloadService.getLocalPath(_selectedMuezzinId);
+      final localFile = File(localPath);
+
+      if (await localFile.exists() && await localFile.length() > 100000) {
+        await _audioPlayer.play(DeviceFileSource(localPath));
+        if (mounted) setState(() => _isPlaying = true);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('🔊 تشغيل الأذان لصلاة $prayerName')),
+          );
+        }
+
+        await _audioPlayer.onPlayerComplete.first;
+        if (mounted) setState(() => _isPlaying = false);
+
+        // دعاء + قبلة
+        if (mounted) setState(() => _showDua = true);
+        await Future.delayed(const Duration(seconds: 5));
+        if (mounted) setState(() => _showDua = false);
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                '⚠️ الأذان المحلي غير محمّل. اذهب إلى: الإعدادات ← تحميل الأذان'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ تعذر تشغيل الأذان')),
+        );
+      }
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -443,7 +613,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                       color: const Color(0xFF0B132B),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                          color:
+                              const Color(0xFFD4AF37).withValues(alpha: 0.3)),
                     ),
                     child: DropdownButton<String>(
                       value: tempMuezzinId,
@@ -520,13 +691,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadLocationAndFetchTimes();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content:
-                            Text('✅ تم تحديث الإعدادات لصلاة $prayerName')),
-                  );
-                }
               },
               child: const Text('تطبيق'),
             ),
@@ -536,62 +700,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     );
   }
 
-  // ============================================================
-  //  تشغيل الأذان
-  // ============================================================
-  Future<void> _playAdhan(String prayerName) async {
-    try {
-      final localPath =
-          await AdhanDownloadService.getLocalPath(_selectedMuezzinId);
-      final localFile = File(localPath);
-
-      if (await localFile.exists() && await localFile.length() > 100000) {
-        await _audioPlayer.play(DeviceFileSource(localPath));
-        if (mounted) setState(() => _isPlaying = true);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('🔊 تشغيل الأذان (محلي) لصلاة $prayerName')),
-          );
-        }
-
-        await Future.delayed(const Duration(seconds: 30));
-        await _audioPlayer.stop();
-        if (mounted) setState(() => _isPlaying = false);
-
-        if (mounted) setState(() => _showDua = true);
-        await Future.delayed(const Duration(seconds: 5));
-        if (mounted) setState(() => _showDua = false);
-
-        // فتح شاشة القبلة بعد الأذان
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const QiblaScreen()),
-          );
-        }
-        return;
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                '⚠️ الأذان المحلي غير محمّل. اذهب إلى: الإعدادات ← تحميل الأذان'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ تعذر تشغيل الأذان')),
-        );
-      }
-    }
-  }
-
+  // ═══════════════════════════════════════════════════════════
+  // عرض دعاء الأذان
+  // ═══════════════════════════════════════════════════════════
   Widget _buildDuaScreen() {
     return Container(
       color: Colors.black87,
@@ -605,12 +716,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
                 color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                  blurRadius: 30,
-                  spreadRadius: 10),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -642,7 +747,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     );
   }
 
-  /// فتح شاشة القبلة
   void _openQiblaScreen() {
     Navigator.push(
       context,
@@ -699,19 +803,17 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ─── التاريخ + المستخدم ───
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
                                     const Icon(Icons.location_on,
-                                        color: Color(0xFFD4AF37),
-                                        size: 16),
+                                        color: Color(0xFFD4AF37), size: 16),
                                     const SizedBox(width: 6),
                                     Text(_cityName,
                                         style: const TextStyle(
@@ -728,8 +830,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               ],
                             ),
                             Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(gregorianDate,
                                     style: const TextStyle(
@@ -748,6 +849,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                           ],
                         ),
                         const SizedBox(height: 10),
+
+                        // ─── المؤذن ───
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
@@ -773,9 +876,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                           ),
                         ),
                         const SizedBox(height: 12),
+
+                        // ─── أزرار التحكم ───
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _buildControlButton(
                               icon: Icons.calendar_view_week,
@@ -799,6 +903,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                           ],
                         ),
                         const SizedBox(height: 12),
+
+                        // ─── جدول 7 أيام ───
                         if (_showWeeklyTable && _weeklyPrayers.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -812,8 +918,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                       .withValues(alpha: 0.3)),
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text('📅 الأيام السبعة القادمة',
                                     style: TextStyle(
@@ -857,14 +962,18 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               ],
                             ),
                           ),
+
+                        // ─── بطاقة الصلاة القادمة ───
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                                const Color(0xFFD4AF37).withValues(alpha: 0.05)
+                                const Color(0xFFD4AF37)
+                                    .withValues(alpha: 0.15),
+                                const Color(0xFFD4AF37)
+                                    .withValues(alpha: 0.05)
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -873,13 +982,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             border: Border.all(
                                 color: const Color(0xFFD4AF37)
                                     .withValues(alpha: 0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: const Color(0xFFD4AF37)
-                                      .withValues(alpha: 0.1),
-                                  blurRadius: 20,
-                                  spreadRadius: 5),
-                            ],
                           ),
                           child: Column(
                             children: [
@@ -962,6 +1064,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                           ),
                         ),
                         const SizedBox(height: 16),
+
+                        // ─── قائمة الصلوات ───
                         Expanded(
                           child: ListView.builder(
                             itemCount: _prayerList.length,
