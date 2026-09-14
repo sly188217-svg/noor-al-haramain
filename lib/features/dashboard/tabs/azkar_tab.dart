@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,9 @@ class _AzkarTabState extends State<AzkarTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // ===== أذكار الصباح =====
+  // ═══════════════════════════════════════════════════════════
+  // أذكار الصباح
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, dynamic>> _morningAzkar = [
     {'text': 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذَا الْيَوْمِ فَتْحَهُ وَنَصْرَهُ وَنُورَهُ وَبَرَكَتَهُ وَهُدَاهُ.', 'count': 1},
     {'text': 'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ.', 'count': 1},
@@ -24,28 +27,36 @@ class _AzkarTabState extends State<AzkarTab>
     {'text': 'اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 4},
   ];
 
-  // ===== أذكار المساء =====
+  // ═══════════════════════════════════════════════════════════
+  // أذكار المساء
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, dynamic>> _eveningAzkar = [
     {'text': 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذِهِ اللَّيْلَةِ فَتْحَهَا وَنَصْرَهَا وَنُورَهَا وَبَرَكَتَهَا وَهُدَاهَا.', 'count': 1},
     {'text': 'اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ.', 'count': 1},
     {'text': 'اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 4},
   ];
 
-  // ===== أذكار النوم =====
+  // ═══════════════════════════════════════════════════════════
+  // أذكار النوم
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, dynamic>> _sleepAzkar = [
     {'text': 'اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا.', 'count': 1},
     {'text': 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.', 'count': 3},
     {'text': 'بِاسْمِكَ رَبِّ وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا.', 'count': 1},
   ];
 
-  // ===== أذكار بعد الصلاة =====
+  // ═══════════════════════════════════════════════════════════
+  // أذكار بعد الصلاة
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, dynamic>> _prayerAzkar = [
     {'text': 'أَسْتَغْفِرُ اللَّهَ (ثلاثاً) اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ.', 'count': 1},
     {'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', 'count': 1},
     {'text': 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ.', 'count': 1},
   ];
 
-  // ===== الأدعية =====
+  // ═══════════════════════════════════════════════════════════
+  // الأدعية
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _duas = [
     {'text': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ', 'reference': 'البقرة 201'},
     {'text': 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً إِنَّكَ أَنْتَ الْوَهَّابُ', 'reference': 'آل عمران 8'},
@@ -55,7 +66,9 @@ class _AzkarTabState extends State<AzkarTab>
     {'text': 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا', 'reference': 'الفرقان 74'},
   ];
 
-  // ===== الرقية الشرعية =====
+  // ═══════════════════════════════════════════════════════════
+  // الرقية الشرعية
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _ruqyah = [
     {'text': 'بِسْمِ اللَّهِ أَرْقِيكَ مِنْ كُلِّ شَيْءٍ يُؤْذِيكَ مِنْ شَرِّ كُلِّ نَفْسٍ أَوْ عَيْنٍ حَاسِدٍ، اللَّهُ يَشْفِيكَ.', 'count': '3'},
     {'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ غَضَبِهِ وَعِقَابِهِ وَشَرِّ عِبَادِهِ.', 'count': '3'},
@@ -64,8 +77,9 @@ class _AzkarTabState extends State<AzkarTab>
     {'text': 'اللَّهُمَّ رَبَّ النَّاسِ أَذْهِبِ الْبَاسَ اشْفِ أَنْتَ الشَّافِي لَا شِفَاءَ إِلَّا شِفَاؤُكَ.', 'count': '3'},
   ];
 
-  // ===== البث المباشر =====
-  // ✅ روابط قنوات دائمة (لا تتغير) — تستخدم بث مباشر 24/7 من الحرمين
+  // ═══════════════════════════════════════════════════════════
+  // البث المباشر — قناتان فقط
+  // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _liveStreams = [
     {
       'name': 'الحرم المكي',
@@ -83,9 +97,13 @@ class _AzkarTabState extends State<AzkarTab>
     },
   ];
 
-  // ===== السبحة =====
+  // ═══════════════════════════════════════════════════════════
+  // السبحة — عداد منفصل لكل ذكر
+  // ═══════════════════════════════════════════════════════════
   int _tasbihCount = 0;
   String _selectedDhikr = 'سبحان الله';
+  Map<String, int> _tasbihCounts = {};
+
   final List<String> _dhikrList = [
     'سبحان الله',
     'الحمد لله',
@@ -108,19 +126,39 @@ class _AzkarTabState extends State<AzkarTab>
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 📿 دوال السبحة
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadTasbihPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final savedDhikr = prefs.getString('tasbih_dhikr');
-    final savedCount = prefs.getInt('tasbih_count');
+    final savedCounts = prefs.getString('tasbih_counts');
+
     if (!mounted) return;
-    if (savedDhikr != null) setState(() => _selectedDhikr = savedDhikr);
-    if (savedCount != null) setState(() => _tasbihCount = savedCount);
+
+    Map<String, int> loadedCounts = {};
+    if (savedCounts != null) {
+      try {
+        final decoded = jsonDecode(savedCounts) as Map<String, dynamic>;
+        loadedCounts = decoded.map(
+            (key, value) => MapEntry(key, (value as num).toInt()));
+      } catch (_) {
+        loadedCounts = {};
+      }
+    }
+
+    setState(() {
+      if (savedDhikr != null) _selectedDhikr = savedDhikr;
+      _tasbihCounts = loadedCounts;
+      _tasbihCount = _tasbihCounts[_selectedDhikr] ?? 0;
+    });
   }
 
   Future<void> _saveTasbihPreference() async {
     final prefs = await SharedPreferences.getInstance();
+    _tasbihCounts[_selectedDhikr] = _tasbihCount;
     await prefs.setString('tasbih_dhikr', _selectedDhikr);
-    await prefs.setInt('tasbih_count', _tasbihCount);
+    await prefs.setString('tasbih_counts', jsonEncode(_tasbihCounts));
   }
 
   void _incrementTasbih() {
@@ -129,16 +167,99 @@ class _AzkarTabState extends State<AzkarTab>
     _saveTasbihPreference();
   }
 
-  void _resetTasbih() {
-    HapticFeedback.heavyImpact();
-    setState(() => _tasbihCount = 0);
+  void _decrementTasbih() {
+    if (_tasbihCount <= 0) return;
+    HapticFeedback.lightImpact();
+    setState(() => _tasbihCount--);
     _saveTasbihPreference();
   }
 
-  // ===== عرض البث المباشر =====
+  Future<void> _resetCurrentTasbih() async {
+    if (_tasbihCount == 0) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: const Text('🔄 إعادة تعيين',
+            style: TextStyle(color: Color(0xFFD4AF37))),
+        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟',
+            style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child:
+                const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: Colors.black),
+            child: const Text('إعادة'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      HapticFeedback.heavyImpact();
+      setState(() => _tasbihCount = 0);
+      _tasbihCounts[_selectedDhikr] = 0;
+      _saveTasbihPreference();
+    }
+  }
+
+  Future<void> _resetAllTasbih() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: const Text('⚠️ تحذير',
+            style: TextStyle(color: Colors.orange)),
+        content: const Text(
+            'هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child:
+                const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white),
+            child: const Text('حذف الكل'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _tasbihCounts.clear();
+        _tasbihCount = 0;
+      });
+      _saveTasbihPreference();
+    }
+  }
+
+  void _changeDhikr(String newDhikr) {
+    _tasbihCounts[_selectedDhikr] = _tasbihCount;
+    setState(() {
+      _selectedDhikr = newDhikr;
+      _tasbihCount = _tasbihCounts[newDhikr] ?? 0;
+    });
+    _saveTasbihPreference();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // البث المباشر
+  // ═══════════════════════════════════════════════════════════
   void _showLiveStream(String url, String title) {
-    // ✅ استخدام WebView لعرض البث المباشر من YouTube
-    // لأنه يدعم embed/live_stream بينما youtube_player_iframe لا يدعمه
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
@@ -163,13 +284,13 @@ class _AzkarTabState extends State<AzkarTab>
           ),
           child: Column(
             children: [
-              // شريط العنوان
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: const BoxDecoration(
                   color: Color(0xFF1C2541),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(11)),
                 ),
                 child: Row(
                   children: [
@@ -202,7 +323,6 @@ class _AzkarTabState extends State<AzkarTab>
                   ],
                 ),
               ),
-              // مشغل البث
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
@@ -217,7 +337,9 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  // ===== بناء قائمة الأذكار =====
+  // ═══════════════════════════════════════════════════════════
+  // بناء قائمة الأذكار
+  // ═══════════════════════════════════════════════════════════
   Widget _buildAzkarList(
       List<Map<String, dynamic>> items, bool isArabic, String title) {
     return Column(
@@ -273,7 +395,8 @@ class _AzkarTabState extends State<AzkarTab>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        color:
+                            const Color(0xFFD4AF37).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -295,7 +418,9 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  // ===== بناء الأدعية =====
+  // ═══════════════════════════════════════════════════════════
+  // بناء الأدعية
+  // ═══════════════════════════════════════════════════════════
   Widget _buildDuasList(bool isArabic) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -339,7 +464,9 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  // ===== بناء الرقية =====
+  // ═══════════════════════════════════════════════════════════
+  // بناء الرقية
+  // ═══════════════════════════════════════════════════════════
   Widget _buildRuqyahList(bool isArabic) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -393,7 +520,9 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  // ===== بناء البث المباشر =====
+  // ═══════════════════════════════════════════════════════════
+  // بناء البث المباشر
+  // ═══════════════════════════════════════════════════════════
   Widget _buildLiveStreams(bool isArabic) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -454,13 +583,15 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  // ===== بناء السبحة =====
+  // ═══════════════════════════════════════════════════════════
+  // بناء السبحة
+  // ═══════════════════════════════════════════════════════════
   Widget _buildSmartTasbih(bool isArabic) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // اختيار الذكر
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
@@ -476,30 +607,53 @@ class _AzkarTabState extends State<AzkarTab>
               underline: const SizedBox(),
               isExpanded: true,
               items: _dhikrList.map((dhikr) {
+                final count = _tasbihCounts[dhikr] ?? 0;
                 return DropdownMenuItem(
                   value: dhikr,
-                  child: Text(
-                    dhikr,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontFamily: 'Amiri',
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        dhikr,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontFamily: 'Amiri',
+                        ),
+                      ),
+                      const Spacer(),
+                      if (count > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37)
+                                .withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 );
               }).toList(),
               onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedDhikr = value);
-                  _saveTasbihPreference();
-                }
+                if (value != null) _changeDhikr(value);
               },
             ),
           ),
-          const SizedBox(height: 30),
+
+          const SizedBox(height: 24),
+
+          // الدائرة الكبيرة — العداد
           GestureDetector(
             onTap: _incrementTasbih,
-            onLongPress: _resetTasbih,
             child: Container(
               width: 180,
               height: 180,
@@ -519,25 +673,64 @@ class _AzkarTabState extends State<AzkarTab>
                 ],
               ),
               child: Center(
-                child: Text(
-                  '$_tasbihCount',
-                  style: const TextStyle(
-                    color: Color(0xFF0B132B),
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$_tasbihCount',
+                      style: const TextStyle(
+                        color: Color(0xFF0B132B),
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isArabic ? 'اضغط للعد' : 'Tap to count',
+                      style: const TextStyle(
+                        color: Color(0xFF0B132B),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            isArabic
-                ? '👆 اضغط للعد، اضغط مطولاً لإعادة الضبط'
-                : '👆 Tap to count, long press to reset',
-            style: const TextStyle(color: Colors.grey, fontSize: 14),
+
+          const SizedBox(height: 24),
+
+          // أزرار التحكم
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildCircleButton(
+                icon: Icons.remove,
+                color: Colors.orange,
+                tooltip: 'تقليل',
+                onTap: _decrementTasbih,
+              ),
+              const SizedBox(width: 16),
+              _buildCircleButton(
+                icon: Icons.refresh,
+                color: const Color(0xFFD4AF37),
+                tooltip: 'إعادة تعيين',
+                onTap: _resetCurrentTasbih,
+              ),
+              const SizedBox(width: 16),
+              _buildCircleButton(
+                icon: Icons.add,
+                color: Colors.green,
+                tooltip: 'زيادة',
+                onTap: _incrementTasbih,
+              ),
+            ],
           ),
+
           const SizedBox(height: 20),
+
+          // إحصائيات
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -548,7 +741,7 @@ class _AzkarTabState extends State<AzkarTab>
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatCard(
-                    '$_tasbihCount', isArabic ? 'العدد' : 'Current'),
+                    '$_tasbihCount', isArabic ? 'الحالي' : 'Current'),
                 _buildStatCard('33', isArabic ? 'الهدف' : 'Target'),
                 _buildStatCard(
                   _tasbihCount >= 33 ? '✅' : '⏳',
@@ -557,7 +750,139 @@ class _AzkarTabState extends State<AzkarTab>
               ],
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          // سجل العدادات
+          if (_tasbihCounts.values.any((v) => v > 0)) ...[
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '📊 سجل العدادات',
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C2541).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                children: _dhikrList.map((dhikr) {
+                  final count = _tasbihCounts[dhikr] ?? 0;
+                  if (count == 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle,
+                            color: Color(0xFFD4AF37), size: 6),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            dhikr,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontFamily: 'Amiri',
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37)
+                                .withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFFD4AF37)
+                                  .withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // زر حذف الجميع
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _resetAllTasbih,
+                icon: const Icon(Icons.delete_forever, size: 18),
+                label: const Text('🗑️ حذف جميع العدادات'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  foregroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                        color: Colors.red.withValues(alpha: 0.5)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          Text(
+            isArabic
+                ? '💡 اضغط الدائرة للعد • استخدم الأزرار للتحكم'
+                : '💡 Tap circle to count • Use buttons to control',
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(50),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+        ),
       ),
     );
   }
