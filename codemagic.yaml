@@ -6,6 +6,8 @@ workflows:
     environment:
       flutter: stable
       java: 17
+      groups:
+        - Noor Al-Haramain
       vars:
         JAVA_HOME: "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home"
     cache:
@@ -31,6 +33,11 @@ workflows:
           storeFile=$CM_BUILD_DIR/android/app/keystore.p12
           storeType=PKCS12
           EOF
+      - name: Verify Java version
+        script: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+          which java
       - name: Get Flutter packages
         script: |
           flutter pub get
