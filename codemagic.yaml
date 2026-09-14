@@ -21,21 +21,19 @@ workflows:
           echo "$GOOGLE_SERVICES_JSON" > $CM_BUILD_DIR/android/app/google-services.json
       - name: Create keystore file
         script: |
-          echo "$KEYSTORE_BASE64" | base64 -d > $CM_BUILD_DIR/android/app/keystore.p12
+          echo "$KEYSTORE_BASE64" | base64 -d > $CM_BUILD_DIR/android/app/keystore.jks
       - name: Create key.properties
         script: |
           cat > $CM_BUILD_DIR/android/key.properties <<EOF
           storePassword=huiop1920
           keyPassword=huiop1920
           keyAlias=upload
-          storeFile=$CM_BUILD_DIR/android/app/keystore.p12
-          storeType=PKCS12
+          storeFile=$CM_BUILD_DIR/android/app/keystore.jks
+          storeType=JKS
           EOF
       - name: Verify Java version
         script: |
           java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-          which java
       - name: Get Flutter packages
         script: |
           flutter pub get
