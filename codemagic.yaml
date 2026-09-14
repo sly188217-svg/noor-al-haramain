@@ -6,8 +6,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      vars:
-        JAVA_HOME: "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home"
     cache:
       cache_paths:
         - ~/.pub-cache
@@ -19,21 +17,6 @@ workflows:
       - name: Create google-services.json
         script: |
           echo "$GOOGLE_SERVICES_JSON" > $CM_BUILD_DIR/android/app/google-services.json
-      - name: Create keystore file
-        script: |
-          echo "$KEYSTORE_BASE64" | base64 -d > $CM_BUILD_DIR/android/app/keystore.jks
-      - name: Create key.properties
-        script: |
-          cat > $CM_BUILD_DIR/android/key.properties <<EOF
-          storePassword=huiop1920
-          keyPassword=huiop1920
-          keyAlias=upload
-          storeFile=$CM_BUILD_DIR/android/app/keystore.jks
-          storeType=JKS
-          EOF
-      - name: Verify Java version
-        script: |
-          java -version
       - name: Get Flutter packages
         script: |
           flutter pub get
