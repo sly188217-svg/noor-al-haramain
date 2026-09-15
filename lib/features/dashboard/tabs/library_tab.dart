@@ -57,13 +57,21 @@ class _LibraryTabState extends State<LibraryTab> {
     }).toList();
   }
 
+  /// ✅ عدد الكتب في كل فئة
+  int _countByCategory(String category) {
+    if (category == 'all') return _allBooks.length;
+    return _allBooks.where((b) => b.category == category).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
+          // ═══════════════════════════════════════════════════════
           // شريط البحث والتصفية
+          // ═══════════════════════════════════════════════════════
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -94,11 +102,16 @@ class _LibraryTabState extends State<LibraryTab> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildCategoryChip('الكل', 'all'),
-                      _buildCategoryChip('الحديث', 'الحديث'),
-                      _buildCategoryChip('التفسير', 'التفسير'),
-                      _buildCategoryChip('الفقه', 'الفقه'),
-                      _buildCategoryChip('السيرة', 'السيرة'),
+                      _buildCategoryChip(
+                          '📚 الكل', 'all', _countByCategory('all')),
+                      _buildCategoryChip(
+                          '📖 الحديث', 'الحديث', _countByCategory('الحديث')),
+                      _buildCategoryChip(
+                          '📖 التفسير', 'التفسير', _countByCategory('التفسير')),
+                      _buildCategoryChip(
+                          '⚖️ الفقه', 'الفقه', _countByCategory('الفقه')),
+                      _buildCategoryChip(
+                          '🕌 السيرة', 'السيرة', _countByCategory('السيرة')),
                     ],
                   ),
                 ),
@@ -106,9 +119,12 @@ class _LibraryTabState extends State<LibraryTab> {
             ),
           ),
 
+          // ═══════════════════════════════════════════════════════
           // إحصائيات
+          // ═══════════════════════════════════════════════════════
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -118,7 +134,9 @@ class _LibraryTabState extends State<LibraryTab> {
                       color: Colors.white54, fontSize: 12),
                 ),
                 Text(
-                  '📖 ${_filteredBooks.fold<int>(0, (sum, b) => sum + b.hadithCount)} حديث',
+                  _selectedCategory == 'all'
+                      ? '📂 كل الفئات'
+                      : '📂 $_selectedCategory',
                   style: const TextStyle(
                       color: Color(0xFFD4AF37), fontSize: 12),
                 ),
@@ -126,7 +144,9 @@ class _LibraryTabState extends State<LibraryTab> {
             ),
           ),
 
+          // ═══════════════════════════════════════════════════════
           // قائمة الكتب
+          // ═══════════════════════════════════════════════════════
           Expanded(
             child: _filteredBooks.isEmpty
                 ? _buildEmptyState()
@@ -143,7 +163,36 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // بطاقة الكتاب
+  // ═══════════════════════════════════════════════════════════
   Widget _buildBookCard(BookModel book) {
+    // ✅ أيقونة مختلفة لكل فئة
+    IconData icon;
+    Color iconColor;
+
+    switch (book.category) {
+      case 'الحديث':
+        icon = Icons.menu_book;
+        iconColor = const Color(0xFFD4AF37);
+        break;
+      case 'التفسير':
+        icon = Icons.auto_stories;
+        iconColor = Colors.lightBlue;
+        break;
+      case 'الفقه':
+        icon = Icons.gavel;
+        iconColor = Colors.green;
+        break;
+      case 'السيرة':
+        icon = Icons.history_edu;
+        iconColor = Colors.purple;
+        break;
+      default:
+        icon = Icons.book;
+        iconColor = const Color(0xFFD4AF37);
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -176,18 +225,15 @@ class _LibraryTabState extends State<LibraryTab> {
                     color: const Color(0xFF0B132B),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                      color: iconColor.withValues(alpha: 0.4),
                     ),
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.menu_book,
-                      color: Color(0xFFD4AF37),
-                      size: 28,
-                    ),
+                  child: Center(
+                    child: Icon(icon, color: iconColor, size: 28),
                   ),
                 ),
                 const SizedBox(width: 12),
+
                 // تفاصيل الكتاب
                 Expanded(
                   child: Column(
@@ -204,22 +250,40 @@ class _LibraryTabState extends State<LibraryTab> {
                       const SizedBox(height: 3),
                       Text(
                         '✍️ ${book.author}',
-                        style: const TextStyle(
-                          color: Color(0xFFD4AF37),
+                        style: TextStyle(
+                          color: iconColor,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '📚 ${book.hadithCount} حديث • ${book.chapters} باب',
+                        _buildBookMeta(book),
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 11,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: iconColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          book.category,
+                          style: TextStyle(
+                            color: iconColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
+
                 const Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.white24,
@@ -233,23 +297,71 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  Widget _buildCategoryChip(String label, String value) {
+  /// نص فرعي حسب الفئة
+  String _buildBookMeta(BookModel book) {
+    switch (book.category) {
+      case 'الحديث':
+        return '📖 ${book.hadithCount} حديث • 📚 ${book.chapters} باب';
+      case 'التفسير':
+        return '📖 تفسير كامل للقرآن';
+      case 'الفقه':
+        return '⚖️ كتاب فقهي';
+      case 'السيرة':
+        return '🕌 سيرة نبوية';
+      default:
+        return '';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Chip الفئة
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildCategoryChip(String label, String value, int count) {
     final isSelected = _selectedCategory == value;
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: ChoiceChip(
-        label: Text(
-          label,
-          style: TextStyle(
-            color:
-                isSelected ? const Color(0xFF0B132B) : Colors.white70,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    isSelected ? const Color(0xFF0B132B) : Colors.white70,
+                fontSize: 12,
+                fontWeight:
+                    isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF0B132B).withValues(alpha: 0.2)
+                      : const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    color: isSelected
+                        ? const Color(0xFF0B132B)
+                        : const Color(0xFFD4AF37),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         selected: isSelected,
         selectedColor: const Color(0xFFD4AF37),
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF0B132B),
         side: BorderSide(
           color: isSelected
               ? const Color(0xFFD4AF37)
@@ -263,6 +375,9 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // الحالة الفارغة
+  // ═══════════════════════════════════════════════════════════
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -270,8 +385,7 @@ class _LibraryTabState extends State<LibraryTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off,
-                color: Colors.grey, size: 60),
+            const Icon(Icons.search_off, color: Colors.grey, size: 60),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty
@@ -283,7 +397,7 @@ class _LibraryTabState extends State<LibraryTab> {
             ),
             const SizedBox(height: 20),
             if (_searchQuery.isNotEmpty || _selectedCategory != 'all')
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   setState(() {
                     _searchQuery = '';
@@ -291,11 +405,12 @@ class _LibraryTabState extends State<LibraryTab> {
                     _filteredBooks = _allBooks;
                   });
                 },
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text('مسح الفلاتر'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,
                 ),
-                child: const Text('مسح الفلاتر'),
               ),
           ],
         ),
