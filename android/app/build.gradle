@@ -26,16 +26,16 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.apexsec.noor_al_haramain_global"
-    compileSdkVersion 34
+    compileSdkVersion 36 // ✅ تم التحديث ليتوافق مع المكتبات الحديثة
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11 // ✅ تم التعديل ليتوافق مع Kotlin
+        targetCompatibility JavaVersion.VERSION_11 // ✅ تم التعديل ليتوافق مع Kotlin
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11' // ✅ تم التعديل ليتوافق مع Java
     }
 
     sourceSets {
@@ -45,7 +45,7 @@ android {
     defaultConfig {
         applicationId "com.apexsec.noor_al_haramain_global"
         minSdkVersion 24
-        targetSdkVersion 34
+        targetSdkVersion 36 // ✅ تم التحديث
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
