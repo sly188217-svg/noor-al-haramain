@@ -31,9 +31,6 @@ class _SettingsTabState extends State<SettingsTab>
   double _soundVolume = 0.8;
   String _appVersion = '1.0.0';
 
-  // ✅ استخدام BackgroundService.backgrounds
-  List<Map<String, dynamic>> get _backgrounds => BackgroundService.backgrounds;
-
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   String _searchQuery = '';
@@ -296,7 +293,7 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🖼️ اختيار الخلفية (مع صور حقيقية + حفظ في BackgroundService)
+  // 🎨 اختيار الخلفية (Gradients إسلامية)
   // ═══════════════════════════════════════════════════════════
   void _showBackgroundPicker() {
     showModalBottomSheet(
@@ -318,16 +315,19 @@ class _SettingsTabState extends State<SettingsTab>
             const SizedBox(height: 16),
             Expanded(
               child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   childAspectRatio: 1.3,
                 ),
-                itemCount: _backgrounds.length,
+                itemCount: BackgroundService.backgrounds.length,
                 itemBuilder: (context, index) {
-                  final bg = _backgrounds[index];
+                  final bg = BackgroundService.backgrounds[index];
                   final isSelected = _selectedBackground == index;
+                  final colors = bg['colors'] as List<Color>;
+
                   return GestureDetector(
                     onTap: () async {
                       setState(() => _selectedBackground = index);
@@ -337,11 +337,17 @@ class _SettingsTabState extends State<SettingsTab>
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text('✅ تم تطبيق: ${bg['name']}')),
+                            content:
+                                Text('✅ تم تطبيق: ${bg['name']}')),
                       );
                     },
                     child: Container(
                       decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: colors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
@@ -350,80 +356,47 @@ class _SettingsTabState extends State<SettingsTab>
                           width: 3,
                         ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.asset(
-                              bg['image'] as String? ?? '',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stack) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: (bg['gradient']
-                                              as List<Color>?) ??
-                                          [
-                                            const Color(0xFF0B132B),
-                                            const Color(0xFF1C2541),
-                                          ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.mosque,
-                                      color: Color(0xFFD4AF37),
-                                      size: 40,
-                                    ),
-                                  ),
-                                );
-                              },
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(
+                              bg['icon'] as IconData,
+                              color: const Color(0xFFD4AF37)
+                                  .withValues(alpha: 0.4),
+                              size: 50,
                             ),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 6, horizontal: 8),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.8),
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
+                          ),
+                          Positioned(
+                            bottom: 6,
+                            left: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 4),
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                bg['name'] as String,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        bg['name'] as String? ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    if (isSelected)
-                                      const Icon(Icons.check_circle,
-                                          color: Color(0xFFD4AF37),
-                                          size: 16),
-                                  ],
-                                ),
+                                textAlign: TextAlign.center,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          if (isSelected)
+                            const Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Icon(Icons.check_circle,
+                                  color: Color(0xFFD4AF37), size: 24),
+                            ),
+                        ],
                       ),
                     ),
                   );
@@ -447,7 +420,8 @@ class _SettingsTabState extends State<SettingsTab>
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
+              child:
+                  const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
@@ -589,7 +563,7 @@ class _SettingsTabState extends State<SettingsTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C2541),
         elevation: 0,
@@ -643,7 +617,8 @@ class _SettingsTabState extends State<SettingsTab>
             children: [
               const Row(
                 children: [
-                  Icon(Icons.location_on, color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.location_on,
+                      color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
                   Text('📍 الموقع الحالي',
                       style: TextStyle(
@@ -682,7 +657,8 @@ class _SettingsTabState extends State<SettingsTab>
                       _isLocationReady
                           ? Icons.gps_fixed
                           : Icons.gps_off,
-                      color: _isLocationReady ? Colors.green : Colors.red,
+                      color:
+                          _isLocationReady ? Colors.green : Colors.red,
                       size: 14),
                   const SizedBox(width: 4),
                   Text(
@@ -717,7 +693,8 @@ class _SettingsTabState extends State<SettingsTab>
             children: [
               const Row(
                 children: [
-                  Icon(Icons.volume_up, color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.volume_up,
+                      color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
                   Text('🎙️ المؤذن',
                       style: TextStyle(
@@ -738,10 +715,12 @@ class _SettingsTabState extends State<SettingsTab>
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none),
                 ),
-                items: MuezzinData.muezzins.map((m) => DropdownMenuItem<String>(
-                      value: m['id'] as String,
-                      child: Text(m['name'] as String),
-                    )).toList(),
+                items: MuezzinData.muezzins
+                    .map((m) => DropdownMenuItem<String>(
+                          value: m['id'] as String,
+                          child: Text(m['name'] as String),
+                        ))
+                    .toList(),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _selectedMuezzin = value);
@@ -761,7 +740,8 @@ class _SettingsTabState extends State<SettingsTab>
             children: [
               const Row(
                 children: [
-                  Icon(Icons.download, color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.download,
+                      color: Color(0xFFD4AF37), size: 24),
                   SizedBox(width: 8),
                   Text('📥 الأذان',
                       style: TextStyle(
@@ -780,8 +760,8 @@ class _SettingsTabState extends State<SettingsTab>
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border:
-                      Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                  border: Border.all(
+                      color: Colors.green.withValues(alpha: 0.4)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -801,7 +781,8 @@ class _SettingsTabState extends State<SettingsTab>
                     const SizedBox(height: 8),
                     ...MuezzinData.bundledMuezzins.map((m) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 3),
                         child: Row(
                           children: [
                             const Icon(Icons.volume_up,
@@ -811,7 +792,8 @@ class _SettingsTabState extends State<SettingsTab>
                               child: Text(
                                 m['name'] as String,
                                 style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12),
+                                    color: Colors.white70,
+                                    fontSize: 12),
                               ),
                             ),
                             Text(
@@ -886,7 +868,8 @@ class _SettingsTabState extends State<SettingsTab>
                                 await AdhanDownloadService.clearAll();
                                 setState(() {});
                                 if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
                                   const SnackBar(
                                       content: Text(
                                           '🗑️ تم حذف الأذانات المحمّلة')),
@@ -912,6 +895,7 @@ class _SettingsTabState extends State<SettingsTab>
         ),
         const SizedBox(height: 12),
 
+        // ─── الإشعارات ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -967,33 +951,28 @@ class _SettingsTabState extends State<SettingsTab>
               Row(
                 children: [
                   Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        height: 60,
-                        child: Image.asset(
-                          _backgrounds[_selectedBackground]['image']
-                                  as String? ??
-                              '',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: (_backgrounds[_selectedBackground]
-                                              ['gradient'] as List<Color>?) ??
-                                      [
-                                        const Color(0xFF0B132B),
-                                        const Color(0xFF1C2541),
-                                      ],
-                                ),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.mosque,
-                                    color: Color(0xFFD4AF37)),
-                              ),
-                            );
-                          },
+                    child: Container(
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: (BackgroundService.backgrounds[
+                                      _selectedBackground]['colors']
+                                  as List<Color>),
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: const Color(0xFFD4AF37)
+                                .withValues(alpha: 0.3)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          BackgroundService.backgrounds[
+                                  _selectedBackground]['name'] as String,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
