@@ -1,124 +1,126 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:firebase_ai/firebase_ai.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 /// ═══════════════════════════════════════════════════════════
-/// خدمة الذكاء الاصطناعي — Firebase AI Logic
+/// خدمة الذكاء الاصطناعي — Gemini REST API مباشرة
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
-  static GenerativeModel? _model;
-  static bool _initialized = false;
+  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
-  /// تهيئة النموذج
-  static Future<void> _ensureInitialized() async {
-    if (_initialized) return;
+  static Future<String> askQuestion(String prompt) async {
+    if (_apiKey.isEmpty) {
+      return '⚠️ مفتاح Gemini API غير موجود.\n\n'
+          'اذهب إلى: الإعدادات ← الذكاء الاصطناعي ← أضف المفتاح';
+    }
 
     try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously();
+      final url = 'https://generativelanguage.googleapis.com/'
+          'v1beta/models/gemini-2.0-flash:generateContent?key=$_apiKey';
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ]
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        debugPrint('❌ Gemini HTTP ${response.statusCode}: ${response.body}');
+        return '⚠️ خطأ ${response.statusCode} — تحقق من مفتاح API';
       }
 
-      final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
-      _model = googleAI.generativeModel(model: 'gemini-2.0-flash');
-      _initialized = true;
-      debugPrint('✅ Firebase AI Service جاهز');
+      final data = jsonDecode(response.body);
+      final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'];
+      return text?.toString() ?? 'لا يوجد رد';
     } catch (e) {
-      debugPrint('❌ فشل تهيئة Firebase AI: $e');
-      rethrow;
-    }
-  }
-
-  /// إرسال نص إلى Gemini
-  static Future<String> askQuestion(String prompt) async {
-    try {
-      await _ensureInitialized();
-      final response = await _model!.generateContent([Content.text(prompt)]);
-      return response.text ?? 'لم يتم استلام رد.';
-    } catch (e) {
-      debugPrint('❌ خطأ: $e');
+      debugPrint('❌ Gemini error: $e');
       return '⚠️ تعذر الحصول على رد: $e';
     }
   }
 
-  /// تحويل صوت إلى نص
-  static Future<String> transcribeAudio({
-    required File audioFile,
-    String language = 'ar',
-  }) async {
-    try {
-      await _ensureInitialized();
-      final bytes = await audioFile.readAsBytes();
-
-      final response = await _model!.generateContent([
-        Content.multi([
-          InlineDataPart('audio/wav', bytes),
-          TextPart('قم بنسخ هذا الصوت العربي بدقة. اللغة: $language'),
-        ]),
-      ]);
-      return response.text ?? '';
-    } catch (e) {
-      debugPrint('❌ خطأ: $e');
-      return '';
-    }
-  }
-
-  /// ═══════════════════════════════════════════════════════════
-  /// ✅ تحليل التلاوة كلمة بكلمة (JSON)
-  /// ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
     required String correctAyah,
   }) async {
-    try {
-      await _ensureInitialized();
+    if (_apiKey.isEmpty) {
+      return {
+        'accuracy': 0,
+        'words': [],
+        'feedback': 'مفتاح Gemini API غير موجود',
+      };
+    }
 
+    try {
       final prompt = '''
 أنت خبير في تصحيح تلاوة القرآن الكريم.
 
-**النص الصحيح (الآية كاملة):**
+النص الصحيح:
 $correctAyah
 
-**ما قرأه المستخدم:**
+ما قرأه المستخدم:
 $userRecitation
 
-**المطلوب:**
-قارن الكلمتين كلمة بكلمة. أعد النتيجة بصيغة JSON فقط، بدون أي نص إضافي أو علامات markdown.
-
-**الصيغة المطلوبة بالضبط:**
+قارن كلمة بكلمة وأعد JSON فقط بهذا الشكل (بدون أي نص إضافي):
 {
   "accuracy": 85,
   "words": [
-    {"user": "الكلمة_التي_قرأها", "correct": "الكلمة_الصحيحة", "status": "correct"},
-    {"user": "الكلمة_الخاطئة", "correct": "الكلمة_الصحيحة", "status": "wrong"}
+    {"user": "الكلمة_التي_قرأها", "correct": "الكلمة_الصحيحة", "status": "correct"}
   ],
-  "feedback": "ملاحظة مختصرة"
+  "feedback": "ملاحظات مختصرة"
 }
 
-**قواعد مهمة:**
-- status = "correct" إذا كانت الكلمة صحيحة 100%
-- status = "wrong" إذا كانت الكلمة خاطئة أو مختلفة
-- status = "missing" إذا لم يقرأها المستخدم
-- status = "extra" إذا قرأ كلمة زائدة
-- accuracy = نسبة مئوية (0-100)
-- يجب أن تحتوي "words" على كل كلمات الآية بالترتيب
-
-**أعد JSON فقط. ابدأ بـ { وانته بـ }.**
+القواعد:
+- status = "correct" للكلمة الصحيحة
+- status = "wrong" للكلمة الخاطئة
+- status = "missing" للكلمة الناقصة
+- status = "extra" للكلمة الزائدة
+- accuracy نسبة مئوية 0-100
 ''';
 
-      final response = await _model!.generateContent([Content.text(prompt)]);
-      final text = response.text ?? '{}';
+      final url = 'https://generativelanguage.googleapis.com/'
+          'v1beta/models/gemini-2.0-flash:generateContent?key=$_apiKey';
 
-      // تنظيف الاستجابة
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ]
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        return {
+          'accuracy': 0,
+          'words': [],
+          'feedback': 'خطأ ${response.statusCode}',
+        };
+      }
+
+      final data = jsonDecode(response.body);
+      final text =
+          data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '{}';
+
       String cleaned = text.trim();
       if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replaceAll(RegExp(r'^```[a-z]*\n?'), '');
-        cleaned = cleaned.replaceAll(RegExp(r'\n?```$'), '');
+        cleaned = cleaned
+            .replaceAll(RegExp(r'^```[a-z]*\n?'), '')
+            .replaceAll(RegExp(r'\n?```$'), '');
       }
-      cleaned = cleaned.trim();
-
-      // استخراج JSON
       final start = cleaned.indexOf('{');
       final end = cleaned.lastIndexOf('}');
       if (start >= 0 && end > start) {
@@ -127,58 +129,22 @@ $userRecitation
 
       try {
         final decoded = jsonDecode(cleaned);
-        if (decoded is Map<String, dynamic>) {
-          return decoded;
-        }
+        if (decoded is Map<String, dynamic>) return decoded;
       } catch (e) {
-        debugPrint('⚠️ فشل تحليل JSON: $e');
+        debugPrint('⚠️ فشل JSON: $e');
       }
 
-      // فشل التحليل — نرجع نتيجة افتراضية
       return {
         'accuracy': 0,
         'words': [],
         'feedback': text,
       };
     } catch (e) {
-      debugPrint('❌ خطأ في التحليل: $e');
       return {
         'accuracy': 0,
         'words': [],
-        'feedback': 'تعذر التحليل: $e',
+        'feedback': 'خطأ: $e',
       };
     }
-  }
-
-  /// التعرف التلقائي على السورة والآية
-  static Future<String> detectSurahAndAyah(String recitation) async {
-    try {
-      await _ensureInitialized();
-      final prompt = '''
-حدد السورة ورقم الآية لهذا النص:
-$recitation
-
-أعد فقط: السورة: [الاسم] | الآية: [الرقم]
-''';
-      final response = await _model!.generateContent([Content.text(prompt)]);
-      return response.text ?? '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /// اختبار الاتصال
-  static Future<bool> testConnection() async {
-    try {
-      final response = await askQuestion('قل: مرحباً');
-      return response.isNotEmpty && !response.startsWith('⚠️');
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static void reset() {
-    _model = null;
-    _initialized = false;
   }
 }

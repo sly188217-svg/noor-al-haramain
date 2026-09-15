@@ -1,63 +1,66 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// خدمة المصادقة — Google + Firebase
 /// ═══════════════════════════════════════════════════════════
 class AuthService {
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  /// ✅ GoogleSignIn مع serverClientId
-  /// ⚠️ serverClientId من google-services.json (oauth_client مع client_type: 3)
-  /// إذا لم يوجد، سيستخدم Google Sign-In الإعدادات الافتراضية
+  /// ✅ serverClientId من google-services.json
+  /// موجود في Firebase Console → Project Settings → Your apps
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    serverClientId: '264723055815-h4f5e0p3rrl15vvnr9gp2er9f3r1h4tq.apps.googleusercontent.com',
   );
 
   static User? get currentUser => _auth.currentUser;
   static bool get isSignedIn => _auth.currentUser != null;
 
   /// ═══════════════════════════════════════════════════════════
-  /// دالة موحّدة: تحاول Google، فإن فشلت تستخدم زائر
+  /// دالة موحّدة: Google أو زائر
   /// ═══════════════════════════════════════════════════════════
   Future<Map<String, String>?> signIn() async {
     try {
       final result = await signInWithGoogle();
       if (result != null) return result;
     } catch (e) {
-      debugPrint('⚠️ Google Sign-In فشل: $e');
+      debugPrint('⚠️ Google فشل: $e');
     }
-    // Fallback: حساب زائر محلي
     return await _signInAsGuest();
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// تسجيل الدخول بحساب Google
+  /// تسجيل Google
   /// ═══════════════════════════════════════════════════════════
   static Future<Map<String, String>?> signInWithGoogle() async {
     try {
-      // 1. تسجيل الخروج أولاً (لضمان اختيار الحساب)
+      // 1. تسجيل الخروج أولاً لضمان اختيار الحساب
       await _googleSignIn.signOut();
 
-      // 2. فتح نافذة اختيار الحساب
+      // 2. فتح نافذة الحساب
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        debugPrint('⚠️ المستخدم ألغى تسجيل الدخول');
+        debugPrint('⚠️ المستخدم ألغى');
         return null;
       }
 
-      // 3. الحصول على tokens
+      debugPrint('✅ Google user: ${googleUser.email}');
+
+      // 3. الحصول على Tokens
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
+      debugPrint('🔑 idToken: ${googleAuth.idToken != null}');
+      debugPrint('🔑 accessToken: ${googleAuth.accessToken != null}');
+
       if (googleAuth.idToken == null && googleAuth.accessToken == null) {
-        debugPrint('❌ لم يتم الحصول على tokens');
-        return null;
+        throw Exception('لم يتم الحصول على tokens');
       }
 
-      // 4. إنشاء credential لـ Firebase
+      // 4. Firebase Credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -68,16 +71,7 @@ class AuthService {
       final user = userCredential.user;
 
       if (user != null) {
-        // 6. حفظ بيانات المستخدم محلياً
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_name', user.displayName ?? 'مستخدم');
-        await prefs.setString('user_email', user.email ?? '');
-        await prefs.setString('user_uid', user.uid);
-        await prefs.setString('user_photo', user.photoURL ?? '');
-        await prefs.setBool('is_logged_in', true);
-        await prefs.setBool('is_guest', false);
-
-        debugPrint('✅ تم تسجيل الدخول: ${user.email}');
+        await _saveUser(user);
         return {
           'displayName': user.displayName ?? 'مستخدم',
           'email': user.email ?? '',
@@ -86,30 +80,35 @@ class AuthService {
         };
       }
       return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('❌ FirebaseAuth: ${e.code} — ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('❌ Google Sign-In Error: $e');
+      debugPrint('❌ Google: $e');
       rethrow;
     }
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// تسجيل دخول كزائر (محلياً، بدون Firebase)
+  /// تسجيل زائر (محلي)
   /// ═══════════════════════════════════════════════════════════
   Future<Map<String, String>?> _signInAsGuest() async {
     try {
-      // ✅ محاولة تسجيل دخول مجهول في Firebase أولاً
-      UserCredential? credential;
+      User? firebaseUser;
       try {
         if (_auth.currentUser == null) {
-          credential = await _auth.signInAnonymously();
+          final cred = await _auth.signInAnonymously();
+          firebaseUser = cred.user;
+        } else {
+          firebaseUser = _auth.currentUser;
         }
       } catch (e) {
-        debugPrint('⚠️ Anonymous Auth فشل: $e');
+        debugPrint('⚠️ Anonymous فشل: $e');
       }
 
       final prefs = await SharedPreferences.getInstance();
-      const guestName = 'زائر';
-      final guestUid = credential?.user?.uid ?? 'guest_local';
+      const guestName = 'مستخدم';
+      final guestUid = firebaseUser?.uid ?? 'guest_local';
 
       await prefs.setString('user_name', guestName);
       await prefs.setString('user_email', '');
@@ -124,9 +123,23 @@ class AuthService {
         'photoURL': '',
       };
     } catch (e) {
-      debugPrint('❌ فشل تسجيل الزائر: $e');
+      debugPrint('❌ Guest فشل: $e');
       return null;
     }
+  }
+
+  /// ═══════════════════════════════════════════════════════════
+  /// حفظ بيانات المستخدم
+  /// ═══════════════════════════════════════════════════════════
+  static Future<void> _saveUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', user.displayName ?? 'مستخدم');
+    await prefs.setString('user_email', user.email ?? '');
+    await prefs.setString('user_uid', user.uid);
+    await prefs.setString('user_photo', user.photoURL ?? '');
+    await prefs.setBool('is_logged_in', true);
+    await prefs.setBool('is_guest', false);
+    debugPrint('✅ محفوظ: ${user.displayName}');
   }
 
   /// ═══════════════════════════════════════════════════════════
@@ -137,7 +150,7 @@ class AuthService {
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
-      debugPrint('⚠️ خطأ في تسجيل الخروج: $e');
+      debugPrint('⚠️ SignOut: $e');
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -149,19 +162,8 @@ class AuthService {
     await prefs.setBool('is_guest', false);
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// الحصول على اسم المستخدم
-  /// ═══════════════════════════════════════════════════════════
   static Future<String> getUserName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_name') ?? 'مستخدم';
-  }
-
-  /// ═══════════════════════════════════════════════════════════
-  /// هل المستخدم زائر؟
-  /// ═══════════════════════════════════════════════════════════
-  static Future<bool> isGuest() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('is_guest') ?? false;
   }
 }

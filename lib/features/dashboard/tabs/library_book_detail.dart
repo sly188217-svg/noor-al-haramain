@@ -13,47 +13,51 @@ class BookDetailScreen extends StatefulWidget {
 }
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
-  List<HadithModel> _hadiths = [];
+  List<HadithModel> _items = [];
   bool _isLoading = true;
-  int _currentPage = 1;
-  final int _limit = 20;
+  String _errorMessage = '';
+  double _progress = 0.0;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadHadiths();
+    _loadBook();
   }
 
-  Future<void> _loadHadiths() async {
-    setState(() => _isLoading = true);
-    final hadiths = await LibraryService.fetchHadiths(
-      bookId: widget.book.id,
-      start: _currentPage,
-      limit: _limit,
-    );
-    if (!mounted) return;
-    setState(() {
-      _hadiths = hadiths;
-      _isLoading = false;
-    });
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadMore() async {
-    if (_isLoading) return;
+  Future<void> _loadBook() async {
     setState(() {
-      _currentPage++;
       _isLoading = true;
+      _errorMessage = '';
+      _progress = 0.0;
     });
-    final moreHadiths = await LibraryService.fetchHadiths(
-      bookId: widget.book.id,
-      start: _currentPage,
-      limit: _limit,
-    );
-    if (!mounted) return;
-    setState(() {
-      _hadiths.addAll(moreHadiths);
-      _isLoading = false;
-    });
+
+    try {
+      final items = await LibraryService.loadFullBook(
+        bookId: widget.book.id,
+        onProgress: (p) {
+          if (mounted) setState(() => _progress = p);
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'فشل التحميل: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -68,133 +72,117 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           children: [
             Text(
               widget.book.title,
-              style:
-                  const TextStyle(color: Color(0xFFD4AF37), fontSize: 16),
+              style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 15),
             ),
+            if (!_isLoading && _items.isNotEmpty)
+              Text(
+                '${_items.length} عنصر',
+                style: const TextStyle(color: Colors.grey, fontSize: 10),
+              ),
+          ],
+        ),
+      ),
+      body: _isLoading
+          ? _buildLoading()
+          : _errorMessage.isNotEmpty
+              ? _buildError()
+              : _items.isEmpty
+                  ? _buildEmpty()
+                  : _buildBookList(),
+    );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.menu_book, color: Color(0xFFD4AF37), size: 80),
+            const SizedBox(height: 24),
             Text(
-              widget.book.author,
-              style: const TextStyle(color: Colors.grey, fontSize: 10),
+              '📥 جاري تحميل ${widget.book.title}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.book.category == 'التفسير'
+                  ? 'تحميل 114 سورة (قد يستغرق دقيقة)'
+                  : 'قد يستغرق 30-60 ثانية لأول مرة',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: 250,
+              child: LinearProgressIndicator(
+                value: _progress > 0 ? _progress : null,
+                backgroundColor: Colors.white12,
+                color: const Color(0xFFD4AF37),
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${(_progress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
       ),
-      body: _isLoading && _hadiths.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
-          : Column(
-              children: [
-                // بطاقة معلومات الكتاب
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C2541),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.book.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '✍️ ${widget.book.author}',
-                              style: const TextStyle(
-                                color: Color(0xFFD4AF37),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.book.description,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          _buildStatChip(
-                              '📚', '${widget.book.chapters} باب'),
-                          const SizedBox(height: 4),
-                          _buildStatChip(
-                              '📖', '${widget.book.hadithCount} حديث'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // قائمة الأحاديث
-                Expanded(
-                  child: _hadiths.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: _hadiths.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == _hadiths.length) {
-                              return _buildLoadMoreButton();
-                            }
-                            final hadith = _hadiths[index];
-                            return _buildHadithCard(hadith);
-                          },
-                        ),
-                ),
-              ],
-            ),
     );
   }
 
-  Widget _buildHadithCard(HadithModel hadith) {
+  Widget _buildBookList() {
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(12),
+        itemCount: _items.length,
+        cacheExtent: 5000,
+        itemBuilder: (context, index) {
+          return _buildItemCard(_items[index], index + 1);
+        },
+      ),
+    );
+  }
+
+  Widget _buildItemCard(HadithModel item, int index) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2541).withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF1C2541).withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(
-            hadith.text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontFamily: 'Amiri',
-              height: 1.8,
-            ),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-          ),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'رقم: ${hadith.number}',
+                  '#$index',
                   style: const TextStyle(
                     color: Color(0xFFD4AF37),
                     fontSize: 11,
@@ -202,112 +190,84 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   ),
                 ),
               ),
-              if (hadith.grade != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: hadith.grade == 'صحيح'
-                        ? Colors.green.withValues(alpha: 0.2)
-                        : Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: hadith.grade == 'صحيح'
-                          ? Colors.green
-                          : Colors.orange,
-                      width: 0.5,
-                    ),
-                  ),
+              if (item.bookName != null && item.bookName!.isNotEmpty)
+                Flexible(
                   child: Text(
-                    hadith.grade!,
-                    style: TextStyle(
-                      color: hadith.grade == 'صحيح'
-                          ? Colors.green
-                          : Colors.orange,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    item.bookName!,
+                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
             ],
           ),
+          const SizedBox(height: 12),
+          SelectableText(
+            item.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontFamily: 'Amiri',
+              height: 1.9,
+            ),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+          if (item.grade != null && item.grade!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                item.grade!,
+                style: const TextStyle(color: Colors.green, fontSize: 10),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildStatChip(String icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B132B),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Text(
-        '$icon $label',
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 11,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadMoreButton() {
-    if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
-        ),
-      );
-    }
-    return Center(
-      child: TextButton(
-        onPressed: _loadMore,
-        child: const Text(
-          'تحميل المزيد',
-          style: TextStyle(color: Color(0xFFD4AF37)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
+  Widget _buildError() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off, color: Colors.orange, size: 60),
-            const SizedBox(height: 16),
-            const Text(
-              '⚠️ لا توجد أحاديث متاحة حالياً',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'تأكد من اتصالك بالإنترنت ثم أعد المحاولة',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
+            const Icon(Icons.cloud_off, color: Colors.orange, size: 80),
             const SizedBox(height: 20),
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadHadiths,
+              onPressed: _loadBook,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
                 foregroundColor: Colors.black,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              icon: const Icon(Icons.refresh),
-              label: const Text('إعادة المحاولة'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return const Center(
+      child: Text(
+        '📭 لا توجد بيانات في هذا الكتاب',
+        style: TextStyle(color: Colors.white54, fontSize: 16),
       ),
     );
   }

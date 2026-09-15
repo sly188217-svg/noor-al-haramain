@@ -1,40 +1,42 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
-
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
+def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
+    localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-if (flutterVersionCode == null) {
-    flutterVersionCode = "1"
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
-def flutterVersionName = localProperties.getProperty("flutter.versionName")
-if (flutterVersionName == null) {
-    flutterVersionName = "1.0"
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
 }
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+apply plugin: 'com.google.gms.google-services' // مطلوب لـ Firebase
 
 android {
-    namespace "com.apexsec.noor_al_haramain_global"
-    compileSdk 36
-    ndkVersion "28.2.13676358"
+    compileSdkVersion 34 // أو الإصدار الذي يستخدمه مشروعك
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '1.8'
     }
 
     sourceSets {
@@ -42,30 +44,24 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.apexsec.noor_al_haramain_global"
-        minSdk 23
-        targetSdk 36
+        // ⚠️ مهم: تأكد أن هذا هو معرف التطبيق الصحيح لمشروعك
+        applicationId "com.apexsec.noor_al_haramain_global" 
+        minSdkVersion 21 // أو 23 حسب متطلبات Firebase Auth
+        targetSdkVersion 34 // أو الإصدار الذي يستخدمه مشروعك
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
 
-        // ✅ Firebase App Check Debug Token ثابت
-        manifestPlaceholders["firebaseAppCheckDebugToken"] = "noor-haramain-debug-token-fixed-12345678"
+        // 🔥 إضافة App Check Debug Token هنا
+        manifestPlaceholders["firebaseAppCheckDebugToken"] = "A0CD6B2F-9F70-4037-B04C-7C1D58CE299D"
     }
 
     buildTypes {
         release {
-            // ✅ استخدام debug signing مؤقتاً للاختبار
-            // سيتم التبديل إلى release signing قبل النشر على Google Play
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
+            // ⚠️ تأكد من إعدادات التوقيع الخاصة بك هنا (Signing Config)
+            // إذا كنت تستخدم مفتاح توقيع خاص، ضعه هنا بدلاً من signingConfigs.debug
+            signingConfig signingConfigs.debug 
         }
-    }
-
-    lintOptions {
-        disable 'InvalidPackage'
-        checkReleaseBuilds false
     }
 }
 
@@ -74,8 +70,8 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation platform('com.google.firebase:firebase-bom:33.7.0')
-    implementation 'com.google.firebase:firebase-analytics'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation platform('com.google.firebase:firebase-bom:32.7.0') // إصدار Firebase BOM
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
 }
