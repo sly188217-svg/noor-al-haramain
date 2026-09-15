@@ -30,12 +30,12 @@ android {
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11 // ✅ تم التعديل ليتوافق مع Kotlin
-        targetCompatibility JavaVersion.VERSION_11 // ✅ تم التعديل ليتوافق مع Kotlin
+        sourceCompatibility JavaVersion.VERSION_11 // ✅ توحيد Java
+        targetCompatibility JavaVersion.VERSION_11 // ✅ توحيد Java
     }
 
     kotlinOptions {
-        jvmTarget = '11' // ✅ تم التعديل ليتوافق مع Java
+        jvmTarget = '11' // ✅ توحيد Kotlin
     }
 
     sourceSets {
