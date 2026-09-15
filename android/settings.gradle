@@ -18,9 +18,12 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.1.0" apply false // ⚠️ استبدل هذا بإصدار AGP الموجود في مشروعك
-    id "org.jetbrains.kotlin.android" version "1.8.22" apply false // ⚠️ استبدل هذا بإصدار Kotlin الموجود في مشروعك
-    id "com.google.gms.google-services" version "4.4.0" apply false // إصدار خدمة Google
+    // تحديث إصدار Android Gradle Plugin ليتوافق مع Flutter الحديث
+    id "com.android.application" version "8.11.1" apply false
+    // إصدار Kotlin مناسب لـ AGP 8+
+    id "org.jetbrains.kotlin.android" version "1.9.0" apply false
+    // خدمة Google لـ Firebase
+    id "com.google.gms.google-services" version "4.4.0" apply false
 }
 
 include ":app"
