@@ -1,4 +1,11 @@
-// ⚠️ هذه السطور كانت ناقصة: تقرأ الإصدار من إعدادات Flutter
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // ضروري لـ Firebase
+}
+
+// ⚠️ هذه السطور يجب أن تكون بعد كتلة plugins
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -15,13 +22,6 @@ if (flutterVersionCode == null) {
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
-}
-
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services" // ضروري لـ Firebase
 }
 
 android {
@@ -44,7 +44,7 @@ android {
 
     defaultConfig {
         applicationId "com.apexsec.noor_al_haramain_global"
-        minSdkVersion 24 // استخدمت 24 لأن الخطأ أظهر أنك تستخدم هذا الإصدار حالياً
+        minSdkVersion 24
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
