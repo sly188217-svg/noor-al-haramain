@@ -1,3 +1,22 @@
+// ⚠️ هذه السطور كانت ناقصة: تقرأ الإصدار من إعدادات Flutter
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -6,7 +25,7 @@ plugins {
 }
 
 android {
-    namespace "com.apexsec.noor_al_haramain_global" // مطلوب في الإصدارات الجديدة
+    namespace "com.apexsec.noor_al_haramain_global"
     compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
@@ -25,7 +44,7 @@ android {
 
     defaultConfig {
         applicationId "com.apexsec.noor_al_haramain_global"
-        minSdkVersion 21
+        minSdkVersion 24 // استخدمت 24 لأن الخطأ أظهر أنك تستخدم هذا الإصدار حالياً
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -37,8 +56,7 @@ android {
 
     buildTypes {
         release {
-            // ⚠️ تأكد من إعدادات التوقيع الخاصة بك هنا
-            // إذا كان لديك ملف keystore خاص، استبدل هذا السطر بإعدادات التوقيع الخاصة بك
+            // ⚠️ إذا كان لديك ملف keystore خاص، استبدل هذا السطر بإعدادات التوقيع الخاصة بك
             signingConfig signingConfigs.debug
         }
     }
