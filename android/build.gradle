@@ -13,22 +13,17 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// ✅ الحل الجذري: إجبار جميع المكتبات على استخدام Java 11 و Kotlin 11
+// ✅ الحل الصحيح والحديث: إجبار جميع المشاريع الفرعية على استخدام Java 11
+// هذا الأسلوب (configureEach) هو البديل الصحيح لـ afterEvaluate الذي تسبب في الخطأ
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_11
-                    targetCompatibility JavaVersion.VERSION_11
-                }
-            }
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = '11'
         }
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                jvmTarget = '11'
-            }
-        }
+    }
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 }
 
