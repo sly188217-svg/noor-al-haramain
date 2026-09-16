@@ -421,11 +421,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
       final hours = remaining.inHours.toString().padLeft(2, '0');
       final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-      final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
 
       await NotificationService.showPersistentNotification(
         nextPrayer: _nextPrayer,
-        timeRemaining: '$hours:$minutes:$seconds',
+        timeRemaining: '$hours:$minutes',
         hijriDate: hijri,
         city: _cityName,
       );

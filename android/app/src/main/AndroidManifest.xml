@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- 🎤 الميكروفون (لتصحيح التلاوة) -->
+    <!-- 🎤 الميكروفون -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- 🔔 الإشعارات -->
@@ -26,7 +26,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-    <!-- 🔋 تحسين البطارية (اختياري لبعض الأجهزة) -->
+    <!-- 🔥 إذن عرض إشعار الأذان فوق الشاشة -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- 🔋 تحسين البطارية -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
@@ -60,7 +63,21 @@
         </activity>
 
         <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- 🔔 استقبال الإشعارات وتشغيل الأذان في الخلفية -->
+        <!-- 🔄 BootReceiver: يعيد تشغيل التطبيق بعد إعادة تشغيل الهاتف -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 🔔 مستقبلات إشعارات Flutter -->
         <!-- ═══════════════════════════════════════════════════════ -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
@@ -97,7 +114,7 @@
         </receiver>
 
         <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- 🔥 Firebase Cloud Messaging (إذا كنت تستخدمه) -->
+        <!-- 🔥 Firebase Cloud Messaging -->
         <!-- ═══════════════════════════════════════════════════════ -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
@@ -112,7 +129,7 @@
     </application>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 📱 دعم أجهزة Android 11+ لرؤية التطبيقات الأخرى -->
+    <!-- 📱 دعم Android 11+ -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <queries>
         <intent>
