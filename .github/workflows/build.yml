@@ -30,8 +30,18 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Rename APK
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk release/noor-al-haramain.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: v${{ github.run_number }}
+          name: "نور الحرمين - Build ${{ github.run_number }}"
+          files: release/noor-al-haramain.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
