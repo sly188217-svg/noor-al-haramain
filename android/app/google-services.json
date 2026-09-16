@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264723055815",
+    "project_id": "disco-charger-507916-s1",
+    "storage_bucket": "disco-charger-507916-s1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264723055815:android:8b5678e531f743660f6ae2",
+        "android_client_info": {
+          "package_name": "com.apexsec.noor_al_haramain_global"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaHUTvC6YR3hEqj9QyFRj73kWh6P6km_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
