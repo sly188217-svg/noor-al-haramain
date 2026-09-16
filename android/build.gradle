@@ -9,6 +9,29 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
+// ✅ 1. تسجيل afterEvaluate أولاً (قبل evaluationDependsOn)
+// هذا يجبر geocoding_android على استخدام compileSdk 36
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileSdkVersion 36
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_11
+                    targetCompatibility JavaVersion.VERSION_11
+                }
+            }
+        }
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = '11'
+            }
+        }
+    }
+}
+
+// ✅ 2. ثم استدعاء evaluationDependsOn (بعد afterEvaluate)
 subprojects {
     project.evaluationDependsOn(':app')
 }
