@@ -1,60 +1,44 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.apexsec.noor_al_haramain_global">
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 📡 الأذونات                                            -->
+    <!-- 🔐 الأذونات الأساسية -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 📍 الموقع والبوصلة -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- 🎤 الميكروفون (لتصحيح التلاوة) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- 🔔 الإشعارات -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 🔔 أذونات الإشعارات (Android 13+ و 14+)                 -->
-    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- ⏰ الأذان في الخلفية (Exact Alarms) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 🧭 مستشعرات البوصلة (اختيارية)                          -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <uses-feature
-        android:name="android.hardware.sensor.compass"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.sensor.accelerometer"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.sensor.gyroscope"
-        android:required="false" />
+    <!-- 🔋 تحسين البطارية (اختياري لبعض الأجهزة) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:label="نور الحرمين"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="true"
-        android:allowBackup="true">
+        android:requestLegacyExternalStorage="true">
 
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- 🔐 Firebase App Check Debug Token                   -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <meta-data
-            android:name="com.google.firebase.appcheck.DEBUG_TOKEN"
-            android:value="noor-haramain-debug-token-fixed-12345678" />
-
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 🚀 النشاط الرئيسي -->
+        <!-- ═══════════════════════════════════════════════════════ -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -75,34 +59,72 @@
             </intent-filter>
         </activity>
 
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- 🔔 استقبال الإشعارات المجدولة بعد إعادة التشغيل     -->
-        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 🔔 استقبال الإشعارات وتشغيل الأذان في الخلفية -->
+        <!-- ═══════════════════════════════════════════════════════ -->
         <receiver
-            android:exported="false"
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
         <receiver
-            android:exported="false"
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 🎵 خدمة الصوت (audio_service) -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 🔥 Firebase Cloud Messaging (إذا كنت تستخدمه) -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- 📌 إعدادات Flutter -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
     </application>
 
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 📱 دعم أجهزة Android 11+ لرؤية التطبيقات الأخرى -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
-        <!-- ✅ مطلوب لـ Google Sign-In -->
         <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="com.google.android.gms.auth.api.signin.RevocationBoundService" />
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 </manifest>
