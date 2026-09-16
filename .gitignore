@@ -116,3 +116,4 @@ desktop.ini
 # ═══════════════════════════════════════════════════════════
 .codemagic/
 codemagic_backup.yaml
+.env
