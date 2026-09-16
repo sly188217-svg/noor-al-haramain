@@ -13,8 +13,21 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// ✅ الحل الصحيح والحديث: إجبار جميع المشاريع الفرعية على استخدام Java 11
-// هذا الأسلوب (configureEach) هو البديل الصحيح لـ afterEvaluate الذي تسبب في الخطأ
+// ✅ إجبار جميع المشاريع الفرعية على استخدام compileSdk 36
+subprojects {
+    project.plugins.withId('com.android.library') {
+        project.android {
+            compileSdkVersion 36
+        }
+    }
+    project.plugins.withId('com.android.application') {
+        project.android {
+            compileSdkVersion 36
+        }
+    }
+}
+
+// ✅ توحيد إصدارات Java و Kotlin
 subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
