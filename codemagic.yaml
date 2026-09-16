@@ -14,9 +14,6 @@ workflows:
       - name: Create .env file
         script: |
           echo "$ENV_FILE" > $CM_BUILD_DIR/.env
-      - name: Create google-services.json
-        script: |
-          echo "$GOOGLE_SERVICES_JSON" > $CM_BUILD_DIR/android/app/google-services.json
       - name: Get Flutter packages
         script: |
           flutter pub get
