@@ -1,48 +1,30 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_ai/firebase_ai.dart';
 
-/// ═══════════════════════════════════════════════════════════
-/// خدمة الذكاء الاصطناعي — Gemini REST API مباشرة
-/// ═══════════════════════════════════════════════════════════
+/// خدمة الذكاء الاصطناعي — Firebase AI Logic (بدون مفتاح API)
 class FirebaseAiService {
-  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  static const String _modelName = 'gemini-flash-latest';
+
+  static GenerativeModel _getModel() {
+    return FirebaseAI.googleAI().generativeModel(model: _modelName);
+  }
 
   static Future<String> askQuestion(String prompt) async {
-    if (_apiKey.isEmpty) {
-      return '⚠️ مفتاح Gemini API غير موجود.\n\n'
-          'اذهب إلى: الإعدادات ← الذكاء الاصطناعي ← أضف المفتاح';
-    }
-
     try {
-      final url = 'https://generativelanguage.googleapis.com/'
-          'v1beta/models/gemini-2.0-flash:generateContent?key=$_apiKey';
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt}
-              ]
-            }
-          ]
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode != 200) {
-        debugPrint('❌ Gemini HTTP ${response.statusCode}: ${response.body}');
-        return '⚠️ خطأ ${response.statusCode} — تحقق من مفتاح API';
-      }
-
-      final data = jsonDecode(response.body);
-      final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'];
-      return text?.toString() ?? 'لا يوجد رد';
+      final model = _getModel();
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text ?? 'لا يوجد رد';
     } catch (e) {
-      debugPrint('❌ Gemini error: $e');
+      debugPrint('❌ Firebase AI error: $e');
+      if (e.toString().contains('UNAUTHENTICATED') ||
+          e.toString().contains('permission-denied')) {
+        return '⚠️ يرجى تسجيل الدخول أولاً لاستخدام المساعد الذكي.';
+      }
+      if (e.toString().contains('quota') ||
+          e.toString().contains('RESOURCE_EXHAUSTED')) {
+        return '⚠️ تجاوزت الحد المسموح. حاول لاحقاً.';
+      }
       return '⚠️ تعذر الحصول على رد: $e';
     }
   }
@@ -51,14 +33,6 @@ class FirebaseAiService {
     required String userRecitation,
     required String correctAyah,
   }) async {
-    if (_apiKey.isEmpty) {
-      return {
-        'accuracy': 0,
-        'words': [],
-        'feedback': 'مفتاح Gemini API غير موجود',
-      };
-    }
-
     try {
       final prompt = '''
 أنت خبير في تصحيح تلاوة القرآن الكريم.
@@ -86,34 +60,9 @@ $userRecitation
 - accuracy نسبة مئوية 0-100
 ''';
 
-      final url = 'https://generativelanguage.googleapis.com/'
-          'v1beta/models/gemini-2.0-flash:generateContent?key=$_apiKey';
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt}
-              ]
-            }
-          ]
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode != 200) {
-        return {
-          'accuracy': 0,
-          'words': [],
-          'feedback': 'خطأ ${response.statusCode}',
-        };
-      }
-
-      final data = jsonDecode(response.body);
-      final text =
-          data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '{}';
+      final model = _getModel();
+      final response = await model.generateContent([Content.text(prompt)]);
+      final text = response.text ?? '{}';
 
       String cleaned = text.trim();
       if (cleaned.startsWith('```')) {
@@ -134,17 +83,10 @@ $userRecitation
         debugPrint('⚠️ فشل JSON: $e');
       }
 
-      return {
-        'accuracy': 0,
-        'words': [],
-        'feedback': text,
-      };
+      return {'accuracy': 0, 'words': [], 'feedback': text};
     } catch (e) {
-      return {
-        'accuracy': 0,
-        'words': [],
-        'feedback': 'خطأ: $e',
-      };
+      debugPrint('❌ Firebase AI error: $e');
+      return {'accuracy': 0, 'words': [], 'feedback': 'خطأ: $e'};
     }
   }
 }
