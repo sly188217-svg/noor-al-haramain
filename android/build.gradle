@@ -13,27 +13,6 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// ✅ الحل القسري: إجبار جميع المكتبات على استخدام compileSdk 36
-// هذا يحل مشكلة geocoding_android التي لا تزال تستخدم compileSdk 33
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                compileSdkVersion 36
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_11
-                    targetCompatibility JavaVersion.VERSION_11
-                }
-            }
-        }
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                jvmTarget = '11'
-            }
-        }
-    }
-}
-
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
