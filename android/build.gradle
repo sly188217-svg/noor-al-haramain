@@ -13,16 +13,16 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// ✅ إجبار جميع المشاريع الفرعية على استخدام compileSdk 36
+// ✅ الحل الجذري: إجبار جميع المكتبات على استخدام compileSdk 36
+// هذا يحل مشكلة geocoding_android التي تستخدم compileSdk 33
 subprojects {
-    project.plugins.withId('com.android.library') {
-        project.android {
-            compileSdkVersion 36
-        }
-    }
-    project.plugins.withId('com.android.application') {
-        project.android {
-            compileSdkVersion 36
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (compileSdkVersion == null || compileSdkVersion.toString().replace('android-', '') as int < 36) {
+                    compileSdkVersion 36
+                }
+            }
         }
     }
 }
