@@ -27,10 +27,23 @@ jobs:
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Decode keystore
+      - name: Debug keystore secret
+        run: |
+          echo "=== حجم السر ==="
+          echo -n "${{ secrets.KEYSTORE_BASE64 }}" | wc -c
+          echo "=== أول 50 حرف ==="
+          echo -n "${{ secrets.KEYSTORE_BASE64 }}" | head -c 50
+          echo ""
+          echo "=== آخر 50 حرف ==="
+          echo -n "${{ secrets.KEYSTORE_BASE64 }}" | tail -c 50
+          echo ""
+
+      - name: Decode keystore (method 1)
         run: |
           mkdir -p android/app
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 -d > android/app/noor-release.jks
+          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" > /tmp/ks.b64
+          tr -d '\r\n \t' < /tmp/ks.b64 > /tmp/ks_clean.b64
+          base64 -d /tmp/ks_clean.b64 > android/app/noor-release.jks
           ls -lh android/app/noor-release.jks
 
       - name: Create key.properties
