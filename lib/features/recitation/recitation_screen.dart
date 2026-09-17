@@ -29,7 +29,7 @@ class _WordFeedback {
 }
 
 /// ═══════════════════════════════════════════════════════════
-/// شاشة تصحيح التلاوة — كلمة بكلمة
+/// شاشة تصحيح التلاوة — الوضع التلقائي + اليدوي
 /// ═══════════════════════════════════════════════════════════
 class RecitationScreen extends StatefulWidget {
   const RecitationScreen({super.key});
@@ -47,6 +47,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
   bool _isSpeaking = false;
   bool _speechAvailable = false;
   bool _isPremium = false;
+  bool _autoDetectMode = true; // ✅ الوضع الافتراضي: تلقائي
 
   int _remainingRecitations = 3;
 
@@ -56,6 +57,13 @@ class _RecitationScreenState extends State<RecitationScreen> {
   String _feedback = '';
   List<_WordFeedback> _words = [];
 
+  // للوضع التلقائي
+  String? _detectedSurahName;
+  int? _detectedSurahNumber;
+  int? _detectedAyahNumber;
+  bool _isDetecting = false;
+
+  // للوضع اليدوي
   List<SurahModel> _surahs = [];
   int _selectedSurah = 1;
   int _selectedAyah = 1;
@@ -95,7 +103,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         onStatus: (status) {
           if (status == 'notListening' && mounted) {
             setState(() => _isListening = false);
-            if (_userRecitation.isNotEmpty) _analyzeRecitation();
+            if (_userRecitation.isNotEmpty) _processRecitation();
           }
         },
         onError: (error) {
@@ -140,6 +148,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
     } catch (_) {}
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎤 بدء/إيقاف الاستماع
+  // ═══════════════════════════════════════════════════════════
   Future<void> _toggleListening() async {
     if (!_isListening) {
       final canRecite = await UsageService.canRecite();
@@ -167,8 +178,13 @@ class _RecitationScreenState extends State<RecitationScreen> {
       _isListening = true;
       _userRecitation = '';
       _accuracy = 0;
-      _feedback = '🎤 استمع... تلُ الآية الآن';
       _words = [];
+      _detectedSurahName = null;
+      _detectedSurahNumber = null;
+      _detectedAyahNumber = null;
+      _feedback = _autoDetectMode
+          ? '🎤 اقرأ أي آية قرآنية...'
+          : '🎤 استمع... تلُ الآية الآن';
     });
 
     await _speech.listen(
@@ -176,15 +192,18 @@ class _RecitationScreenState extends State<RecitationScreen> {
         if (!mounted) return;
         setState(() => _userRecitation = result.recognizedWords);
       },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
+      listenFor: const Duration(seconds: 45),
+      pauseFor: const Duration(seconds: 4),
       partialResults: true,
       localeId: 'ar_SA',
     );
   }
 
-  Future<void> _analyzeRecitation() async {
-    if (_userRecitation.trim().isEmpty || _correctAyah.isEmpty) return;
+  // ═══════════════════════════════════════════════════════════
+  // 🔍 معالجة التلاوة (تلقائي أو يدوي)
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _processRecitation() async {
+    if (_userRecitation.trim().isEmpty) return;
 
     setState(() {
       _isProcessing = true;
@@ -192,6 +211,64 @@ class _RecitationScreenState extends State<RecitationScreen> {
     });
 
     try {
+      // ✅ 1. في الوضع التلقائي: التعرف على الآية أولاً
+      if (_autoDetectMode && _correctAyah.isEmpty) {
+        setState(() {
+          _isDetecting = true;
+          _feedback = '🎯 جاري التعرف على الآية...';
+        });
+
+        final detected = await FirebaseAiService.identifyAyah(_userRecitation);
+
+        if (detected == null || detected['surah'] == null) {
+          if (!mounted) return;
+          setState(() {
+            _isProcessing = false;
+            _isDetecting = false;
+            _feedback = '⚠️ لم يتم التعرف على الآية. أعد المحاولة أو اختر الآية يدوياً.';
+          });
+          return;
+        }
+
+        // ✅ جلب النص الصحيح من قاعدة البيانات
+        final surahNumber = detected['surahNumber'] as int?;
+        final ayahNumber = detected['ayahNumber'] as int?;
+
+        if (surahNumber == null || ayahNumber == null) {
+          if (!mounted) return;
+          setState(() {
+            _isProcessing = false;
+            _isDetecting = false;
+            _feedback = '⚠️ لم يتم التعرف على الآية بدقة.';
+          });
+          return;
+        }
+
+        final ayah = await QuranService.getAyah(surahNumber, ayahNumber);
+        final surah = await QuranService.getSurah(surahNumber);
+
+        if (ayah == null || surah == null) {
+          if (!mounted) return;
+          setState(() {
+            _isProcessing = false;
+            _isDetecting = false;
+            _feedback = '⚠️ تعذر جلب الآية من قاعدة البيانات.';
+          });
+          return;
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _correctAyah = ayah.text;
+          _detectedSurahName = surah.name;
+          _detectedSurahNumber = surahNumber;
+          _detectedAyahNumber = ayahNumber;
+          _isDetecting = false;
+          _feedback = '✅ تم التعرف على الآية — جاري التصحيح...';
+        });
+      }
+
+      // ✅ 2. التحليل والتصحيح
       final result = await FirebaseAiService.analyzeRecitation(
         userRecitation: _userRecitation,
         correctAyah: _correctAyah,
@@ -222,15 +299,34 @@ class _RecitationScreenState extends State<RecitationScreen> {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
+        _isDetecting = false;
         _feedback = '⚠️ تعذر التحليل: $e';
       });
     }
   }
 
-  Future<void> _playHusary() async {
+  // ═══════════════════════════════════════════════════════════
+  // 🔊 تشغيل الآية بصوت الحصري (everyayah.com)
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _playHusaryAyah() async {
     try {
-      final padded = _selectedSurah.toString().padLeft(3, '0');
-      final url = 'https://server13.mp3quran.net/husary/$padded.mp3';
+      final surahNum = _autoDetectMode
+          ? _detectedSurahNumber
+          : _selectedSurah;
+      final ayahNum = _autoDetectMode
+          ? _detectedAyahNumber
+          : _selectedAyah;
+
+      if (surahNum == null || ayahNum == null) {
+        _showSnack('⚠️ لم يتم تحديد الآية بعد');
+        return;
+      }
+
+      // ✅ everyayah.com: تنسيق SSSAAA (3 أرقام للسورة + 3 أرقام للآية)
+      final surahStr = surahNum.toString().padLeft(3, '0');
+      final ayahStr = ayahNum.toString().padLeft(3, '0');
+      final url =
+          'https://everyayah.com/data/Husary_128kbps/$surahStr$ayahStr.mp3';
 
       setState(() => _isSpeaking = true);
       await _audioPlayer.stop();
@@ -248,6 +344,22 @@ class _RecitationScreenState extends State<RecitationScreen> {
   Future<void> _stopAudio() async {
     await _audioPlayer.stop();
     if (mounted) setState(() => _isSpeaking = false);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🧹 إعادة تعيين
+  // ═══════════════════════════════════════════════════════════
+  void _resetRecitation() {
+    setState(() {
+      _userRecitation = '';
+      _correctAyah = '';
+      _accuracy = 0;
+      _feedback = '';
+      _words = [];
+      _detectedSurahName = null;
+      _detectedSurahNumber = null;
+      _detectedAyahNumber = null;
+    });
   }
 
   void _showSnack(String msg) {
@@ -301,6 +413,20 @@ class _RecitationScreenState extends State<RecitationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0B132B),
+        elevation: 0,
+        title: const Text('تصحيح التلاوة',
+            style: TextStyle(color: Color(0xFFD4AF37))),
+        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetRecitation,
+            tooltip: 'إعادة تعيين',
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
@@ -311,20 +437,128 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 children: [
                   _buildLimitBanner(),
                   const SizedBox(height: 12),
-                  _buildSelectors(),
+                  _buildModeToggle(),
                   const SizedBox(height: 12),
-                  _buildAyahCard(),
-                  const SizedBox(height: 12),
+                  if (!_autoDetectMode) ...[
+                    _buildManualSelectors(),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_correctAyah.isNotEmpty) ...[
+                    _buildDetectedInfo(),
+                    const SizedBox(height: 12),
+                    _buildCorrectAyahWithErrors(),
+                    const SizedBox(height: 12),
+                  ],
                   _buildControls(),
                   const SizedBox(height: 12),
-                  if (_userRecitation.isNotEmpty) _buildUserRecitation(),
-                  if (_words.isNotEmpty) _buildWordByWord(),
-                  if (_feedback.isNotEmpty) _buildFeedback(),
+                  if (_userRecitation.isNotEmpty)
+                    _buildUserRecitation(),
+                  if (_feedback.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFeedback(),
+                  ],
                   const SizedBox(height: 16),
                   _buildHint(),
                 ],
               ),
             ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔄 تبديل الوضع (تلقائي / يدوي)
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2541).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _autoDetectMode = true;
+                _resetRecitation();
+              }),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _autoDetectMode
+                      ? const Color(0xFFD4AF37)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: _autoDetectMode
+                          ? Colors.black
+                          : const Color(0xFFD4AF37),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '🎯 التعرف التلقائي',
+                      style: TextStyle(
+                        color: _autoDetectMode
+                            ? Colors.black
+                            : const Color(0xFFD4AF37),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _autoDetectMode = false;
+                _resetRecitation();
+              }),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: !_autoDetectMode
+                      ? const Color(0xFFD4AF37)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.list,
+                      color: !_autoDetectMode
+                          ? Colors.black
+                          : const Color(0xFFD4AF37),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '📋 اختيار يدوي',
+                      style: TextStyle(
+                        color: !_autoDetectMode
+                            ? Colors.black
+                            : const Color(0xFFD4AF37),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -369,7 +603,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           Expanded(
             child: Text(
               _remainingRecitations > 0
-                  ? 'متبقي لك $_remainingRecitations من التصحيحات المجانية اليوم'
+                  ? 'متبقي لك $_remainingRecitations من التصحيحات المجانية'
                   : 'انتهى الحد اليومي — عاود غداً',
               style: TextStyle(color: color, fontSize: 13),
             ),
@@ -379,7 +613,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  Widget _buildSelectors() {
+  // ═══════════════════════════════════════════════════════════
+  // 📋 الاختيار اليدوي (السورة + الآية)
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildManualSelectors() {
     return Row(
       children: [
         Expanded(
@@ -441,6 +678,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
               setState(() {
                 _selectedAyah = v;
                 _correctAyah = ayah.text;
+                _detectedSurahName = null;
+                _detectedSurahNumber = null;
+                _detectedAyahNumber = null;
                 _userRecitation = '';
                 _accuracy = 0;
                 _feedback = '';
@@ -453,44 +693,220 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  Widget _buildAyahCard() {
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 معلومات الآية المكتشفة
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildDetectedInfo() {
+    if (!_autoDetectMode || _detectedSurahName == null) return const SizedBox();
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+        color: Colors.green.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Row(
         children: [
-          const Text('📖 النص الصحيح',
-              style: TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
-          const SizedBox(height: 10),
-          Text(
-            _correctAyah,
-            style: const TextStyle(
-              color: Color(0xFFD4AF37),
-              fontSize: 20,
-              fontFamily: 'Amiri',
-              height: 1.9,
+          const Icon(Icons.check_circle, color: Colors.green, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '✅ تم التعرف: سورة $_detectedSurahName — الآية $_detectedAyahNumber',
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
           ),
         ],
       ),
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 📖 عرض النص الصحيح مع الخط الأحمر تحت الكلمات الخاطئة
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildCorrectAyahWithErrors() {
+    // إذا لم يتم التحليل بعد، نعرض النص فقط
+    if (_words.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C2541).withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.book, color: Color(0xFFD4AF37), size: 16),
+                SizedBox(width: 6),
+                Text('📖 النص الصحيح',
+                    style: TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _correctAyah,
+              style: const TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 22,
+                fontFamily: 'Amiri',
+                height: 2.0,
+              ),
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ✅ عرض النص مع الكلمات الملونة
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2541).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.spellcheck, color: Color(0xFFD4AF37), size: 18),
+              SizedBox(width: 8),
+              Text(
+                '📝 التصحيح كلمة بكلمة',
+                style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // ✅ النص مع الكلمات الملونة والخطوط
+          RichText(
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 22,
+                fontFamily: 'Amiri',
+                height: 2.2,
+              ),
+              children: _buildWordSpans(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Legend
+          Wrap(
+            spacing: 16,
+            runSpacing: 6,
+            children: [
+              _legendItem(Colors.green, 'صحيح'),
+              _legendItem(Colors.red, 'خطأ (تحته خط أحمر)'),
+              _legendItem(Colors.grey, 'ناقص'),
+              _legendItem(Colors.orange, 'زائد'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ بناء TextSpans لكل كلمة مع اللون والخط المناسب
+  List<TextSpan> _buildWordSpans() {
+    final spans = <TextSpan>[];
+
+    for (var w in _words) {
+      Color color;
+      TextDecoration decoration = TextDecoration.none;
+      String displayWord;
+      FontWeight fontWeight = FontWeight.w500;
+
+      switch (w.status) {
+        case 'correct':
+          color = Colors.green;
+          displayWord = w.correctWord;
+          break;
+        case 'missing':
+          color = Colors.grey;
+          decoration = TextDecoration.lineThrough;
+          displayWord = w.correctWord;
+          break;
+        case 'extra':
+          color = Colors.orange;
+          decoration = TextDecoration.lineThrough;
+          displayWord = w.userWord;
+          break;
+        case 'wrong':
+        default:
+          color = Colors.red;
+          decoration = TextDecoration.underline;
+          decorationColor = Colors.red;
+          decorationThickness = 2.5;
+          displayWord = w.correctWord.isNotEmpty ? w.correctWord : w.userWord;
+          fontWeight = FontWeight.bold;
+          break;
+      }
+
+      spans.add(TextSpan(
+        text: '$displayWord ',
+        style: TextStyle(
+          color: color,
+          fontSize: 22,
+          fontFamily: 'Amiri',
+          fontWeight: fontWeight,
+          decoration: decoration,
+          decorationColor: decoration == TextDecoration.underline
+              ? Colors.red
+              : color,
+          decorationThickness: decoration == TextDecoration.underline
+              ? 2.5
+              : 1.5,
+        ),
+      ));
+    }
+
+    return spans;
+  }
+
+  Widget _legendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎮 أزرار التحكم
+  // ═══════════════════════════════════════════════════════════
   Widget _buildControls() {
     return Row(
       children: [
+        // زر الحصري
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isSpeaking ? _stopAudio : _playHusary,
-            icon: Icon(_isSpeaking ? Icons.stop : Icons.volume_up),
+            onPressed: _isSpeaking ? _stopAudio : _playHusaryAyah,
+            icon: Icon(_isSpeaking ? Icons.stop : Icons.volume_up, size: 20),
             label: Text(_isSpeaking ? 'إيقاف' : 'الحصري'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1C2541),
@@ -502,16 +918,22 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ),
         ),
         const SizedBox(width: 8),
+        // زر الاستماع
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
             onPressed: _isProcessing ? null : _toggleListening,
-            icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-            label: Text(_isListening ? '⏹ إيقاف' : '🎤 ابدأ التلاوة'),
+            icon: Icon(_isListening ? Icons.stop : Icons.mic, size: 20),
+            label: Text(
+              _isListening
+                  ? '⏹ إيقاف'
+                  : (_autoDetectMode ? '🎤 اقرأ أي آية' : '🎤 ابدأ التلاوة'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor:
                   _isListening ? Colors.red : const Color(0xFFD4AF37),
-              foregroundColor: Colors.black,
+              foregroundColor: _isListening ? Colors.white : Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -533,8 +955,15 @@ class _RecitationScreenState extends State<RecitationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Text('🎤 ما قرأته',
-              style: TextStyle(color: Colors.blueAccent, fontSize: 12)),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('🎤 ما قرأته',
+                  style: TextStyle(color: Colors.blueAccent, fontSize: 12)),
+              SizedBox(width: 6),
+              Icon(Icons.mic, color: Colors.blueAccent, size: 14),
+            ],
+          ),
           const SizedBox(height: 10),
           Text(
             _userRecitation,
@@ -552,162 +981,15 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ عرض التصحيح كلمة بكلمة
-  // ═══════════════════════════════════════════════════════════
-  Widget _buildWordByWord() {
+  Widget _buildFeedback() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF1C2541).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.spellcheck, color: Color(0xFFD4AF37), size: 18),
-              SizedBox(width: 8),
-              Text(
-                '📝 التصحيح كلمة بكلمة',
-                style: TextStyle(
-                    color: Color(0xFFD4AF37),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 14,
-            alignment: WrapAlignment.end,
-            textDirection: TextDirection.rtl,
-            children: _words.map((w) => _buildWordChip(w)).toList(),
-          ),
-          const SizedBox(height: 16),
-          // Legend
-          Wrap(
-            spacing: 12,
-            runSpacing: 6,
-            children: [
-              _legendItem(Colors.green, 'صحيح'),
-              _legendItem(Colors.red, 'خطأ'),
-              _legendItem(Colors.grey, 'ناقص'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWordChip(_WordFeedback w) {
-    Color borderColor;
-    Color bgColor;
-    String displayWord;
-    String? correctionWord;
-
-    switch (w.status) {
-      case 'correct':
-        borderColor = Colors.green;
-        bgColor = Colors.green.withValues(alpha: 0.15);
-        displayWord = w.correctWord;
-        correctionWord = null;
-        break;
-      case 'missing':
-        borderColor = Colors.grey;
-        bgColor = Colors.grey.withValues(alpha: 0.15);
-        displayWord = w.correctWord;
-        correctionWord = w.correctWord;
-        break;
-      case 'extra':
-        borderColor = Colors.orange;
-        bgColor = Colors.orange.withValues(alpha: 0.15);
-        displayWord = w.userWord;
-        correctionWord = null;
-        break;
-      case 'wrong':
-      default:
-        borderColor = Colors.red;
-        bgColor = Colors.red.withValues(alpha: 0.15);
-        displayWord = w.userWord.isEmpty ? w.correctWord : w.userWord;
-        correctionWord = w.correctWord;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor, width: 1.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            displayWord,
-            style: TextStyle(
-              color: borderColor,
-              fontSize: 18,
-              fontFamily: 'Amiri',
-              fontWeight: FontWeight.w600,
-            ),
-            textDirection: TextDirection.rtl,
-          ),
-          if (correctionWord != null && correctionWord != displayWord) ...[
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '↳ $correctionWord',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 15,
-                  fontFamily: 'Amiri',
-                  fontWeight: FontWeight.bold,
-                ),
-                textDirection: TextDirection.rtl,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _legendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11)),
-      ],
-    );
-  }
-
-  Widget _buildFeedback() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _accuracyColor().withValues(alpha: 0.5)),
+            color: (_accuracy > 0 ? _accuracyColor() : const Color(0xFFD4AF37))
+                .withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -720,7 +1002,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                     borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
                       value: _accuracy / 100,
-                      minHeight: 10,
+                      minHeight: 12,
                       backgroundColor: Colors.white12,
                       valueColor: AlwaysStoppedAnimation(_accuracyColor()),
                     ),
@@ -731,7 +1013,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                   '${_accuracy.toStringAsFixed(0)}%',
                   style: TextStyle(
                     color: _accuracyColor(),
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -741,7 +1023,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ],
           Text(
             _feedback,
-            style: TextStyle(color: _accuracyColor(), fontSize: 14),
+            style: TextStyle(
+              color: _accuracy > 0 ? _accuracyColor() : Colors.white70,
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -756,10 +1041,11 @@ class _RecitationScreenState extends State<RecitationScreen> {
         color: Colors.blueAccent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Text(
-        '💡 اختر السورة والآية، ثم اضغط "ابدأ التلاوة". '
-        'يمكنك سماع تلاوة الشيخ الحصري أولاً، ثم تلُ أنت الآية.',
-        style: TextStyle(color: Colors.white70, fontSize: 13),
+      child: Text(
+        _autoDetectMode
+            ? '💡 اقرأ أي آية قرآنية، وسيتعرف التطبيق عليها تلقائياً ويعرض النص الصحيح مع تحديد الأخطاء بخط أحمر.'
+            : '💡 اختر السورة والآية يدوياً، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
+        style: const TextStyle(color: Colors.white70, fontSize: 13),
         textAlign: TextAlign.center,
       ),
     );
