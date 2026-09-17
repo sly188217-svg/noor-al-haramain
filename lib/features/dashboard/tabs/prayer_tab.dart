@@ -68,7 +68,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   double _userLng = 39.8262;
 
   String _selectedMuezzinId = 'marwan';
-  String _selectedMuezzinName = 'محمد مروان القصاص';
+  String _selectedMuezzinName = 'الشيخ محمد مروان القصاص';
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
 
@@ -220,7 +220,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           };
           _buildPrayerListFromTimes();
 
-          // ✅ جدولة إشعارات الأذان
           await NotificationService.schedulePrayerNotifications(
             _prayerTimes.map((k, v) => MapEntry(k, v.toString())),
             _cityName,
@@ -396,7 +395,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         _loadLocationAndFetchTimes();
       }
 
-      // ✅ فحص وقت الأذان كل ثانية
       _checkAdhanTime();
     });
   }
@@ -464,23 +462,30 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
   // ═══════════════════════════════════════════════════════════
   // 🎧 تشغيل الأذان تلقائياً + الدعاء بعده
+  // ✅ يستخدم getPlayablePath (يدعم المضمّن + المحمّل)
   // ═══════════════════════════════════════════════════════════
   Future<void> _triggerAdhanAutomatically(String prayerName) async {
     try {
       debugPrint('🔔 وقت صلاة $prayerName — تشغيل الأذان');
 
-      // 1. المسار المحلي
-      final localPath =
-          await AdhanDownloadService.getLocalPath(_selectedMuezzinId);
-      final localFile = File(localPath);
+      // 1. المسار (يدعم assets + local)
+      final path =
+          await AdhanDownloadService.getPlayablePath(_selectedMuezzinId);
 
-      if (!await localFile.exists()) {
-        debugPrint('⚠️ الأذان غير محمّل');
+      if (path == null) {
+        debugPrint('⚠️ الأذان غير متاح: $_selectedMuezzinId');
         return;
       }
 
       // 2. تشغيل الأذان
-      await _audioPlayer.play(DeviceFileSource(localPath));
+      if (path.startsWith('assets/')) {
+        await _audioPlayer.play(
+          AssetSource(path.replaceFirst('assets/', '')),
+        );
+      } else {
+        await _audioPlayer.play(DeviceFileSource(path));
+      }
+
       if (mounted) setState(() => _isPlaying = true);
 
       // 3. انتظار انتهاء الأذان
@@ -528,44 +533,52 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
   // ═══════════════════════════════════════════════════════════
   // تشغيل يدوي للأذان
+  // ✅ يستخدم getPlayablePath (يدعم المضمّن + المحمّل)
   // ═══════════════════════════════════════════════════════════
   Future<void> _playAdhan(String prayerName) async {
     try {
-      final localPath =
-          await AdhanDownloadService.getLocalPath(_selectedMuezzinId);
-      final localFile = File(localPath);
+      final path =
+          await AdhanDownloadService.getPlayablePath(_selectedMuezzinId);
 
-      if (await localFile.exists() && await localFile.length() > 100000) {
-        await _audioPlayer.play(DeviceFileSource(localPath));
-        if (mounted) setState(() => _isPlaying = true);
-
+      if (path == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('🔊 تشغيل الأذان لصلاة $prayerName')),
+            const SnackBar(
+              content: Text(
+                  '⚠️ الأذان غير متاح. اذهب إلى: الإعدادات ← تحميل الأذان'),
+              duration: Duration(seconds: 5),
+            ),
           );
         }
-
-        await _audioPlayer.onPlayerComplete.first;
-        if (mounted) setState(() => _isPlaying = false);
-
-        // دعاء + قبلة
-        if (mounted) setState(() => _showDua = true);
-        await Future.delayed(const Duration(seconds: 5));
-        if (mounted) setState(() => _showDua = false);
         return;
       }
 
+      // تشغيل الأذان حسب نوع المسار
+      if (path.startsWith('assets/')) {
+        await _audioPlayer.play(
+          AssetSource(path.replaceFirst('assets/', '')),
+        );
+      } else {
+        await _audioPlayer.play(DeviceFileSource(path));
+      }
+
+      if (mounted) setState(() => _isPlaying = true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                '⚠️ الأذان المحلي غير محمّل. اذهب إلى: الإعدادات ← تحميل الأذان'),
-            duration: Duration(seconds: 5),
-          ),
+          SnackBar(content: Text('🔊 تشغيل الأذان لصلاة $prayerName')),
         );
       }
+
+      await _audioPlayer.onPlayerComplete.first;
+      if (mounted) setState(() => _isPlaying = false);
+
+      // دعاء
+      if (mounted) setState(() => _showDua = true);
+      await Future.delayed(const Duration(seconds: 5));
+      if (mounted) setState(() => _showDua = false);
     } catch (e) {
+      debugPrint('❌ خطأ في تشغيل الأذان: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('⚠️ تعذر تشغيل الأذان')),
@@ -802,7 +815,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ─── التاريخ + المستخدم ───
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -849,7 +861,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 10),
 
-                        // ─── المؤذن ───
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
@@ -876,7 +887,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
-                        // ─── أزرار التحكم ───
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -903,7 +913,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
-                        // ─── جدول 7 أيام ───
                         if (_showWeeklyTable && _weeklyPrayers.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -962,7 +971,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             ),
                           ),
 
-                        // ─── بطاقة الصلاة القادمة ───
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
@@ -1064,7 +1072,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 16),
 
-                        // ─── قائمة الصلوات ───
                         Expanded(
                           child: ListView.builder(
                             itemCount: _prayerList.length,

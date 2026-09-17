@@ -12,7 +12,9 @@ class FirebaseAiService {
 
   static const String _baseUrl =
       'https://api.groq.com/openai/v1/chat/completions';
-  static const String _model = 'llama-3.3-70b-versatile';
+
+  /// ✅ الموديل المتاح للجميع (مستقر وسريع)
+  static const String _model = 'llama-3.1-8b-instant';
 
   // ═══════════════════════════════════════════════════════════
   // 🎁 نظام التجربة المجانية
@@ -133,6 +135,9 @@ class FirebaseAiService {
         return text?.toString().trim() ?? '⚠️ لا يوجد رد.';
       } else if (response.statusCode == 401) {
         return '⚠️ مفتاح Groq غير صالح.';
+      } else if (response.statusCode == 404) {
+        debugPrint('❌ 404: Model not found. Body: ${response.body}');
+        return '⚠️ الموديل غير متاح. جرب لاحقاً.';
       } else if (response.statusCode == 429) {
         return '⚠️ تجاوزت حد الاستخدام. حاول بعد دقيقة.';
       } else {
@@ -162,7 +167,7 @@ class FirebaseAiService {
         return {
           'accuracy': 0,
           'words': [],
-          'feedback': '🔒 انتهت تجربتك المجانية.\n💎 اشترك: \$2.99 شهرياً / \$19.99 سنوياً',
+          'feedback': '🔒 انتهت تجربتك المجانية.\n💎 اشترك: \$2.99 شهرياً',
         };
       }
     }
@@ -212,6 +217,7 @@ $userRecitation
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode != 200) {
+        debugPrint('❌ Groq ${response.statusCode}: ${response.body}');
         return {
           'accuracy': 0,
           'words': [],
