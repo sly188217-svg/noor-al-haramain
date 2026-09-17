@@ -42,13 +42,14 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    // ✅ إعدادات التوقيع للـ Release
+    // ✅ إعدادات التوقيع للـ Release (JKS Format)
     signingConfigs {
         release {
             keyAlias 'noor-key'
             keyPassword 'Noor2026Pass'
             storeFile file('noor-release.jks')
             storePassword 'Noor2026Pass'
+            storeType 'JKS'  // ✅ مهم: تحديد نوع المخزن
         }
     }
 
