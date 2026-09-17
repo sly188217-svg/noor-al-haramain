@@ -9,11 +9,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   static FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  /// ✅ serverClientId من google-services.json
-  /// موجود في Firebase Console → Project Settings → Your apps
+  /// ✅ serverClientId الصحيح من Google Cloud Console
+  /// Project: My Project 42119 (disco-charger-507916-s1)
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    serverClientId: '264723055815-h4f5e0p3rrl15vvnr9gp2er9f3r1h4tq.apps.googleusercontent.com',
+    serverClientId:
+        '264723055815-vomgr1029ufgbf82h39fomrjee1kvgua.apps.googleusercontent.com',
   );
 
   static User? get currentUser => _auth.currentUser;
