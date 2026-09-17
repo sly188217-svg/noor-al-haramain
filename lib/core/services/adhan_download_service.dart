@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎵 خدمة الأذان — 12 ملف صوتي مضمّن في assets/adhan/raw/
+/// 🎵 خدمة الأذان — 11 ملف صوتي مضمّن في assets/adhan/raw/
 /// ✅ جميع الأصوات حقيقية وتعمل 100% بدون إنترنت
 /// ═══════════════════════════════════════════════════════════
 class AdhanDownloadService {
@@ -14,12 +14,13 @@ class AdhanDownloadService {
   };
 
   /// ✅ خريطة الملفات — ID → اسم الملف داخل assets/adhan/raw/
+  /// ⚠️ 11 ملف (تم حذف adhan_sudais.mp3 لأنه كان ناقصاً)
   static const Map<String, String> adhanFiles = {
     // المضمّنون (3)
-    'marwan': 'adhan_sudais.mp3',
+    'marwan': 'adhan_amman.mp3',
     'yasser': 'adhan_yasser.mp3',
     'salah_budair': 'adhan_almuaiqly.mp3',
-    // القابلون للتحميل (9) — لكنها مضمّنة فعلياً
+    // القابلون للتحميل (8)
     'afasy': 'adhan_alafasy.mp3',
     'abdalbaset': 'adhan_abdalbaset.mp3',
     'ghamdi': 'adhan_ghamdi.mp3',
@@ -28,7 +29,6 @@ class AdhanDownloadService {
     'madina': 'adhan_madina.mp3',
     'alaqsa': 'adhan_alaqsa.mp3',
     'masr': 'adhan_masr.mp3',
-    'amman': 'adhan_amman.mp3',
   };
 
   static bool isBundled(String muezzinId) {
