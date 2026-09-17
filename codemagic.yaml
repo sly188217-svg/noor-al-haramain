@@ -6,6 +6,8 @@ workflows:
     environment:
       flutter: stable
       java: 17
+      groups:
+        - Noor Al-Haramain
     cache:
       cache_paths:
         - ~/.pub-cache
@@ -14,12 +16,43 @@ workflows:
       - name: Create .env file
         script: |
           echo "$ENV_FILE" > $CM_BUILD_DIR/.env
+          echo "✅ .env created"
+          wc -c $CM_BUILD_DIR/.env
+
+      - name: Decode keystore
+        script: |
+          mkdir -p $CM_BUILD_DIR/android/app
+          echo "$KEYSTORE_BASE64" > /tmp/ks.b64
+          tr -d '\n\r\t ' < /tmp/ks.b64 > /tmp/ks_clean.b64
+          base64 -d /tmp/ks_clean.b64 > $CM_BUILD_DIR/android/app/noor-release.jks
+          echo "✅ Keystore decoded"
+          ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
+
+      - name: Create key.properties
+        script: |
+          cat > $CM_BUILD_DIR/android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=noor-release.jks
+          EOF
+          echo "✅ key.properties created"
+
       - name: Get Flutter packages
         script: |
+          cd $CM_BUILD_DIR
           flutter pub get
+
       - name: Build APK
         script: |
+          cd $CM_BUILD_DIR
           flutter build apk --release
+
+      - name: Verify APK
+        script: |
+          ls -lh $CM_BUILD_DIR/build/app/outputs/flutter-apk/
+          file $CM_BUILD_DIR/build/app/outputs/flutter-apk/app-release.apk
+
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
     publishing:
