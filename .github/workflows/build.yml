@@ -29,7 +29,9 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/noor-release.jks
+          mkdir -p android/app
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 -d > android/app/noor-release.jks
+          ls -lh android/app/noor-release.jks
 
       - name: Create key.properties
         run: |
