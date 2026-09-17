@@ -83,4 +83,44 @@ class AdhanDownloadService {
   static Future<void> deleteMuezzin(String _) async {}
 
   static final Map<String, String> muezzinUrls = {};
+
+  // ═══════════════════════════════════════════════════════════
+  // ⚠️ Stub methods — للتوافق مع الكود القديم
+  // (جميع الأصوات مضمّنة الآن، لا حاجة للتحميل)
+  // ═══════════════════════════════════════════════════════════
+
+  /// تحميل مؤذن واحد — وهمي (المؤذن مضمّن بالفعل)
+  static Future<bool> downloadMuezzin(
+    String muezzinId,
+    void Function(double progress) onProgress,
+  ) async {
+    if (adhanFiles.containsKey(muezzinId)) {
+      onProgress(1.0);
+      debugPrint('✅ $muezzinId مضمّن بالفعل');
+      return true;
+    }
+    debugPrint('⚠️ مؤذن غير معروف: $muezzinId');
+    onProgress(1.0);
+    return false;
+  }
+
+  /// تحميل الكل — وهمي
+  static Future<Map<String, bool>> downloadAll({
+    required void Function(String muezzinId, double progress) onMuezzinProgress,
+    required void Function(int completed, int total) onOverallProgress,
+  }) async {
+    final ids = adhanFiles.keys.toList();
+    final results = <String, bool>{};
+    int completed = 0;
+
+    for (final id in ids) {
+      onMuezzinProgress(id, 1.0);
+      results[id] = true;
+      completed++;
+      onOverallProgress(completed, ids.length);
+    }
+
+    debugPrint('✅ جميع المؤذنين مضمّنون');
+    return results;
+  }
 }
