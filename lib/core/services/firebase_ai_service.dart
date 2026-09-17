@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🤖 خدمة الذكاء الاصطناعي — Groq API (مجاني)
+/// ✅ يجرب عدة موديلات تلقائياً حتى ينجح أحدها
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -13,8 +14,19 @@ class FirebaseAiService {
   static const String _baseUrl =
       'https://api.groq.com/openai/v1/chat/completions';
 
-  /// ✅ الموديل المتاح للجميع (مستقر وسريع)
-  static const String _model = 'llama-3.1-8b-instant';
+  /// ✅ قائمة الموديلات (يجربها بالترتيب حتى ينجح واحد)
+  static const List<String> _models = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-70b-versatile',
+    'llama3-70b-8192',
+    'llama-3.1-8b-instant',
+    'llama3-8b-8192',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
+  ];
+
+  /// ✅ الموديل النشط (يُحفظ بعد نجاحه)
+  static String? _activeModel;
 
   // ═══════════════════════════════════════════════════════════
   // 🎁 نظام التجربة المجانية
@@ -24,6 +36,7 @@ class FirebaseAiService {
   static const String _aiCountKey = 'ai_questions_used';
   static const String _correctionCountKey = 'corrections_used';
   static const String _isPremiumKey = 'is_premium';
+  static const String _activeModelKey = 'groq_active_model';
 
   static Future<bool> isPremium() async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,7 +82,79 @@ class FirebaseAiService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي — أسئلة دينية فقط
+  // 🎯 اختيار الموديل النشط (مع التبديل التلقائي)
+  // ═══════════════════════════════════════════════════════════
+  static Future<String> _getActiveModel() async {
+    if (_activeModel != null) return _activeModel!;
+
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_activeModelKey);
+    if (saved != null && saved.isNotEmpty) {
+      _activeModel = saved;
+      return saved;
+    }
+    return _models.first;
+  }
+
+  static Future<void> _setActiveModel(String model) async {
+    _activeModel = model;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_activeModelKey, model);
+    debugPrint('✅ الموديل النشط: $model');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔄 إرسال طلب مع تجربة موديلات متعددة
+  // ═══════════════════════════════════════════════════════════
+  static Future<http.Response?> _sendRequest(
+    Map<String, dynamic> body,
+    {Duration timeout = const Duration(seconds: 60)}
+  ) async {
+    // ابدأ بالموديل النشط أولاً
+    final active = await _getActiveModel();
+    final modelsToTry = [active, ..._models.where((m) => m != active)];
+
+    for (final model in modelsToTry) {
+      try {
+        body['model'] = model;
+        final response = await http
+            .post(
+              Uri.parse(_baseUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $_apiKey',
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(timeout);
+
+        if (response.statusCode == 200) {
+          // نجح! احفظ الموديل
+          await _setActiveModel(model);
+          return response;
+        }
+
+        if (response.statusCode == 404 ||
+            response.body.contains('model_not_found') ||
+            response.body.contains('does not exist')) {
+          debugPrint('⚠️ الموديل $model غير متاح، جرب التالي...');
+          continue;
+        }
+
+        // خطأ آخر (401, 429, ...)
+        return response;
+      } catch (e) {
+        debugPrint('⚠️ خطأ مع $model: $e');
+        continue;
+      }
+    }
+
+    // فشلت كل الموديلات
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🤖 المساعد الذكي
   // ═══════════════════════════════════════════════════════════
   static Future<String> askQuestion(String question) async {
     if (_apiKey.isEmpty) {
@@ -89,19 +174,11 @@ class FirebaseAiService {
     }
 
     try {
-      final response = await http
-          .post(
-            Uri.parse(_baseUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
-            body: jsonEncode({
-              'model': _model,
-              'messages': [
-                {
-                  'role': 'system',
-                  'content': '''
+      final response = await _sendRequest({
+        'messages': [
+          {
+            'role': 'system',
+            'content': '''
 أنت "المرشد" — مساعد إسلامي ذكي متخصص في:
 - القرآن الكريم والتفسير
 - الحديث النبوي وعلومه
@@ -113,20 +190,22 @@ class FirebaseAiService {
 
 قواعد صارمة:
 1. أجب فقط عن الأسئلة الدينية الإسلامية.
-2. إذا سُئلت عن شيء خارج الدين، اعتذر بلطف: "أنا متخصص في العلوم الإسلامية فقط".
+2. إذا سُئلت عن شيء خارج الدين، اعتذر بلطف.
 3. استشهد بالأدلة من القرآن والسنة.
 4. اذكر المصادر (اسم السورة ورقم الآية).
 5. اتبع منهج أهل السنة والجماعة.
 6. اكتب بالعربية الفصحى الواضحة.
 '''
-                },
-                {'role': 'user', 'content': question}
-              ],
-              'max_tokens': 2000,
-              'temperature': 0.7,
-            }),
-          )
-          .timeout(const Duration(seconds: 60));
+          },
+          {'role': 'user', 'content': question}
+        ],
+        'max_tokens': 2000,
+        'temperature': 0.7,
+      });
+
+      if (response == null) {
+        return '⚠️ جميع الموديلات غير متاحة. حاول لاحقاً.';
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -135,9 +214,6 @@ class FirebaseAiService {
         return text?.toString().trim() ?? '⚠️ لا يوجد رد.';
       } else if (response.statusCode == 401) {
         return '⚠️ مفتاح Groq غير صالح.';
-      } else if (response.statusCode == 404) {
-        debugPrint('❌ 404: Model not found. Body: ${response.body}');
-        return '⚠️ الموديل غير متاح. جرب لاحقاً.';
       } else if (response.statusCode == 429) {
         return '⚠️ تجاوزت حد الاستخدام. حاول بعد دقيقة.';
       } else {
@@ -197,31 +273,22 @@ $userRecitation
 ⚠️ JSON فقط بدون أي نص آخر.
 ''';
 
-      final response = await http
-          .post(
-            Uri.parse(_baseUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
-            body: jsonEncode({
-              'model': _model,
-              'messages': [
-                {'role': 'user', 'content': prompt}
-              ],
-              'max_tokens': 2000,
-              'temperature': 0.3,
-              'response_format': {'type': 'json_object'},
-            }),
-          )
-          .timeout(const Duration(seconds: 60));
+      final response = await _sendRequest({
+        'messages': [
+          {'role': 'user', 'content': prompt}
+        ],
+        'max_tokens': 2000,
+        'temperature': 0.3,
+        'response_format': {'type': 'json_object'},
+      });
 
-      if (response.statusCode != 200) {
-        debugPrint('❌ Groq ${response.statusCode}: ${response.body}');
+      if (response == null || response.statusCode != 200) {
         return {
           'accuracy': 0,
           'words': [],
-          'feedback': 'خطأ ${response.statusCode}',
+          'feedback': response != null
+              ? 'خطأ ${response.statusCode}'
+              : 'جميع الموديلات غير متاحة',
         };
       }
 
@@ -261,7 +328,7 @@ $userRecitation
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎯 التعرف الديناميكي على الآية من الصوت
+  // 🎯 التعرف الديناميكي على الآية
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>?> identifyAyah(String spokenText) async {
     if (_apiKey.isEmpty || spokenText.trim().isEmpty) return null;
@@ -285,26 +352,19 @@ $userRecitation
 ⚠️ JSON فقط.
 ''';
 
-      final response = await http
-          .post(
-            Uri.parse(_baseUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
-            body: jsonEncode({
-              'model': _model,
-              'messages': [
-                {'role': 'user', 'content': prompt}
-              ],
-              'max_tokens': 500,
-              'temperature': 0.1,
-              'response_format': {'type': 'json_object'},
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _sendRequest(
+        {
+          'messages': [
+            {'role': 'user', 'content': prompt}
+          ],
+          'max_tokens': 500,
+          'temperature': 0.1,
+          'response_format': {'type': 'json_object'},
+        },
+        timeout: const Duration(seconds: 30),
+      );
 
-      if (response.statusCode != 200) return null;
+      if (response == null || response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body);
       final text = data['choices']?[0]?['message']?['content'] ?? '{}';
@@ -324,6 +384,28 @@ $userRecitation
     } catch (e) {
       debugPrint('❌ identifyAyah error: $e');
       return null;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔍 جلب قائمة الموديلات المتاحة (للتشخيص)
+  // ═══════════════════════════════════════════════════════════
+  static Future<List<String>> fetchAvailableModels() async {
+    if (_apiKey.isEmpty) return [];
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.groq.com/openai/v1/models'),
+        headers: {'Authorization': 'Bearer $_apiKey'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) return [];
+
+      final data = jsonDecode(response.body);
+      final List<dynamic> models = data['data'] ?? [];
+      return models.map((m) => m['id']?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('❌ fetchModels error: $e');
+      return [];
     }
   }
 }
