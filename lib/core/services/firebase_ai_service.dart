@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ═══════════════════════════════════════════════════════════
 /// 🤖 خدمة الذكاء الاصطناعي — Groq API (مجاني)
 /// ✅ يجرب عدة موديلات تلقائياً حتى ينجح أحدها
+/// ✅ تجديد يومي تلقائي للتجربة المجانية
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -28,7 +29,7 @@ class FirebaseAiService {
   static String? _activeModel;
 
   // ═══════════════════════════════════════════════════════════
-  // 🎁 نظام التجربة المجانية
+  // 🎁 نظام التجربة المجانية (تجديد يومي)
   // ═══════════════════════════════════════════════════════════
   static const int _freeAiQuestions = 5;
   static const int _freeCorrections = 3;
@@ -36,14 +37,42 @@ class FirebaseAiService {
   static const String _correctionCountKey = 'corrections_used';
   static const String _isPremiumKey = 'is_premium';
   static const String _activeModelKey = 'groq_active_model';
+  static const String _lastResetDateKey = 'last_reset_date';
 
   static Future<bool> isPremium() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_isPremiumKey) ?? false;
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🔄 التجديد اليومي التلقائي
+  // ═══════════════════════════════════════════════════════════
+  static Future<void> _checkDailyReset() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final lastReset = prefs.getString(_lastResetDateKey) ?? '';
+
+      if (lastReset != today) {
+        // ✅ يوم جديد — أعد العدادات
+        await prefs.setInt(_aiCountKey, 0);
+        await prefs.setInt(_correctionCountKey, 0);
+        await prefs.setString(_lastResetDateKey, today);
+        debugPrint('🔄 تجديد يومي: تم إعادة العدادات إلى 0 (التاريخ: $today)');
+      }
+    } catch (e) {
+      debugPrint('⚠️ فشل التجديد اليومي: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📊 عدادات المتبقي
+  // ═══════════════════════════════════════════════════════════
   static Future<int> remainingAiQuestions() async {
     if (await isPremium()) return 999999;
+    await _checkDailyReset();
     final prefs = await SharedPreferences.getInstance();
     final used = prefs.getInt(_aiCountKey) ?? 0;
     return (_freeAiQuestions - used).clamp(0, _freeAiQuestions);
@@ -51,6 +80,7 @@ class FirebaseAiService {
 
   static Future<int> remainingCorrections() async {
     if (await isPremium()) return 999999;
+    await _checkDailyReset();
     final prefs = await SharedPreferences.getInstance();
     final used = prefs.getInt(_correctionCountKey) ?? 0;
     return (_freeCorrections - used).clamp(0, _freeCorrections);
@@ -58,6 +88,7 @@ class FirebaseAiService {
 
   static Future<void> _incrementAiCount() async {
     if (await isPremium()) return;
+    await _checkDailyReset();
     final prefs = await SharedPreferences.getInstance();
     final used = prefs.getInt(_aiCountKey) ?? 0;
     await prefs.setInt(_aiCountKey, used + 1);
@@ -65,6 +96,7 @@ class FirebaseAiService {
 
   static Future<void> _incrementCorrectionCount() async {
     if (await isPremium()) return;
+    await _checkDailyReset();
     final prefs = await SharedPreferences.getInstance();
     final used = prefs.getInt(_correctionCountKey) ?? 0;
     await prefs.setInt(_correctionCountKey, used + 1);
@@ -80,8 +112,17 @@ class FirebaseAiService {
     await prefs.setBool(_isPremiumKey, false);
   }
 
+  /// إعادة تعيين يدوية (للتشخيص)
+  static Future<void> resetCounters() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_aiCountKey);
+    await prefs.remove(_correctionCountKey);
+    await prefs.remove(_lastResetDateKey);
+    debugPrint('✅ تم إعادة تعيين العدادات يدوياً');
+  }
+
   // ═══════════════════════════════════════════════════════════
-  // 🎯 اختيار الموديل النشط (مع التبديل التلقائي)
+  // 🎯 اختيار الموديل النشط
   // ═══════════════════════════════════════════════════════════
   static Future<String> _getActiveModel() async {
     if (_activeModel != null) return _activeModel!;
@@ -109,7 +150,6 @@ class FirebaseAiService {
     Map<String, dynamic> body, {
     Duration timeout = const Duration(seconds: 60),
   }) async {
-    // ابدأ بالموديل النشط أولاً
     final active = await _getActiveModel();
     final modelsToTry = [active, ..._models.where((m) => m != active)];
 
@@ -160,9 +200,10 @@ class FirebaseAiService {
     if (!await isPremium()) {
       final remaining = await remainingAiQuestions();
       if (remaining <= 0) {
-        return '🔒 **انتهت تجربتك المجانية**\n\n'
-            'استخدمت 5 أسئلة مجانية.\n\n'
-            '💎 **للاشتراك:**\n'
+        return '🔒 **انتهت تجربتك المجانية لليوم**\n\n'
+            'استخدمت 5 أسئلة مجانية اليوم.\n'
+            '⏰ **يتجدد تلقائياً غداً**\n\n'
+            '💎 **للاشتراك الفوري:**\n'
             '• شهرياً: \$2.99\n'
             '• سنوياً: \$19.99\n\n'
             'اذهب إلى الإعدادات ← الاشتراك';
@@ -239,7 +280,8 @@ class FirebaseAiService {
         return {
           'accuracy': 0,
           'words': [],
-          'feedback': '🔒 انتهت تجربتك المجانية.\n💎 اشترك: \$2.99 شهرياً',
+          'feedback':
+              '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً\n💎 اشترك: \$2.99 شهرياً',
         };
       }
     }
