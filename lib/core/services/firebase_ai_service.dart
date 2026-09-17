@@ -14,15 +14,14 @@ class FirebaseAiService {
   static const String _baseUrl =
       'https://api.groq.com/openai/v1/chat/completions';
 
-  /// ✅ قائمة الموديلات (يجربها بالترتيب حتى ينجح واحد)
+  /// ✅ قائمة الموديلات الجديدة من Groq (2026)
   static const List<String> _models = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-70b-versatile',
-    'llama3-70b-8192',
-    'llama-3.1-8b-instant',
-    'llama3-8b-8192',
-    'mixtral-8x7b-32768',
-    'gemma2-9b-it',
+    'openai/gpt-oss-120b',      // الأقوى
+    'openai/gpt-oss-20b',       // سريع
+    'qwen/qwen3.8-27b',         // قوي بالعربية
+    'allam-2-7b',               // سعودي — عربي أصيل
+    'groq/compound',            // بديل
+    'groq/compound-mini',       // الأسرع
   ];
 
   /// ✅ الموديل النشط (يُحفظ بعد نجاحه)
@@ -107,9 +106,9 @@ class FirebaseAiService {
   // 🔄 إرسال طلب مع تجربة موديلات متعددة
   // ═══════════════════════════════════════════════════════════
   static Future<http.Response?> _sendRequest(
-    Map<String, dynamic> body,
-    {Duration timeout = const Duration(seconds: 60)}
-  ) async {
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
     // ابدأ بالموديل النشط أولاً
     final active = await _getActiveModel();
     final modelsToTry = [active, ..._models.where((m) => m != active)];
@@ -129,7 +128,6 @@ class FirebaseAiService {
             .timeout(timeout);
 
         if (response.statusCode == 200) {
-          // نجح! احفظ الموديل
           await _setActiveModel(model);
           return response;
         }
@@ -141,7 +139,6 @@ class FirebaseAiService {
           continue;
         }
 
-        // خطأ آخر (401, 429, ...)
         return response;
       } catch (e) {
         debugPrint('⚠️ خطأ مع $model: $e');
@@ -149,7 +146,6 @@ class FirebaseAiService {
       }
     }
 
-    // فشلت كل الموديلات
     return null;
   }
 
@@ -402,7 +398,10 @@ $userRecitation
 
       final data = jsonDecode(response.body);
       final List<dynamic> models = data['data'] ?? [];
-      return models.map((m) => m['id']?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      return models
+          .map((m) => m['id']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('❌ fetchModels error: $e');
       return [];
