@@ -32,7 +32,7 @@ workflows:
           tail -c 20 /tmp/ks.b64
           echo ""
           echo "=== فك Base64 (base64 -di) ==="
-          base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/base64_error.log
+          base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/base64_error.log || true
           cat /tmp/base64_error.log
           echo "=== حجم Keystore ==="
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
@@ -42,20 +42,8 @@ workflows:
           xxd $CM_BUILD_DIR/android/app/noor-release.jks | head -1
           echo "=== التحقق من المفتاح ==="
           keytool -list -keystore $CM_BUILD_DIR/android/app/noor-release.jks \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -alias "$KEY_ALIAS" 2>&1 || echo "⚠️ فشل التحقق من المفتاح"
-
-      - name: Create key.properties
-        script: |
-          cat > $CM_BUILD_DIR/android/key.properties << EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=noor-release.jks
-          EOF
-          echo "✅ key.properties created"
-          echo "=== محتوى key.properties ==="
-          cat $CM_BUILD_DIR/android/key.properties
+            -storepass "Noor2026Pass" \
+            -alias "noor-key" 2>&1 || echo "⚠️ فشل التحقق من المفتاح"
 
       - name: Get Flutter packages
         script: |
