@@ -42,7 +42,6 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    // ✅ إعدادات التوقيع — القيم مباشرة (لا تعتمد على key.properties)
     signingConfigs {
         release {
             keyAlias 'noor-key'

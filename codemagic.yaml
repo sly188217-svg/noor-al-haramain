@@ -28,22 +28,19 @@ workflows:
           echo "=== أول 20 حرف ==="
           head -c 20 /tmp/ks.b64
           echo ""
-          echo "=== آخر 20 حرف ==="
-          tail -c 20 /tmp/ks.b64
-          echo ""
-          echo "=== فك Base64 (base64 -di) ==="
-          base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/base64_error.log || true
-          cat /tmp/base64_error.log
+          echo "=== فك Base64 ==="
+          base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/b64err.log || true
+          cat /tmp/b64err.log
           echo "=== حجم Keystore ==="
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
-          echo "=== نوع الملف (يجب: Java KeyStore) ==="
+          echo "=== نوع الملف ==="
           file $CM_BUILD_DIR/android/app/noor-release.jks
-          echo "=== أول 4 بايت (يجب: feed feed) ==="
+          echo "=== أول 4 بايت ==="
           xxd $CM_BUILD_DIR/android/app/noor-release.jks | head -1
           echo "=== التحقق من المفتاح ==="
           keytool -list -keystore $CM_BUILD_DIR/android/app/noor-release.jks \
             -storepass "Noor2026Pass" \
-            -alias "noor-key" 2>&1 || echo "⚠️ فشل التحقق من المفتاح"
+            -alias "noor-key" 2>&1 || echo "⚠️ فشل"
 
       - name: Get Flutter packages
         script: |
