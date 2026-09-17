@@ -1,89 +1,98 @@
 /// ═══════════════════════════════════════════════════════════
-/// بيانات المؤذنين
+/// بيانات المؤذنين — 12 صوت حقيقي من مصادر مجانية
 /// ═══════════════════════════════════════════════════════════
-/// 
-/// 📦 مضمّن (bundled): 3 مؤذنين في التطبيق — يعملون بدون إنترنت
-/// 📥 للتحميل: 9 مؤذنين من الإنترنت
 class MuezzinData {
   static final List<Map<String, dynamic>> muezzins = [
     // ═══════════════════════════════════════════════════════════
-    // 📦 المؤذنون المضمّنون (يعملون بدون إنترنت)
+    // 📦 المضمّنون (3 مؤذنين — بدون إنترنت)
     // ═══════════════════════════════════════════════════════════
     {
       'id': 'marwan',
-      'name': 'الشيخ محمد مروان القصاص',
-      'country': '🇸🇾 سوريا',
+      'name': 'الشيخ عبد الرحمن السديس',
+      'country': '🇸🇦 مكة المكرمة',
       'bundled': true,
+      'file': 'adhan_sudais.mp3',
     },
     {
       'id': 'yasser',
-      'name': 'الشيخ ياسر القطامي',
+      'name': 'الشيخ ياسر الدوسري',
       'country': '🇸🇦 السعودية',
       'bundled': true,
+      'file': 'adhan_yasser.mp3',
     },
     {
       'id': 'salah_budair',
-      'name': 'الشيخ صلاح البدير',
-      'country': '🇸🇦 المدينة المنورة',
+      'name': 'الشيخ ماهر المعيقلي',
+      'country': '🇸🇦 مكة المكرمة',
       'bundled': true,
+      'file': 'adhan_almuaiqly.mp3',
     },
 
     // ═══════════════════════════════════════════════════════════
-    // 📥 المؤذنون القابلون للتحميل
+    // 📥 القابلون للتحميل (9 مؤذنين — أصوات حقيقية)
     // ═══════════════════════════════════════════════════════════
     {
       'id': 'afasy',
       'name': 'الشيخ مشاري العفاسي',
       'country': '🇰🇼 الكويت',
       'bundled': false,
+      'file': 'adhan_alafasy.mp3',
     },
     {
-      'id': 'sudais',
-      'name': 'الشيخ عبد الرحمن السديس',
-      'country': '🇸🇦 مكة المكرمة',
-      'bundled': false,
-    },
-    {
-      'id': 'ali_jaber',
-      'name': 'الشيخ علي جابر',
-      'country': '🇸🇦 مكة المكرمة',
-      'bundled': false,
-    },
-    {
-      'id': 'ahmad_hajjim',
-      'name': 'الشيخ أحمد الحجيمي',
-      'country': '🇸🇦 السعودية',
-      'bundled': false,
-    },
-    {
-      'id': 'basir_dosari',
-      'name': 'الشيخ ياسر الدوسري',
-      'country': '🇸🇦 السعودية',
-      'bundled': false,
-    },
-    {
-      'id': 'abdullah_juhani',
-      'name': 'الشيخ عبد الله عواد الجهني',
-      'country': '🇸🇦 السعودية',
-      'bundled': false,
-    },
-    {
-      'id': 'abdullah_busfar',
-      'name': 'الشيخ عبد الله بصفر',
-      'country': '🇾🇪 اليمن',
-      'bundled': false,
-    },
-    {
-      'id': 'khalid_qahdani',
-      'name': 'الشيخ خالد القحطاني',
-      'country': '🇸🇦 السعودية',
-      'bundled': false,
-    },
-    {
-      'id': 'husary',
-      'name': 'الشيخ محمود خليل الحصري',
+      'id': 'abdalbaset',
+      'name': 'الشيخ عبد الباسط عبد الصمد',
       'country': '🇪🇬 مصر',
       'bundled': false,
+      'file': 'adhan_abdalbaset.mp3',
+    },
+    {
+      'id': 'ghamdi',
+      'name': 'الشيخ سعد الغامدي',
+      'country': '🇸🇦 السعودية',
+      'bundled': false,
+      'file': 'adhan_ghamdi.mp3',
+    },
+    {
+      'id': 'shamiree',
+      'name': 'الشيخ عبد الرحمن الشميري',
+      'country': '🇾🇪 اليمن',
+      'bundled': false,
+      'file': 'adhan_shamiree.mp3',
+    },
+    {
+      'id': 'makkah',
+      'name': 'أذان الحرم المكي',
+      'country': '🇸🇦 مكة المكرمة',
+      'bundled': false,
+      'file': 'adhan_makkah.mp3',
+    },
+    {
+      'id': 'madina',
+      'name': 'أذان المسجد النبوي',
+      'country': '🇸🇦 المدينة المنورة',
+      'bundled': false,
+      'file': 'adhan_madina.mp3',
+    },
+    {
+      'id': 'alaqsa',
+      'name': 'أذان المسجد الأقصى',
+      'country': '🇵🇸 القدس',
+      'bundled': false,
+      'file': 'adhan_alaqsa.mp3',
+    },
+    {
+      'id': 'masr',
+      'name': 'أذان مصر (عبد الباسط)',
+      'country': '🇪🇬 مصر',
+      'bundled': false,
+      'file': 'adhan_masr.mp3',
+    },
+    {
+      'id': 'amman',
+      'name': 'أذان عمّان (الأردن)',
+      'country': '🇯🇴 الأردن',
+      'bundled': false,
+      'file': 'adhan_amman.mp3',
     },
   ];
 
@@ -102,6 +111,15 @@ class MuezzinData {
       return m['country'] as String? ?? '';
     } catch (e) {
       return '';
+    }
+  }
+
+  static String? getMuezzinFile(String muezzinId) {
+    try {
+      final m = muezzins.firstWhere((m) => m['id'] == muezzinId);
+      return m['file'] as String?;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -125,8 +143,4 @@ class MuezzinData {
 
   static int get downloadableCount =>
       muezzins.where((m) => m['bundled'] == false).length;
-
-  static String getLocalAdhanPath(String muezzinId, String prayerName) {
-    return 'assets/adhan/$muezzinId/adhan.mp3';
-  }
 }

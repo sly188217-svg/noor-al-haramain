@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -68,7 +67,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   double _userLng = 39.8262;
 
   String _selectedMuezzinId = 'marwan';
-  String _selectedMuezzinName = 'الشيخ محمد مروان القصاص';
+  String _selectedMuezzinName = 'الشيخ عبد الرحمن السديس';
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
 
@@ -384,7 +383,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // المؤقت (كل ثانية)
+  // المؤقت
   // ═══════════════════════════════════════════════════════════
   void _startCountdownTimer() {
     _timer?.cancel();
@@ -394,14 +393,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       } else {
         _loadLocationAndFetchTimes();
       }
-
       _checkAdhanTime();
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔔 الإشعار الدائم
-  // ═══════════════════════════════════════════════════════════
   void _startPersistentNotificationUpdates() {
     _persistentTimer?.cancel();
     _updatePersistentNotification();
@@ -413,10 +408,8 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   Future<void> _updatePersistentNotification() async {
     try {
       if (!mounted) return;
-
       final hijri = HijriService.getHijriDate(DateTime.now());
       final remaining = _timeRemainingNotifier.value;
-
       final hours = remaining.inHours.toString().padLeft(2, '0');
       final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
 
@@ -431,19 +424,14 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🕌 مراقبة وقت الأذان — تشغيل تلقائي
-  // ═══════════════════════════════════════════════════════════
   void _checkAdhanTime() {
     if (!mounted) return;
-
     final now = DateTime.now();
     final currentTime = DateFormat('HH:mm').format(now);
 
     for (var prayer in _prayerList) {
       final name = prayer['name'] as String;
       final time = (prayer['time'] ?? '').toString();
-
       final cleanTime = time
           .replaceAll(RegExp(r'\(.*\)'), '')
           .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
@@ -452,7 +440,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       if (cleanTime == currentTime &&
           _lastAdhanTriggeredPrayer != '$name-$currentTime') {
         if (name.contains('الشروق')) continue;
-
         _lastAdhanTriggeredPrayer = '$name-$currentTime';
         _triggerAdhanAutomatically(name);
         break;
@@ -461,44 +448,52 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎧 تشغيل الأذان تلقائياً + الدعاء بعده
-  // ✅ يستخدم getPlayablePath (يدعم المضمّن + المحمّل)
+  // ✅ تشغيل الأذان من assets (12 ملف حقيقي)
+  // ═══════════════════════════════════════════════════════════
+  Future<bool> _playAdhanFromAssets(String muezzinId) async {
+    final assetSourcePath =
+        await AdhanDownloadService.getAssetSourcePath(muezzinId);
+    if (assetSourcePath == null) {
+      debugPrint('⚠️ الأذان غير متاح: $muezzinId');
+      return false;
+    }
+
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource(assetSourcePath));
+      debugPrint('✅ بدأ تشغيل الأذان: $assetSourcePath');
+      return true;
+    } catch (e) {
+      debugPrint('❌ فشل تشغيل الأذان: $e');
+      return false;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // تشغيل الأذان تلقائياً عند دخول الوقت
   // ═══════════════════════════════════════════════════════════
   Future<void> _triggerAdhanAutomatically(String prayerName) async {
     try {
       debugPrint('🔔 وقت صلاة $prayerName — تشغيل الأذان');
 
-      // 1. المسار (يدعم assets + local)
-      final path =
-          await AdhanDownloadService.getPlayablePath(_selectedMuezzinId);
-
-      if (path == null) {
-        debugPrint('⚠️ الأذان غير متاح: $_selectedMuezzinId');
+      final started = await _playAdhanFromAssets(_selectedMuezzinId);
+      if (!started) {
+        debugPrint('⚠️ تعذر تشغيل الأذان');
         return;
-      }
-
-      // 2. تشغيل الأذان
-      if (path.startsWith('assets/')) {
-        await _audioPlayer.play(
-          AssetSource(path.replaceFirst('assets/', '')),
-        );
-      } else {
-        await _audioPlayer.play(DeviceFileSource(path));
       }
 
       if (mounted) setState(() => _isPlaying = true);
 
-      // 3. انتظار انتهاء الأذان
       await _audioPlayer.onPlayerComplete.first;
       if (mounted) setState(() => _isPlaying = false);
 
       debugPrint('✅ انتهى الأذان — تشغيل الدعاء');
 
-      // 4. تشغيل الدعاء
       await Future.delayed(const Duration(milliseconds: 500));
       await _playDuaAfterAdhan();
     } catch (e) {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
+      if (mounted) setState(() => _isPlaying = false);
     }
   }
 
@@ -532,34 +527,21 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // تشغيل يدوي للأذان
-  // ✅ يستخدم getPlayablePath (يدعم المضمّن + المحمّل)
+  // ✅ تشغيل يدوي للأذان
   // ═══════════════════════════════════════════════════════════
   Future<void> _playAdhan(String prayerName) async {
     try {
-      final path =
-          await AdhanDownloadService.getPlayablePath(_selectedMuezzinId);
-
-      if (path == null) {
+      final started = await _playAdhanFromAssets(_selectedMuezzinId);
+      if (!started) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                  '⚠️ الأذان غير متاح. اذهب إلى: الإعدادات ← تحميل الأذان'),
-              duration: Duration(seconds: 5),
+              content: Text('⚠️ الأذان غير متاح'),
+              duration: Duration(seconds: 3),
             ),
           );
         }
         return;
-      }
-
-      // تشغيل الأذان حسب نوع المسار
-      if (path.startsWith('assets/')) {
-        await _audioPlayer.play(
-          AssetSource(path.replaceFirst('assets/', '')),
-        );
-      } else {
-        await _audioPlayer.play(DeviceFileSource(path));
       }
 
       if (mounted) setState(() => _isPlaying = true);
@@ -573,18 +555,23 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       await _audioPlayer.onPlayerComplete.first;
       if (mounted) setState(() => _isPlaying = false);
 
-      // دعاء
       if (mounted) setState(() => _showDua = true);
       await Future.delayed(const Duration(seconds: 5));
       if (mounted) setState(() => _showDua = false);
     } catch (e) {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
       if (mounted) {
+        setState(() => _isPlaying = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('⚠️ تعذر تشغيل الأذان')),
         );
       }
     }
+  }
+
+  Future<void> _stopAudio() async {
+    await _audioPlayer.stop();
+    if (mounted) setState(() => _isPlaying = false);
   }
 
   String _formatDuration(Duration duration) {
@@ -633,6 +620,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                       dropdownColor: const Color(0xFF1C2541),
                       style: const TextStyle(color: Colors.white),
                       underline: const SizedBox(),
+                      isExpanded: true,
                       items: MuezzinData.muezzins.map((m) {
                         return DropdownMenuItem<String>(
                           value: m['id'] as String,
@@ -712,9 +700,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // عرض دعاء الأذان
-  // ═══════════════════════════════════════════════════════════
   Widget _buildDuaScreen() {
     return Container(
       color: Colors.black87,
@@ -1014,7 +999,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                     ],
                                   ),
                                   GestureDetector(
-                                    onTap: () => _playAdhan(_nextPrayer),
+                                    onTap: _isPlaying
+                                        ? _stopAudio
+                                        : () => _playAdhan(_nextPrayer),
                                     child: Container(
                                       padding: const EdgeInsets.all(14),
                                       decoration: const BoxDecoration(
@@ -1022,7 +1009,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                           shape: BoxShape.circle),
                                       child: Icon(
                                         _isPlaying
-                                            ? Icons.pause
+                                            ? Icons.stop
                                             : Icons.play_arrow,
                                         color: const Color(0xFF0B132B),
                                         size: 28,
