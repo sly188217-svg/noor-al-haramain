@@ -11,7 +11,7 @@ import '../../core/services/usage_service.dart';
 class _WordFeedback {
   final String userWord;
   final String correctWord;
-  final String status; // correct / wrong / missing / extra
+  final String status;
 
   _WordFeedback({
     required this.userWord,
@@ -28,9 +28,6 @@ class _WordFeedback {
   }
 }
 
-/// ═══════════════════════════════════════════════════════════
-/// شاشة تصحيح التلاوة — الوضع التلقائي + اليدوي
-/// ═══════════════════════════════════════════════════════════
 class RecitationScreen extends StatefulWidget {
   const RecitationScreen({super.key});
 
@@ -47,7 +44,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
   bool _isSpeaking = false;
   bool _speechAvailable = false;
   bool _isPremium = false;
-  bool _autoDetectMode = true; // ✅ الوضع الافتراضي: تلقائي
+  bool _autoDetectMode = true;
 
   int _remainingRecitations = 3;
 
@@ -57,13 +54,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
   String _feedback = '';
   List<_WordFeedback> _words = [];
 
-  // للوضع التلقائي
   String? _detectedSurahName;
   int? _detectedSurahNumber;
   int? _detectedAyahNumber;
-  bool _isDetecting = false;
 
-  // للوضع اليدوي
   List<SurahModel> _surahs = [];
   int _selectedSurah = 1;
   int _selectedAyah = 1;
@@ -148,9 +142,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     } catch (_) {}
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎤 بدء/إيقاف الاستماع
-  // ═══════════════════════════════════════════════════════════
   Future<void> _toggleListening() async {
     if (!_isListening) {
       final canRecite = await UsageService.canRecite();
@@ -199,9 +190,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔍 معالجة التلاوة (تلقائي أو يدوي)
-  // ═══════════════════════════════════════════════════════════
   Future<void> _processRecitation() async {
     if (_userRecitation.trim().isEmpty) return;
 
@@ -211,10 +199,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
     });
 
     try {
-      // ✅ 1. في الوضع التلقائي: التعرف على الآية أولاً
       if (_autoDetectMode && _correctAyah.isEmpty) {
         setState(() {
-          _isDetecting = true;
           _feedback = '🎯 جاري التعرف على الآية...';
         });
 
@@ -224,13 +210,12 @@ class _RecitationScreenState extends State<RecitationScreen> {
           if (!mounted) return;
           setState(() {
             _isProcessing = false;
-            _isDetecting = false;
-            _feedback = '⚠️ لم يتم التعرف على الآية. أعد المحاولة أو اختر الآية يدوياً.';
+            _feedback =
+                '⚠️ لم يتم التعرف على الآية. أعد المحاولة أو اختر الآية يدوياً.';
           });
           return;
         }
 
-        // ✅ جلب النص الصحيح من قاعدة البيانات
         final surahNumber = detected['surahNumber'] as int?;
         final ayahNumber = detected['ayahNumber'] as int?;
 
@@ -238,7 +223,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
           if (!mounted) return;
           setState(() {
             _isProcessing = false;
-            _isDetecting = false;
             _feedback = '⚠️ لم يتم التعرف على الآية بدقة.';
           });
           return;
@@ -251,7 +235,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
           if (!mounted) return;
           setState(() {
             _isProcessing = false;
-            _isDetecting = false;
             _feedback = '⚠️ تعذر جلب الآية من قاعدة البيانات.';
           });
           return;
@@ -263,12 +246,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
           _detectedSurahName = surah.name;
           _detectedSurahNumber = surahNumber;
           _detectedAyahNumber = ayahNumber;
-          _isDetecting = false;
           _feedback = '✅ تم التعرف على الآية — جاري التصحيح...';
         });
       }
 
-      // ✅ 2. التحليل والتصحيح
       final result = await FirebaseAiService.analyzeRecitation(
         userRecitation: _userRecitation,
         correctAyah: _correctAyah,
@@ -277,7 +258,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
       await UsageService.incrementRecitation();
       final remaining = await UsageService.remainingRecitations();
 
-      // تحويل الكلمات
       final wordsList = <_WordFeedback>[];
       if (result['words'] is List) {
         for (final w in result['words']) {
@@ -299,30 +279,22 @@ class _RecitationScreenState extends State<RecitationScreen> {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
-        _isDetecting = false;
         _feedback = '⚠️ تعذر التحليل: $e';
       });
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔊 تشغيل الآية بصوت الحصري (everyayah.com)
-  // ═══════════════════════════════════════════════════════════
   Future<void> _playHusaryAyah() async {
     try {
-      final surahNum = _autoDetectMode
-          ? _detectedSurahNumber
-          : _selectedSurah;
-      final ayahNum = _autoDetectMode
-          ? _detectedAyahNumber
-          : _selectedAyah;
+      final surahNum =
+          _autoDetectMode ? _detectedSurahNumber : _selectedSurah;
+      final ayahNum = _autoDetectMode ? _detectedAyahNumber : _selectedAyah;
 
       if (surahNum == null || ayahNum == null) {
         _showSnack('⚠️ لم يتم تحديد الآية بعد');
         return;
       }
 
-      // ✅ everyayah.com: تنسيق SSSAAA (3 أرقام للسورة + 3 أرقام للآية)
       final surahStr = surahNum.toString().padLeft(3, '0');
       final ayahStr = ayahNum.toString().padLeft(3, '0');
       final url =
@@ -346,9 +318,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     if (mounted) setState(() => _isSpeaking = false);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🧹 إعادة تعيين
-  // ═══════════════════════════════════════════════════════════
   void _resetRecitation() {
     setState(() {
       _userRecitation = '';
@@ -451,8 +420,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                   ],
                   _buildControls(),
                   const SizedBox(height: 12),
-                  if (_userRecitation.isNotEmpty)
-                    _buildUserRecitation(),
+                  if (_userRecitation.isNotEmpty) _buildUserRecitation(),
                   if (_feedback.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _buildFeedback(),
@@ -465,9 +433,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔄 تبديل الوضع (تلقائي / يدوي)
-  // ═══════════════════════════════════════════════════════════
   Widget _buildModeToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -613,9 +578,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📋 الاختيار اليدوي (السورة + الآية)
-  // ═══════════════════════════════════════════════════════════
   Widget _buildManualSelectors() {
     return Row(
       children: [
@@ -693,11 +655,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 معلومات الآية المكتشفة
-  // ═══════════════════════════════════════════════════════════
   Widget _buildDetectedInfo() {
-    if (!_autoDetectMode || _detectedSurahName == null) return const SizedBox();
+    if (!_autoDetectMode || _detectedSurahName == null) {
+      return const SizedBox();
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -725,11 +686,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📖 عرض النص الصحيح مع الخط الأحمر تحت الكلمات الخاطئة
-  // ═══════════════════════════════════════════════════════════
   Widget _buildCorrectAyahWithErrors() {
-    // إذا لم يتم التحليل بعد، نعرض النص فقط
     if (_words.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -747,7 +704,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 Icon(Icons.book, color: Color(0xFFD4AF37), size: 16),
                 SizedBox(width: 6),
                 Text('📖 النص الصحيح',
-                    style: TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
+                    style:
+                        TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
               ],
             ),
             const SizedBox(height: 10),
@@ -767,7 +725,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
       );
     }
 
-    // ✅ عرض النص مع الكلمات الملونة
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -793,7 +750,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // ✅ النص مع الكلمات الملونة والخطوط
           RichText(
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
@@ -807,13 +763,12 @@ class _RecitationScreenState extends State<RecitationScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Legend
           Wrap(
             spacing: 16,
             runSpacing: 6,
             children: [
               _legendItem(Colors.green, 'صحيح'),
-              _legendItem(Colors.red, 'خطأ (تحته خط أحمر)'),
+              _legendItem(Colors.red, 'خطأ (تحته خط)'),
               _legendItem(Colors.grey, 'ناقص'),
               _legendItem(Colors.orange, 'زائد'),
             ],
@@ -823,7 +778,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ✅ بناء TextSpans لكل كلمة مع اللون والخط المناسب
+  // ✅ تصحيح الأخطاء: استخدام decorationColor و decorationThickness داخل TextStyle مباشرة
   List<TextSpan> _buildWordSpans() {
     final spans = <TextSpan>[];
 
@@ -832,6 +787,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
       TextDecoration decoration = TextDecoration.none;
       String displayWord;
       FontWeight fontWeight = FontWeight.w500;
+      double thickness = 1.5;
 
       switch (w.status) {
         case 'correct':
@@ -852,10 +808,10 @@ class _RecitationScreenState extends State<RecitationScreen> {
         default:
           color = Colors.red;
           decoration = TextDecoration.underline;
-          decorationColor = Colors.red;
-          decorationThickness = 2.5;
-          displayWord = w.correctWord.isNotEmpty ? w.correctWord : w.userWord;
+          displayWord =
+              w.correctWord.isNotEmpty ? w.correctWord : w.userWord;
           fontWeight = FontWeight.bold;
+          thickness = 2.5;
           break;
       }
 
@@ -867,12 +823,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
           fontFamily: 'Amiri',
           fontWeight: fontWeight,
           decoration: decoration,
-          decorationColor: decoration == TextDecoration.underline
-              ? Colors.red
-              : color,
-          decorationThickness: decoration == TextDecoration.underline
-              ? 2.5
-              : 1.5,
+          decorationColor: color,
+          decorationThickness: thickness,
         ),
       ));
     }
@@ -896,13 +848,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎮 أزرار التحكم
-  // ═══════════════════════════════════════════════════════════
   Widget _buildControls() {
     return Row(
       children: [
-        // زر الحصري
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _isSpeaking ? _stopAudio : _playHusaryAyah,
@@ -918,7 +866,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        // زر الاستماع
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
@@ -928,7 +875,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
               _isListening
                   ? '⏹ إيقاف'
                   : (_autoDetectMode ? '🎤 اقرأ أي آية' : '🎤 ابدأ التلاوة'),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor:
@@ -959,7 +907,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text('🎤 ما قرأته',
-                  style: TextStyle(color: Colors.blueAccent, fontSize: 12)),
+                  style:
+                      TextStyle(color: Colors.blueAccent, fontSize: 12)),
               SizedBox(width: 6),
               Icon(Icons.mic, color: Colors.blueAccent, size: 14),
             ],
