@@ -1,0 +1,434 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+import '../features/dashboard/dashboard_screen.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _mainController;
+  late AnimationController _pulseController;
+  late AnimationController _rotateController;
+
+  late Animation<double> _fadeIn;
+  late Animation<double> _scaleIn;
+  late Animation<Offset> _slideUp;
+  late Animation<double> _goldGlow;
+  late Animation<double> _rotate;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _mainController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _rotateController = AnimationController(
+      duration: const Duration(seconds: 40),
+      vsync: this,
+    )..repeat();
+
+    _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
+
+    _scaleIn = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _goldGlow = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _rotate = Tween<double>(begin: 0.0, end: 2 * pi).animate(_rotateController);
+
+    _mainController.forward();
+
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 800),
+            pageBuilder: (_, __, ___) => const DashboardScreen(),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _mainController.dispose();
+    _pulseController.dispose();
+    _rotateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      body: Container(
+        width: size.width,
+        height: size.height,
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.3,
+            colors: [
+              Color(0xFF1C2541),
+              Color(0xFF0F1A2E),
+              Color(0xFF0B132B),
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // ===== زخرفة دوارة في الخلفية =====
+            Center(
+              child: AnimatedBuilder(
+                animation: _rotate,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _rotate.value,
+                    child: SizedBox(
+                      width: size.width * 0.9,
+                      height: size.width * 0.9,
+                      child: CustomPaint(
+                        painter: _IslamicPatternPainter(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // ===== شعار التطبيق (بدون ApexSec داخله) =====
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ScaleTransition(
+                    scale: _scaleIn,
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: AnimatedBuilder(
+                        animation: _goldGlow,
+                        builder: (context, child) {
+                          return Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const RadialGradient(
+                                colors: [
+                                  Color(0xFF2C3E50),
+                                  Color(0xFF0B132B),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFFD4AF37),
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFD4AF37)
+                                      .withOpacity(_goldGlow.value * 0.5),
+                                  blurRadius: 60,
+                                  spreadRadius: 15,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 145,
+                                    height: 145,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFD4AF37)
+                                            .withOpacity(0.4),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.mosque,
+                                    size: 95,
+                                    color: Color(0xFFD4AF37),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 45),
+
+                  // ===== اسم التطبيق العربي =====
+                  SlideTransition(
+                    position: _slideUp,
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: const Text(
+                        'نور الحرمين',
+                        style: TextStyle(
+                          color: Color(0xFFD4AF37),
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Amiri',
+                          letterSpacing: 2,
+                          shadows: [
+                            Shadow(
+                              color: Color(0xFFD4AF37),
+                              blurRadius: 30,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ===== الاسم الإنجليزي =====
+                  SlideTransition(
+                    position: _slideUp,
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _line(),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'NOOR AL-HARAMAIN',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              letterSpacing: 4,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _line(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // ===== علم السعودية + نص =====
+                  SlideTransition(
+                    position: _slideUp,
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withOpacity(0.4),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              '🇸🇦',
+                              style: TextStyle(fontSize: 22),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'تطبيق إسلامي عالمي شامل',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 50),
+
+                  // ===== مؤشر التحميل =====
+                  FadeTransition(
+                    opacity: _fadeIn,
+                    child: const SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ===== البسملة (أعلى اليسار) =====
+            Positioned(
+              top: 60,
+              left: 30,
+              child: FadeTransition(
+                opacity: _fadeIn,
+                child: const Text(
+                  '﷽',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontSize: 32,
+                  ),
+                ),
+              ),
+            ),
+
+            // ===== الهلال (أعلى اليمين) =====
+            Positioned(
+              top: 60,
+              right: 40,
+              child: FadeTransition(
+                opacity: _fadeIn,
+                child: AnimatedBuilder(
+                  animation: _goldGlow,
+                  builder: (context, child) {
+                    return Icon(
+                      Icons.nightlight_round,
+                      color: const Color(0xFFD4AF37)
+                          .withOpacity(0.7 + _goldGlow.value * 0.3),
+                      size: 45,
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // ===== Powered by ApexSec (أسفل) =====
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: FadeTransition(
+                opacity: _fadeIn,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 1,
+                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'POWERED BY',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 9,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'ApexSec',
+                      style: TextStyle(
+                        color: Color(0xFFD4AF37),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _line() {
+    return Container(
+      width: 40,
+      height: 1,
+      color: const Color(0xFFD4AF37).withOpacity(0.5),
+    );
+  }
+}
+
+// ==============================================
+// الزخرفة الإسلامية
+// ==============================================
+class _IslamicPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFD4AF37).withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = min(size.width, size.height) * 0.45;
+
+    for (int i = 0; i < 12; i++) {
+      final angle = i * (2 * pi / 12);
+      final dx = radius * cos(angle);
+      final dy = radius * sin(angle);
+      final point = Offset(center.dx + dx, center.dy + dy);
+      canvas.drawCircle(point, 3, paint);
+      canvas.drawLine(center, point, paint);
+    }
+
+    for (int i = 1; i <= 4; i++) {
+      canvas.drawCircle(center, radius * i / 4, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}

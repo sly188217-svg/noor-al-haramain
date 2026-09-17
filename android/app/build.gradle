@@ -29,7 +29,6 @@ android {
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        // ✅ تفعيل Core Library Desugaring لمكتبة flutter_local_notifications
         coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
@@ -41,6 +40,16 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    // ✅ إعدادات التوقيع للـ Release
+    signingConfigs {
+        release {
+            keyAlias 'noor-key'
+            keyPassword 'Noor2026Pass'
+            storeFile file('noor-release.jks')
+            storePassword 'Noor2026Pass'
+        }
     }
 
     defaultConfig {
@@ -56,7 +65,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
@@ -66,9 +77,7 @@ flutter {
 }
 
 dependencies {
-    // ✅ إضافة مكتبة desugar_jdk_libs المطلوبة للـ Core Library Desugaring
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
-
     implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
