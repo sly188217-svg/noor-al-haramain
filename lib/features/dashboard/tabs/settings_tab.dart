@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import '../../../core/services/adhan_download_service.dart';
 import '../../../core/services/background_service.dart';
+import '../../../core/services/notification_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/data/muezzins.dart';
 
 class SettingsTab extends StatefulWidget {
@@ -25,7 +28,7 @@ class _SettingsTabState extends State<SettingsTab>
   bool _isLocationReady = false;
   int _selectedBackground = 0;
   String _selectedTimeFormat = '24h';
-  String _selectedMuezzin = 'marwan';
+  String _selectedMuezzin = 'adhan_sudais';
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   double _soundVolume = 0.8;
@@ -62,7 +65,8 @@ class _SettingsTabState extends State<SettingsTab>
       _isLocationReady = prefs.getBool('location_enabled') ?? false;
       _selectedBackground = prefs.getInt('background_index') ?? 0;
       _selectedTimeFormat = prefs.getString('time_format') ?? '24h';
-      _selectedMuezzin = prefs.getString('selected_muezzin') ?? 'marwan';
+      _selectedMuezzin =
+          prefs.getString('selected_muezzin') ?? 'adhan_sudais';
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _soundEnabled = prefs.getBool('sound_enabled') ?? true;
       _soundVolume = prefs.getDouble('sound_volume') ?? 0.8;
@@ -293,7 +297,7 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 اختيار الخلفية (Gradients إسلامية)
+  // 🎨 اختيار الخلفية
   // ═══════════════════════════════════════════════════════════
   void _showBackgroundPicker() {
     showModalBottomSheet(
@@ -337,8 +341,7 @@ class _SettingsTabState extends State<SettingsTab>
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content:
-                                Text('✅ تم تطبيق: ${bg['name']}')),
+                            content: Text('✅ تم تطبيق: ${bg['name']}')),
                       );
                     },
                     child: Container(
@@ -437,7 +440,7 @@ class _SettingsTabState extends State<SettingsTab>
                   _isLocationReady = false;
                   _selectedBackground = 0;
                   _selectedTimeFormat = '24h';
-                  _selectedMuezzin = 'marwan';
+                  _selectedMuezzin = 'adhan_sudais';
                   _notificationsEnabled = true;
                   _soundEnabled = true;
                   _soundVolume = 0.8;
@@ -453,98 +456,6 @@ class _SettingsTabState extends State<SettingsTab>
         ],
       ),
     );
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // تحميل الأذان
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _startDownload() async {
-    final ids = AdhanDownloadService.muezzinUrls.keys
-        .where((id) => !AdhanDownloadService.isBundled(id))
-        .toList();
-    final total = ids.length;
-
-    double currentProgress = 0;
-    String currentMuezzin = 'جاري التحضير...';
-    int completed = 0;
-    bool isCancelled = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (dialogContext.mounted && !isCancelled) {
-                setDialogState(() {});
-              }
-            });
-
-            final overallProgress =
-                total > 0 ? (completed + currentProgress) / total : 0.0;
-
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1C2541),
-              title: const Text('📥 جاري تحميل الأذان',
-                  style: TextStyle(
-                      color: Color(0xFFD4AF37), fontSize: 16)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LinearProgressIndicator(
-                    value: overallProgress.clamp(0.0, 1.0),
-                    backgroundColor: Colors.white12,
-                    color: const Color(0xFFD4AF37),
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('$completed / $total',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Text(currentMuezzin,
-                      style: const TextStyle(
-                          color: Colors.grey, fontSize: 12),
-                      textAlign: TextAlign.center),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    try {
-      for (int i = 0; i < ids.length; i++) {
-        final id = ids[i];
-        currentMuezzin = MuezzinData.getMuezzinName(id);
-        currentProgress = 0;
-
-        await AdhanDownloadService.downloadMuezzin(id, (p) {
-          currentProgress = p;
-        });
-
-        completed = i + 1;
-        currentProgress = 0;
-      }
-    } catch (e) {
-      debugPrint('❌ خطأ في التحميل: $e');
-    }
-
-    isCancelled = true;
-
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ تم تحميل جميع الأذان بنجاح!'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
   }
 
   Widget _buildSettingsCard(Widget child) {
@@ -708,6 +619,7 @@ class _SettingsTabState extends State<SettingsTab>
                 initialValue: _selectedMuezzin,
                 dropdownColor: const Color(0xFF1C2541),
                 style: const TextStyle(color: Colors.white),
+                isExpanded: true,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: const Color(0xFF0B132B),
@@ -715,180 +627,44 @@ class _SettingsTabState extends State<SettingsTab>
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none),
                 ),
-                items: MuezzinData.muezzins
+                items: NotificationService.muezzins
                     .map((m) => DropdownMenuItem<String>(
-                          value: m['id'] as String,
-                          child: Text(m['name'] as String),
+                          value: m['file']!,
+                          child: Text(m['name']!),
                         ))
                     .toList(),
-                onChanged: (value) {
+                onChanged: (value) async {
                   if (value != null) {
                     setState(() => _selectedMuezzin = value);
-                    _saveSettings();
+                    await _saveSettings();
+                    await NotificationService.setSelectedMuezzin(value);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ تم تغيير المؤذن')),
+                    );
                   }
                 },
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // ─── الأذان ───
-        _buildSettingsCard(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.download,
-                      color: Color(0xFFD4AF37), size: 24),
-                  SizedBox(width: 8),
-                  Text('📥 الأذان',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
               const SizedBox(height: 8),
-              const Text('3 مؤذنين متوفرين دائماً، والبقية يمكن تحميلها',
-                  style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.4)),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await NotificationService.showTestNotification();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('🔔 تم إرسال اختبار الأذان')),
+                    );
+                  },
+                  icon: const Icon(Icons.play_circle,
+                      color: Color(0xFFD4AF37)),
+                  label: const Text('🔔 اختبار الأذان',
+                      style: TextStyle(color: Color(0xFFD4AF37))),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFD4AF37)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.check_circle,
-                            color: Colors.green, size: 16),
-                        SizedBox(width: 6),
-                        Text('مضمّن في التطبيق (بدون إنترنت)',
-                            style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...MuezzinData.bundledMuezzins.map((m) {
-                      return Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.volume_up,
-                                color: Colors.green, size: 14),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                m['name'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12),
-                              ),
-                            ),
-                            Text(
-                              m['country'] as String? ?? '',
-                              style: const TextStyle(
-                                  color: Colors.white38, fontSize: 10),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              FutureBuilder<int>(
-                future: AdhanDownloadService.onlyDownloadedCount(),
-                builder: (context, snapshot) {
-                  final downloaded = snapshot.data ?? 0;
-                  final total = AdhanDownloadService.downloadableCount;
-                  final isComplete = downloaded >= total;
-
-                  return Column(
-                    children: [
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('قابلون للتحميل',
-                            style: TextStyle(
-                                color: Color(0xFFD4AF37),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 6),
-                      LinearProgressIndicator(
-                        value: total > 0 ? downloaded / total : 0,
-                        backgroundColor: Colors.white12,
-                        color: const Color(0xFFD4AF37),
-                        minHeight: 6,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      const SizedBox(height: 6),
-                      Text('$downloaded / $total مؤذن محمّل',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed:
-                                  isComplete ? null : _startDownload,
-                              icon: const Icon(Icons.download, size: 16),
-                              label: Text(isComplete
-                                  ? 'محمّل الكل ✅'
-                                  : 'تحميل المتبقي'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isComplete
-                                    ? Colors.grey
-                                    : const Color(0xFFD4AF37),
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (downloaded > 0)
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                await AdhanDownloadService.clearAll();
-                                setState(() {});
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          '🗑️ تم حذف الأذانات المحمّلة')),
-                                );
-                              },
-                              icon: const Icon(Icons.delete, size: 16),
-                              label: const Text('حذف'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 16),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
               ),
             ],
           ),
@@ -1115,12 +891,148 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 4. المعلومات
+  // 4. المعلومات (مع Google Sign-In)
   // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // ═══════════════════════════════════════════════════════
+        // 🔐 الحساب
+        // ═══════════════════════════════════════════════════════
+        _buildSettingsCard(
+          StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              final user = snapshot.data;
+              final isSignedIn = user != null && !user.isAnonymous;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.person, color: Color(0xFFD4AF37), size: 24),
+                      SizedBox(width: 8),
+                      Text('🔐 الحساب',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (isSignedIn) ...[
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundImage: user.photoURL != null
+                              ? NetworkImage(user.photoURL!)
+                              : null,
+                          backgroundColor:
+                              const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                          child: user.photoURL == null
+                              ? const Icon(Icons.person,
+                                  color: Color(0xFFD4AF37), size: 24)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.displayName ?? 'مستخدم',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                user.email ?? '',
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          await AuthService.signOut();
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('✅ تم تسجيل الخروج')),
+                          );
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text('تسجيل الخروج'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Text(
+                      'سجّل بحساب Google لمزامنة بياناتك عبر الأجهزة',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            final result =
+                                await AuthService.signInWithGoogle();
+                            if (!mounted) return;
+                            if (result != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      '✅ مرحباً ${result['displayName']}!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('⚠️ فشل: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.login),
+                        label: const Text('تسجيل الدخول بحساب Google'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ═══════════════════════════════════════════════════════
+        // معلومات التطبيق
+        // ═══════════════════════════════════════════════════════
         _buildSettingsCard(
           Column(
             children: [

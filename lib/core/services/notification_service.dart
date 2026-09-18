@@ -6,6 +6,10 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// ═══════════════════════════════════════════════════════════
+/// 🔔 خدمة الإشعارات — أذان فوري في وقته
+/// ✅ يستخدم res/raw/ لأصوات الأذان (12 مؤذن)
+/// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -13,45 +17,51 @@ class NotificationService {
   static bool _initialized = false;
   static const int _persistentId = 9999;
 
+  /// 🔑 المفتاح الموحّد (يستخدمه settings_tab أيضاً)
+  static const String _muezzinKey = 'selected_muezzin';
+
+  /// ✅ القيمة الافتراضية
+  static const String _defaultMuezzin = 'adhan_sudais';
+
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 قائمة المؤذنين المتاحين (12 مؤذناً)
-  /// ⚠️ تأكد من أن الملفات موجودة في:
-  /// android/app/src/main/res/raw/
+  /// 🎵 قائمة المؤذنين (12) — الأسماء مطابقة لملفات res/raw/
   /// ═══════════════════════════════════════════════════════════
   static const List<Map<String, String>> muezzins = [
-    {'name': 'عبدالرحمن السديس', 'file': 'adhan_sudais'},
-    {'name': 'عبدالمجيد السريحي', 'file': 'adhan_madina'},
-    {'name': 'مشاري العفاسي', 'file': 'adhan_alafasy'},
-    {'name': 'عبدالباسط عبدالصمد', 'file': 'adhan_abdalbaset'},
-    {'name': 'ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
-    {'name': 'ياسر الدوسري', 'file': 'adhan_yasser'},
-    {'name': 'عبدالرحمن الشميري', 'file': 'adhan_shamiree'},
-    {'name': 'سعد الغامدي', 'file': 'adhan_ghamdi'},
-    {'name': 'المسجد الأقصى', 'file': 'adhan_alaqsa'},
+    {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
+    {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
+    {'name': 'الشيخ ياسر الدوسري', 'file': 'adhan_yasser'},
+    {'name': 'الشيخ عبد الباسط عبد الصمد', 'file': 'adhan_abdalbaset'},
+    {'name': 'الشيخ مشاري العفاسي', 'file': 'adhan_alafasy'},
+    {'name': 'الشيخ سعد الغامدي', 'file': 'adhan_ghamdi'},
+    {'name': 'الشيخ عبد الرحمن الشميري', 'file': 'adhan_shamiree'},
+    {'name': 'أذان الحرم المكي', 'file': 'adhan_makkah'},
+    {'name': 'أذان المسجد النبوي', 'file': 'adhan_madina'},
+    {'name': 'أذان المسجد الأقصى', 'file': 'adhan_alaqsa'},
     {'name': 'أذان مصر', 'file': 'adhan_masr'},
-    {'name': 'الحرم المكي', 'file': 'adhan_makkah'},
     {'name': 'أذان عمّان', 'file': 'adhan_amman'},
   ];
 
-  /// 🔑 المفتاح المستخدم لحفظ المؤذن المختار
-  static const String _muezzinKey = 'selected_muezzin_file';
-
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 الحصول على اسم ملف الأذان المختار (من التفضيلات)
+  /// 🎵 جلب الملف المختار
   /// ═══════════════════════════════════════════════════════════
   static Future<String> getSelectedMuezzin() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_muezzinKey) ?? 'adhan_sudais'; // الافتراضي: السديس
+    final saved = prefs.getString(_muezzinKey);
+    if (saved == null || saved.isEmpty) return _defaultMuezzin;
+    // تأكد من أن الملف موجود
+    final valid = muezzins.any((m) => m['file'] == saved);
+    return valid ? saved : _defaultMuezzin;
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 💾 حفظ المؤذن المختار
+  /// 💾 حفظ الملف المختار
   /// ═══════════════════════════════════════════════════════════
   static Future<void> setSelectedMuezzin(String file) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_muezzinKey, file);
     // إعادة إنشاء القناة بالصوت الجديد
     await _createAdhanChannel();
+    debugPrint('✅ تم تغيير المؤذن إلى: $file');
   }
 
   /// ═══════════════════════════════════════════════════════════
@@ -97,14 +107,14 @@ class NotificationService {
 
     if (Platform.isAndroid) {
       await _requestAndroidPermissions();
-      await _createAdhanChannel(); // ✅ إنشاء قناة الأذان
+      await _createAdhanChannel();
     }
 
     _initialized = true;
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 إنشاء قناة الأذان بصوت المؤذن المختار
+  /// 🎵 إنشاء قناة الأذان
   /// ═══════════════════════════════════════════════════════════
   static Future<void> _createAdhanChannel() async {
     final androidImpl = _notifications.resolvePlatformSpecificImplementation<
@@ -113,7 +123,6 @@ class NotificationService {
 
     final selectedFile = await getSelectedMuezzin();
 
-    // قناة الأذان (صوت كامل)
     final AndroidNotificationChannel adhanChannel = AndroidNotificationChannel(
       'adhan_channel',
       'الأذان',
@@ -126,7 +135,6 @@ class NotificationService {
       showBadge: true,
     );
 
-    // قناة الإشعار العادي (بدون صوت، للإشعار الدائم)
     const AndroidNotificationChannel prayerChannel =
         AndroidNotificationChannel(
       'prayer_channel',
@@ -137,13 +145,12 @@ class NotificationService {
     );
 
     try {
-      // حذف القناة القديمة لضمان تحديث الصوت
       await androidImpl.deleteNotificationChannel('adhan_channel');
       await androidImpl.createNotificationChannel(adhanChannel);
       await androidImpl.createNotificationChannel(prayerChannel);
-      debugPrint('✅ تم إنشاء قناة الأذان بالصوت: $selectedFile');
+      debugPrint('✅ قناة الأذان جاهزة بالصوت: $selectedFile');
     } catch (e) {
-      debugPrint('⚠️ فشل إنشاء قناة الأذان: $e');
+      debugPrint('⚠️ فشل إنشاء القناة: $e');
     }
   }
 
@@ -157,19 +164,21 @@ class NotificationService {
 
     try {
       await androidImpl.requestNotificationsPermission();
+      debugPrint('✅ إذن الإشعارات');
     } catch (e) {
-      debugPrint('⚠️ requestNotificationsPermission: $e');
+      debugPrint('⚠️ requestNotifications: $e');
     }
 
     try {
       await androidImpl.requestExactAlarmsPermission();
+      debugPrint('✅ إذن المنبهات الدقيقة');
     } catch (e) {
-      debugPrint('⚠️ requestExactAlarmsPermission: $e');
+      debugPrint('⚠️ requestExactAlarms: $e');
     }
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔔 إشعار ثابت دائم — العد التنازلي + التاريخ الهجري
+  /// 🔔 إشعار ثابت دائم — العد التنازلي
   /// ═══════════════════════════════════════════════════════════
   static Future<void> showPersistentNotification({
     required String nextPrayer,
@@ -213,9 +222,6 @@ class NotificationService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// إلغاء الإشعار الدائم
-  /// ═══════════════════════════════════════════════════════════
   static Future<void> cancelPersistent() async {
     try {
       await _notifications.cancel(_persistentId);
@@ -223,7 +229,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 📅 جدولة إشعارات الأذان لكل صلاة
+  /// 📅 جدولة إشعارات الأذان — ✅ فوري في وقته
   /// ═══════════════════════════════════════════════════════════
   static Future<void> schedulePrayerNotifications(
     Map<String, String> prayerTimes,
@@ -234,7 +240,7 @@ class NotificationService {
     if (!_initialized) await initialize();
 
     try {
-      // ✅ إلغاء الإشعارات المجدولة فقط (بدون الإشعار الدائم)
+      // إلغاء الإشعارات المجدولة فقط (بدون الإشعار الدائم)
       final pending = await _notifications.pendingNotificationRequests();
       for (final p in pending) {
         if (p.id != _persistentId) {
@@ -266,17 +272,18 @@ class NotificationService {
             '🔔 حان وقت صلاة $prayerNameAr',
             'صلاة $prayerNameAr في $cityName — أذان $muezzinName',
             tz.TZDateTime.from(finalTime, tz.local),
-            await _adhanNotificationDetails(), // ✅ يستخدم قناة الأذان
+            await _adhanNotificationDetails(),
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             matchDateTimeComponents: DateTimeComponents.time,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
           );
+          debugPrint('✅ جدولة $prayerNameAr في: $finalTime');
         } catch (e) {
           debugPrint('⚠️ فشل جدولة $prayerName: $e');
         }
 
-        // إشعار تذكيري قبل 15 دقيقة (بدون صوت)
+        // تذكير قبل 15 دقيقة (بدون صوت)
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
@@ -285,7 +292,7 @@ class NotificationService {
               '⏰ قبل صلاة $prayerNameAr بـ 15 دقيقة',
               'استعد لصلاة $prayerNameAr في $cityName',
               tz.TZDateTime.from(reminderTime, tz.local),
-              _silentNotificationDetails(), // ✅ بدون صوت
+              _silentNotificationDetails(),
               androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
               uiLocalNotificationDateInterpretation:
                   UILocalNotificationDateInterpretation.absoluteTime,
@@ -299,7 +306,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔔 إشعار فوري (للاختبار) - يشغّل الأذان
+  /// 🔔 اختبار الأذان الفوري
   /// ═══════════════════════════════════════════════════════════
   static Future<void> showTestNotification() async {
     if (Platform.isLinux) return;
@@ -308,14 +315,11 @@ class NotificationService {
     await _notifications.show(
       8888,
       '🔔 اختبار الأذان',
-      'هذا إشعار تجريبي — يجب أن تسمع صوت الأذان',
+      'يجب أن تسمع صوت الأذان الآن',
       await _adhanNotificationDetails(),
     );
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// ❌ إلغاء جميع الإشعارات (بما فيها الدائم)
-  /// ═══════════════════════════════════════════════════════════
   static Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }
@@ -324,7 +328,6 @@ class NotificationService {
   // 🛠️ مساعدات داخلية
   // ═══════════════════════════════════════════════════════════
 
-  /// ✅ تفاصيل إشعار الأذان (بصوت المؤذن المختار)
   static Future<NotificationDetails> _adhanNotificationDetails() async {
     final selectedFile = await getSelectedMuezzin();
     return NotificationDetails(
@@ -339,7 +342,7 @@ class NotificationService {
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
-        timeoutAfter: 120000, // دقيقتان
+        timeoutAfter: 120000,
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
@@ -349,7 +352,6 @@ class NotificationService {
     );
   }
 
-  /// ✅ تفاصيل إشعار صامت (للتذكير)
   static NotificationDetails _silentNotificationDetails() {
     return const NotificationDetails(
       android: AndroidNotificationDetails(
@@ -364,7 +366,6 @@ class NotificationService {
     );
   }
 
-  /// 🕌 ترجمة أسماء الصلوات إلى العربية
   static String _translatePrayerName(String name) {
     switch (name) {
       case 'Fajr':
@@ -384,7 +385,6 @@ class NotificationService {
     }
   }
 
-  /// 🕐 تحويل نص الوقت إلى DateTime
   static DateTime? _parseTime(String timeStr, DateTime reference) {
     try {
       String clean = timeStr.replaceAll(RegExp(r'\(.*\)'), '').trim();
