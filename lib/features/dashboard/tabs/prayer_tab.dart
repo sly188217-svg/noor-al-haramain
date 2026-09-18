@@ -8,12 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/hijri_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/adhan_download_service.dart';
 import '../../../core/data/muezzins.dart';
 import '../../qibla/qibla_screen.dart';
+import '../../kids/kids_stories_screen.dart';
 
 // ==============================================
 // خلفية إسلامية
@@ -66,7 +68,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   double _userLat = 21.4225;
   double _userLng = 39.8262;
 
-  String _selectedMuezzinId = 'marwan';
+  String _selectedMuezzinId = 'adhan_sudais';
   String _selectedMuezzinName = 'الشيخ عبد الرحمن السديس';
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
@@ -126,12 +128,16 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
   Future<void> _loadMuezzinPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('selected_muezzin') ?? 'marwan';
-    final name = MuezzinData.getMuezzinName(id);
+    final id = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
+    // ابحث عن الاسم من قائمة الإشعارات
+    final matching = NotificationService.muezzins.firstWhere(
+      (m) => m['file'] == id,
+      orElse: () => NotificationService.muezzins.first,
+    );
     if (mounted) {
       setState(() {
         _selectedMuezzinId = id;
-        _selectedMuezzinName = name;
+        _selectedMuezzinName = matching['name'] ?? 'مؤذن';
       });
     }
   }
@@ -448,7 +454,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ✅ تشغيل الأذان من assets (12 ملف حقيقي)
+  // ✅ تشغيل الأذان من assets
   // ═══════════════════════════════════════════════════════════
   Future<bool> _playAdhanFromAssets(String muezzinId) async {
     final assetSourcePath =
@@ -469,18 +475,12 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // تشغيل الأذان تلقائياً عند دخول الوقت
-  // ═══════════════════════════════════════════════════════════
   Future<void> _triggerAdhanAutomatically(String prayerName) async {
     try {
       debugPrint('🔔 وقت صلاة $prayerName — تشغيل الأذان');
 
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
-      if (!started) {
-        debugPrint('⚠️ تعذر تشغيل الأذان');
-        return;
-      }
+      if (!started) return;
 
       if (mounted) setState(() => _isPlaying = true);
 
@@ -526,9 +526,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ تشغيل يدوي للأذان
-  // ═══════════════════════════════════════════════════════════
   Future<void> _playAdhan(String prayerName) async {
     try {
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
@@ -572,6 +569,43 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   Future<void> _stopAudio() async {
     await _audioPlayer.stop();
     if (mounted) setState(() => _isPlaying = false);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🤲 التبرع — منصة إحسان
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _openDonation() async {
+    const url = 'https://ehsan.sa/';
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⚠️ تعذر فتح منصة إحسان')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ خطأ: $e')),
+        );
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🧒 قصص الأطفال
+  // ═══════════════════════════════════════════════════════════
+  void _openKidsStories() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const KidsStoriesScreen(),
+      ),
+    );
   }
 
   String _formatDuration(Duration duration) {
@@ -621,10 +655,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                       style: const TextStyle(color: Colors.white),
                       underline: const SizedBox(),
                       isExpanded: true,
-                      items: MuezzinData.muezzins.map((m) {
+                      items: NotificationService.muezzins.map((m) {
                         return DropdownMenuItem<String>(
-                          value: m['id'] as String,
-                          child: Text(m['name'] as String),
+                          value: m['file']!,
+                          child: Text(m['name']!),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -674,6 +708,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('selected_muezzin', tempMuezzinId);
+                await NotificationService.setSelectedMuezzin(tempMuezzinId);
                 if (tempOffset != 0) {
                   _prayerOffsets[prayerName] = tempOffset;
                 } else {
@@ -681,11 +716,14 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                 }
                 await prefs.setString(
                     'prayer_offsets', jsonEncode(_prayerOffsets));
+                final matching = NotificationService.muezzins.firstWhere(
+                  (m) => m['file'] == tempMuezzinId,
+                  orElse: () => NotificationService.muezzins.first,
+                );
                 if (mounted) {
                   setState(() {
                     _selectedMuezzinId = tempMuezzinId;
-                    _selectedMuezzinName =
-                        MuezzinData.getMuezzinName(tempMuezzinId);
+                    _selectedMuezzinName = matching['name'] ?? 'مؤذن';
                   });
                 }
                 if (!context.mounted) return;
@@ -872,6 +910,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
+                        // ═════════════════════════════════════════════
+                        // أزرار التحكم — 5 أزرار
+                        // ═════════════════════════════════════════════
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -888,6 +929,16 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               icon: Icons.explore,
                               label: 'القبلة',
                               onTap: _openQiblaScreen,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.child_care,
+                              label: 'أطفال',
+                              onTap: _openKidsStories,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.volunteer_activism,
+                              label: 'تبرع',
+                              onTap: _openDonation,
                             ),
                             _buildControlButton(
                               icon: Icons.refresh,
