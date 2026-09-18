@@ -904,154 +904,18 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 4. المعلومات — مع Google Sign-In
+  // 4. المعلومات — مع Google Sign-In (آمن على جميع المنصات)
   // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ═══════════════════════════════════════════════════════
-        // 🔐 الحساب
-        // ═══════════════════════════════════════════════════════
-        _buildSettingsCard(
-          StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, snapshot) {
-              final user = snapshot.data;
-              final isSignedIn = user != null && !user.isAnonymous;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.person,
-                          color: Color(0xFFD4AF37), size: 24),
-                      SizedBox(width: 8),
-                      Text('🔐 الحساب',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (isSignedIn) ...[
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundImage: user.photoURL != null
-                              ? NetworkImage(user.photoURL!)
-                              : null,
-                          backgroundColor: const Color(0xFFD4AF37)
-                              .withValues(alpha: 0.3),
-                          child: user.photoURL == null
-                              ? const Icon(Icons.person,
-                                  color: Color(0xFFD4AF37), size: 24)
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user.displayName ?? 'مستخدم',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                user.email ?? '',
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          await AuthService.signOut();
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('✅ تم تسجيل الخروج')),
-                          );
-                        },
-                        icon: const Icon(Icons.logout),
-                        label: const Text('تسجيل الخروج'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    const Text(
-                      'سجّل بحساب Google لمزامنة بياناتك عبر الأجهزة',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            final result =
-                                await AuthService.signInWithGoogle();
-                            if (!mounted) return;
-                            if (result != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      '✅ مرحباً ${result['displayName']}!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('⚠️ فشل: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.login),
-                        label: const Text('تسجيل الدخول بحساب Google'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
+        _buildSettingsCard(_buildAccountSection()),
         const SizedBox(height: 12),
-
-        // ═══════════════════════════════════════════════════════
-        // معلومات التطبيق
-        // ═══════════════════════════════════════════════════════
         _buildSettingsCard(
           Column(
             children: [
-              const Icon(Icons.mosque,
-                  color: Color(0xFFD4AF37), size: 80),
+              const Icon(Icons.mosque, color: Color(0xFFD4AF37), size: 80),
               const SizedBox(height: 16),
               const Text('نور الحرمين',
                   style: TextStyle(
@@ -1071,6 +935,188 @@ class _SettingsTabState extends State<SettingsTab>
           ),
         ),
       ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔐 قسم الحساب — آمن (يتعامل مع Firebase غير المُهيأ)
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildAccountSection() {
+    // ✅ التحقق من أن Firebase يعمل
+    bool firebaseAvailable = false;
+    try {
+      FirebaseAuth.instance;
+      firebaseAvailable = true;
+    } catch (e) {
+      debugPrint('⚠️ Firebase غير متاح: $e');
+      firebaseAvailable = false;
+    }
+
+    // ⚠️ Firebase لا يعمل (Linux) → عرض رسالة
+    if (!firebaseAvailable) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.person, color: Color(0xFFD4AF37), size: 24),
+              SizedBox(width: 8),
+              Text('🔐 الحساب',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'تسجيل Google متاح على الهاتف فقط',
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ✅ Firebase يعمل → StreamBuilder
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final isSignedIn = user != null && !user.isAnonymous;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.person, color: Color(0xFFD4AF37), size: 24),
+                SizedBox(width: 8),
+                Text('🔐 الحساب',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (isSignedIn) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: user.photoURL != null
+                        ? NetworkImage(user.photoURL!)
+                        : null,
+                    backgroundColor:
+                        const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                    child: user.photoURL == null
+                        ? const Icon(Icons.person,
+                            color: Color(0xFFD4AF37), size: 24)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.displayName ?? 'مستخدم',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          user.email ?? '',
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await AuthService.signOut();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ تم تسجيل الخروج')),
+                    );
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('تسجيل الخروج'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const Text(
+                'سجّل بحساب Google لمزامنة بياناتك عبر الأجهزة',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final result = await AuthService.signInWithGoogle();
+                      if (!mounted) return;
+                      if (result != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                '✅ مرحباً ${result['displayName']}!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('⚠️ فشل: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.login),
+                  label: const Text('تسجيل الدخول بحساب Google'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
