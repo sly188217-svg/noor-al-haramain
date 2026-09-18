@@ -2,33 +2,32 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎵 خدمة الأذان — 11 ملف صوتي مضمّن في assets/adhan/raw/
-/// ✅ جميع الأصوات حقيقية وتعمل 100% بدون إنترنت
+/// 🎵 خدمة الأذان — 12 ملف صوتي مضمّن في assets/adhan/raw/
+/// ✅ المفاتيح موحّدة مع notification_service.dart
 /// ═══════════════════════════════════════════════════════════
 class AdhanDownloadService {
   /// ✅ المؤذنون المضمّنون (3 يظهرون دائماً)
   static const Set<String> bundledMuezzins = {
-    'marwan',
-    'yasser',
-    'salah_budair',
+    'adhan_sudais',
+    'adhan_yasser',
+    'adhan_almuaiqly',
   };
 
-  /// ✅ خريطة الملفات — ID → اسم الملف داخل assets/adhan/raw/
-  /// ⚠️ 11 ملف (تم حذف adhan_sudais.mp3 لأنه كان ناقصاً)
+  /// ✅ خريطة الملفات — ID → اسم الملف
+  /// ⚠️ المفاتيح تطابق notification_service.muezzins
   static const Map<String, String> adhanFiles = {
-    // المضمّنون (3)
-    'marwan': 'adhan_amman.mp3',
-    'yasser': 'adhan_yasser.mp3',
-    'salah_budair': 'adhan_almuaiqly.mp3',
-    // القابلون للتحميل (8)
-    'afasy': 'adhan_alafasy.mp3',
-    'abdalbaset': 'adhan_abdalbaset.mp3',
-    'ghamdi': 'adhan_ghamdi.mp3',
-    'shamiree': 'adhan_shamiree.mp3',
-    'makkah': 'adhan_makkah.mp3',
-    'madina': 'adhan_madina.mp3',
-    'alaqsa': 'adhan_alaqsa.mp3',
-    'masr': 'adhan_masr.mp3',
+    'adhan_sudais': 'adhan_sudais.mp3',
+    'adhan_yasser': 'adhan_yasser.mp3',
+    'adhan_almuaiqly': 'adhan_almuaiqly.mp3',
+    'adhan_alafasy': 'adhan_alafasy.mp3',
+    'adhan_abdalbaset': 'adhan_abdalbaset.mp3',
+    'adhan_ghamdi': 'adhan_ghamdi.mp3',
+    'adhan_shamiree': 'adhan_shamiree.mp3',
+    'adhan_makkah': 'adhan_makkah.mp3',
+    'adhan_madina': 'adhan_madina.mp3',
+    'adhan_alaqsa': 'adhan_alaqsa.mp3',
+    'adhan_masr': 'adhan_masr.mp3',
+    'adhan_amman': 'adhan_amman.mp3',
   };
 
   static bool isBundled(String muezzinId) {
@@ -85,26 +84,21 @@ class AdhanDownloadService {
   static final Map<String, String> muezzinUrls = {};
 
   // ═══════════════════════════════════════════════════════════
-  // ⚠️ Stub methods — للتوافق مع الكود القديم
-  // (جميع الأصوات مضمّنة الآن، لا حاجة للتحميل)
+  // Stub methods — للتوافق مع settings_tab
   // ═══════════════════════════════════════════════════════════
 
-  /// تحميل مؤذن واحد — وهمي (المؤذن مضمّن بالفعل)
   static Future<bool> downloadMuezzin(
     String muezzinId,
     void Function(double progress) onProgress,
   ) async {
     if (adhanFiles.containsKey(muezzinId)) {
       onProgress(1.0);
-      debugPrint('✅ $muezzinId مضمّن بالفعل');
       return true;
     }
-    debugPrint('⚠️ مؤذن غير معروف: $muezzinId');
     onProgress(1.0);
     return false;
   }
 
-  /// تحميل الكل — وهمي
   static Future<Map<String, bool>> downloadAll({
     required void Function(String muezzinId, double progress) onMuezzinProgress,
     required void Function(int completed, int total) onOverallProgress,
@@ -112,15 +106,12 @@ class AdhanDownloadService {
     final ids = adhanFiles.keys.toList();
     final results = <String, bool>{};
     int completed = 0;
-
     for (final id in ids) {
       onMuezzinProgress(id, 1.0);
       results[id] = true;
       completed++;
       onOverallProgress(completed, ids.length);
     }
-
-    debugPrint('✅ جميع المؤذنين مضمّنون');
     return results;
   }
 }
