@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
-import '../../../core/services/adhan_download_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -54,8 +53,22 @@ class _SettingsTabState extends State<SettingsTab>
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // ✅ تحميل الإعدادات — مع التحقق من قيمة المؤذن
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadAllSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // ✅ التحقق من قيمة المؤذن قبل الاستخدام
+    String muezzin = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
+    final valid =
+        NotificationService.muezzins.any((m) => m['file'] == muezzin);
+    if (!valid) {
+      debugPrint('⚠️ قيمة مؤذن غير صالحة: $muezzin — استخدام الافتراضي');
+      muezzin = 'adhan_sudais';
+      await prefs.setString('selected_muezzin', muezzin);
+    }
+
     if (!mounted) return;
     setState(() {
       _userName = prefs.getString('user_name') ?? 'مستخدم';
@@ -65,8 +78,7 @@ class _SettingsTabState extends State<SettingsTab>
       _isLocationReady = prefs.getBool('location_enabled') ?? false;
       _selectedBackground = prefs.getInt('background_index') ?? 0;
       _selectedTimeFormat = prefs.getString('time_format') ?? '24h';
-      _selectedMuezzin =
-          prefs.getString('selected_muezzin') ?? 'adhan_sudais';
+      _selectedMuezzin = muezzin;
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _soundEnabled = prefs.getBool('sound_enabled') ?? true;
       _soundVolume = prefs.getDouble('sound_volume') ?? 0.8;
@@ -105,7 +117,7 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // البحث عن الموقع
+  // 🔍 البحث عن الموقع
   // ═══════════════════════════════════════════════════════════
   Future<void> _searchLocation(String query) async {
     if (query.isEmpty || query.length < 2) {
@@ -653,7 +665,8 @@ class _SettingsTabState extends State<SettingsTab>
                     await NotificationService.showTestNotification();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('🔔 تم إرسال اختبار الأذان')),
+                      const SnackBar(
+                          content: Text('🔔 تم إرسال اختبار الأذان')),
                     );
                   },
                   icon: const Icon(Icons.play_circle,
@@ -891,7 +904,7 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 4. المعلومات (مع Google Sign-In)
+  // 4. المعلومات — مع Google Sign-In
   // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
@@ -912,7 +925,8 @@ class _SettingsTabState extends State<SettingsTab>
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.person, color: Color(0xFFD4AF37), size: 24),
+                      Icon(Icons.person,
+                          color: Color(0xFFD4AF37), size: 24),
                       SizedBox(width: 8),
                       Text('🔐 الحساب',
                           style: TextStyle(
@@ -930,8 +944,8 @@ class _SettingsTabState extends State<SettingsTab>
                           backgroundImage: user.photoURL != null
                               ? NetworkImage(user.photoURL!)
                               : null,
-                          backgroundColor:
-                              const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                          backgroundColor: const Color(0xFFD4AF37)
+                              .withValues(alpha: 0.3),
                           child: user.photoURL == null
                               ? const Icon(Icons.person,
                                   color: Color(0xFFD4AF37), size: 24)
@@ -1036,7 +1050,8 @@ class _SettingsTabState extends State<SettingsTab>
         _buildSettingsCard(
           Column(
             children: [
-              const Icon(Icons.mosque, color: Color(0xFFD4AF37), size: 80),
+              const Icon(Icons.mosque,
+                  color: Color(0xFFD4AF37), size: 80),
               const SizedBox(height: 16),
               const Text('نور الحرمين',
                   style: TextStyle(

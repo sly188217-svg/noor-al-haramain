@@ -13,7 +13,6 @@ import '../../../core/providers/language_provider.dart';
 import '../../../core/services/hijri_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/adhan_download_service.dart';
-import '../../../core/data/muezzins.dart';
 import '../../qibla/qibla_screen.dart';
 import '../../kids/kids_stories_screen.dart';
 
@@ -126,14 +125,24 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ✅ إصلاح: التحقق من قيمة المؤذن قبل الاستخدام
   Future<void> _loadMuezzinPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
-    // ابحث عن الاسم من قائمة الإشعارات
+    String id = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
+
+    // ✅ التحقق: إذا كانت القيمة غير صالحة → استخدم الافتراضي
+    final valid = NotificationService.muezzins.any((m) => m['file'] == id);
+    if (!valid) {
+      debugPrint('⚠️ قيمة مؤذن غير صالحة: $id — استخدام الافتراضي');
+      id = 'adhan_sudais';
+      await prefs.setString('selected_muezzin', id);
+    }
+
     final matching = NotificationService.muezzins.firstWhere(
       (m) => m['file'] == id,
       orElse: () => NotificationService.muezzins.first,
     );
+
     if (mounted) {
       setState(() {
         _selectedMuezzinId = id;
@@ -634,6 +643,12 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           ),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
+              // ✅ التحقق من أن القيمة صالحة
+              final validValue = NotificationService.muezzins
+                      .any((m) => m['file'] == tempMuezzinId)
+                  ? tempMuezzinId
+                  : 'adhan_sudais';
+
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -650,7 +665,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               const Color(0xFFD4AF37).withValues(alpha: 0.3)),
                     ),
                     child: DropdownButton<String>(
-                      value: tempMuezzinId,
+                      value: validValue,
                       dropdownColor: const Color(0xFF1C2541),
                       style: const TextStyle(color: Colors.white),
                       underline: const SizedBox(),
@@ -910,9 +925,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
-                        // ═════════════════════════════════════════════
-                        // أزرار التحكم — 5 أزرار
-                        // ═════════════════════════════════════════════
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
