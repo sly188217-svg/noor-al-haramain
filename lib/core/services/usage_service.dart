@@ -1,109 +1,187 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// خدمة تتبع الاستخدام — محلية بالكامل (بدون Firebase)
+/// 📊 خدمة الاستخدام — محفوظة في Firebase Firestore
+/// ✅ لا يمكن التلاعب بحذف التطبيق
+/// ✅ تجديد يومي تلقائي
 /// ═══════════════════════════════════════════════════════════
 class UsageService {
-  static const int freeRecitationLimit = 3;
-  static const int freeChatLimit = 5;
+  static const int _freeChats = 5;
+  static const int _freeRecitations = 3;
+  static const String _guestUidKey = 'guest_uid';
 
-  static String get _today {
+  static Future<String> _getUid() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) return user.uid;
+    } catch (e) {
+      debugPrint('⚠️ Firebase Auth غير متاح: $e');
+    }
+    final prefs = await SharedPreferences.getInstance();
+    String? guestUid = prefs.getString(_guestUidKey);
+    if (guestUid == null) {
+      guestUid = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      await prefs.setString(_guestUidKey, guestUid);
+    }
+    return guestUid;
+  }
+
+  static String _today() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  /// قراءة بيانات المستخدم (محلي)
-  static Future<Map<String, dynamic>> getUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastReset = prefs.getString('usage_last_reset') ?? _today;
+  static Future<Map<String, dynamic>> _getUsage() async {
+    final uid = await _getUid();
+    final today = _today();
 
-    if (lastReset != _today) {
-      await prefs.setInt('usage_daily_recitations', 0);
-      await prefs.setInt('usage_daily_chats', 0);
-      await prefs.setString('usage_last_reset', _today);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      if (!doc.exists) {
+        final initial = {
+          'chats_used': 0,
+          'recitations_used': 0,
+          'last_reset': today,
+          'is_premium': false,
+        };
+        await FirebaseFirestore.instance
+            .collection('usage')
+            .doc(uid)
+            .set(initial);
+        return initial;
+      }
+
+      final data = doc.data() ?? {};
+      final lastReset = data['last_reset'] as String? ?? '';
+
+      if (lastReset != today) {
+        await FirebaseFirestore.instance
+            .collection('usage')
+            .doc(uid)
+            .update({
+          'chats_used': 0,
+          'recitations_used': 0,
+          'last_reset': today,
+        });
+        return {
+          ...data,
+          'chats_used': 0,
+          'recitations_used': 0,
+          'last_reset': today,
+        };
+      }
+
+      return data;
+    } catch (e) {
+      debugPrint('⚠️ فشل قراءة Firestore: $e');
+      return await _localFallback();
+    }
+  }
+
+  static Future<Map<String, dynamic>> _localFallback() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = _today();
+    final lastReset = prefs.getString('local_last_reset') ?? '';
+
+    if (lastReset != today) {
+      await prefs.setInt('local_chats_used', 0);
+      await prefs.setInt('local_recitations_used', 0);
+      await prefs.setString('local_last_reset', today);
     }
 
     return {
-      'subscription': prefs.getString('subscription') ?? 'free',
-      'dailyRecitations': prefs.getInt('usage_daily_recitations') ?? 0,
-      'dailyChats': prefs.getInt('usage_daily_chats') ?? 0,
-      'totalRecitations': prefs.getInt('usage_total_recitations') ?? 0,
-      'totalChats': prefs.getInt('usage_total_chats') ?? 0,
+      'chats_used': prefs.getInt('local_chats_used') ?? 0,
+      'recitations_used': prefs.getInt('local_recitations_used') ?? 0,
+      'is_premium': prefs.getBool('is_premium') ?? false,
     };
   }
 
-  static Future<bool> isPremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('subscription') == 'premium';
-  }
-
-  static Future<bool> canRecite() async {
-    if (await isPremium()) return true;
-    final data = await getUserData();
-    final count = data['dailyRecitations'] as int? ?? 0;
-    return count < freeRecitationLimit;
-  }
-
-  static Future<bool> canChat() async {
-    if (await isPremium()) return true;
-    final data = await getUserData();
-    final count = data['dailyChats'] as int? ?? 0;
-    return count < freeChatLimit;
-  }
-
-  static Future<void> incrementRecitation() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('usage_daily_recitations',
-        (prefs.getInt('usage_daily_recitations') ?? 0) + 1);
-    await prefs.setInt('usage_total_recitations',
-        (prefs.getInt('usage_total_recitations') ?? 0) + 1);
-    await prefs.setString('usage_last_reset', _today);
-  }
-
-  static Future<void> incrementChat() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('usage_daily_chats',
-        (prefs.getInt('usage_daily_chats') ?? 0) + 1);
-    await prefs.setInt('usage_total_chats',
-        (prefs.getInt('usage_total_chats') ?? 0) + 1);
-    await prefs.setString('usage_last_reset', _today);
+  static Future<int> remainingChats() async {
+    final data = await _getUsage();
+    if (data['is_premium'] == true) return 999999;
+    final used = (data['chats_used'] as num?)?.toInt() ?? 0;
+    return (_freeChats - used).clamp(0, _freeChats);
   }
 
   static Future<int> remainingRecitations() async {
-    if (await isPremium()) return -1;
-    final data = await getUserData();
-    final count = data['dailyRecitations'] as int? ?? 0;
-    final remaining = freeRecitationLimit - count;
-    return remaining < 0 ? 0 : remaining;
+    final data = await _getUsage();
+    if (data['is_premium'] == true) return 999999;
+    final used = (data['recitations_used'] as num?)?.toInt() ?? 0;
+    return (_freeRecitations - used).clamp(0, _freeRecitations);
   }
 
-  static Future<int> remainingChats() async {
-    if (await isPremium()) return -1;
-    final data = await getUserData();
-    final count = data['dailyChats'] as int? ?? 0;
-    final remaining = freeChatLimit - count;
-    return remaining < 0 ? 0 : remaining;
+  static Future<bool> canChat() async => (await remainingChats()) > 0;
+  static Future<bool> canRecite() async => (await remainingRecitations()) > 0;
+
+  static Future<void> incrementChat() async {
+    final uid = await _getUid();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .set({
+        'chats_used': FieldValue.increment(1),
+        'last_reset': _today(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      final used = prefs.getInt('local_chats_used') ?? 0;
+      await prefs.setInt('local_chats_used', used + 1);
+    }
   }
 
-  /// ترقية لـ Premium (محلي)
-  static Future<void> upgradeToPremium({
-    required String productId,
-    required DateTime expiry,
-  }) async {
+  static Future<void> incrementRecitation() async {
+    final uid = await _getUid();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .set({
+        'recitations_used': FieldValue.increment(1),
+        'last_reset': _today(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      final used = prefs.getInt('local_recitations_used') ?? 0;
+      await prefs.setInt('local_recitations_used', used + 1);
+    }
+  }
+
+  static Future<bool> isPremium() async {
+    final data = await _getUsage();
+    return data['is_premium'] == true;
+  }
+
+  static Future<void> activatePremium() async {
+    final uid = await _getUid();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .set({'is_premium': true}, SetOptions(merge: true));
+    } catch (e) {}
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('subscription', 'premium');
+    await prefs.setBool('is_premium', true);
   }
 
-  static Future<void> cancelPremium() async {
+  static Future<void> deactivatePremium() async {
+    final uid = await _getUid();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .set({'is_premium': false}, SetOptions(merge: true));
+    } catch (e) {}
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('subscription', 'free');
-  }
-
-  /// للتطوير — إعادة تعيين
-  static Future<void> resetDailyUsage() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('usage_daily_recitations', 0);
-    await prefs.setInt('usage_daily_chats', 0);
+    await prefs.setBool('is_premium', false);
   }
 }
+

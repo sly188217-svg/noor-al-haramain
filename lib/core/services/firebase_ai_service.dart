@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'usage_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🤖 خدمة الذكاء الاصطناعي — Groq API (مجاني)
-/// ✅ يجرب عدة موديلات تلقائياً حتى ينجح أحدها
-/// ✅ تجديد يومي تلقائي للتجربة المجانية
+/// ✅ يستخدم Firestore للعدادات (لا يمكن التلاعب)
+/// ✅ يقرأ التشكيل والحركات
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -15,118 +16,20 @@ class FirebaseAiService {
   static const String _baseUrl =
       'https://api.groq.com/openai/v1/chat/completions';
 
-  /// ✅ قائمة الموديلات الجديدة من Groq (2026)
   static const List<String> _models = [
-    'openai/gpt-oss-120b',      // الأقوى
-    'openai/gpt-oss-20b',       // سريع
-    'qwen/qwen3.8-27b',         // قوي بالعربية
-    'allam-2-7b',               // سعودي — عربي أصيل
-    'groq/compound',            // بديل
-    'groq/compound-mini',       // الأسرع
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b',
+    'qwen/qwen3.8-27b',
+    'allam-2-7b',
+    'groq/compound',
+    'groq/compound-mini',
   ];
 
-  /// ✅ الموديل النشط (يُحفظ بعد نجاحه)
   static String? _activeModel;
-
-  // ═══════════════════════════════════════════════════════════
-  // 🎁 نظام التجربة المجانية (تجديد يومي)
-  // ═══════════════════════════════════════════════════════════
-  static const int _freeAiQuestions = 5;
-  static const int _freeCorrections = 3;
-  static const String _aiCountKey = 'ai_questions_used';
-  static const String _correctionCountKey = 'corrections_used';
-  static const String _isPremiumKey = 'is_premium';
   static const String _activeModelKey = 'groq_active_model';
-  static const String _lastResetDateKey = 'last_reset_date';
 
-  static Future<bool> isPremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_isPremiumKey) ?? false;
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 🔄 التجديد اليومي التلقائي
-  // ═══════════════════════════════════════════════════════════
-  static Future<void> _checkDailyReset() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final now = DateTime.now();
-      final today =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final lastReset = prefs.getString(_lastResetDateKey) ?? '';
-
-      if (lastReset != today) {
-        // ✅ يوم جديد — أعد العدادات
-        await prefs.setInt(_aiCountKey, 0);
-        await prefs.setInt(_correctionCountKey, 0);
-        await prefs.setString(_lastResetDateKey, today);
-        debugPrint('🔄 تجديد يومي: تم إعادة العدادات إلى 0 (التاريخ: $today)');
-      }
-    } catch (e) {
-      debugPrint('⚠️ فشل التجديد اليومي: $e');
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 📊 عدادات المتبقي
-  // ═══════════════════════════════════════════════════════════
-  static Future<int> remainingAiQuestions() async {
-    if (await isPremium()) return 999999;
-    await _checkDailyReset();
-    final prefs = await SharedPreferences.getInstance();
-    final used = prefs.getInt(_aiCountKey) ?? 0;
-    return (_freeAiQuestions - used).clamp(0, _freeAiQuestions);
-  }
-
-  static Future<int> remainingCorrections() async {
-    if (await isPremium()) return 999999;
-    await _checkDailyReset();
-    final prefs = await SharedPreferences.getInstance();
-    final used = prefs.getInt(_correctionCountKey) ?? 0;
-    return (_freeCorrections - used).clamp(0, _freeCorrections);
-  }
-
-  static Future<void> _incrementAiCount() async {
-    if (await isPremium()) return;
-    await _checkDailyReset();
-    final prefs = await SharedPreferences.getInstance();
-    final used = prefs.getInt(_aiCountKey) ?? 0;
-    await prefs.setInt(_aiCountKey, used + 1);
-  }
-
-  static Future<void> _incrementCorrectionCount() async {
-    if (await isPremium()) return;
-    await _checkDailyReset();
-    final prefs = await SharedPreferences.getInstance();
-    final used = prefs.getInt(_correctionCountKey) ?? 0;
-    await prefs.setInt(_correctionCountKey, used + 1);
-  }
-
-  static Future<void> activatePremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_isPremiumKey, true);
-  }
-
-  static Future<void> deactivatePremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_isPremiumKey, false);
-  }
-
-  /// إعادة تعيين يدوية (للتشخيص)
-  static Future<void> resetCounters() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_aiCountKey);
-    await prefs.remove(_correctionCountKey);
-    await prefs.remove(_lastResetDateKey);
-    debugPrint('✅ تم إعادة تعيين العدادات يدوياً');
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 اختيار الموديل النشط
-  // ═══════════════════════════════════════════════════════════
   static Future<String> _getActiveModel() async {
     if (_activeModel != null) return _activeModel!;
-
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_activeModelKey);
     if (saved != null && saved.isNotEmpty) {
@@ -143,9 +46,6 @@ class FirebaseAiService {
     debugPrint('✅ الموديل النشط: $model');
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔄 إرسال طلب مع تجربة موديلات متعددة
-  // ═══════════════════════════════════════════════════════════
   static Future<http.Response?> _sendRequest(
     Map<String, dynamic> body, {
     Duration timeout = const Duration(seconds: 60),
@@ -175,7 +75,6 @@ class FirebaseAiService {
         if (response.statusCode == 404 ||
             response.body.contains('model_not_found') ||
             response.body.contains('does not exist')) {
-          debugPrint('⚠️ الموديل $model غير متاح، جرب التالي...');
           continue;
         }
 
@@ -197,16 +96,14 @@ class FirebaseAiService {
       return '⚠️ مفتاح Groq API غير موجود.';
     }
 
-    if (!await isPremium()) {
-      final remaining = await remainingAiQuestions();
+    if (!await UsageService.isPremium()) {
+      final remaining = await UsageService.remainingChats();
       if (remaining <= 0) {
         return '🔒 **انتهت تجربتك المجانية لليوم**\n\n'
-            'استخدمت 5 أسئلة مجانية اليوم.\n'
-            '⏰ **يتجدد تلقائياً غداً**\n\n'
+            '⏰ يتجدد تلقائياً غداً\n\n'
             '💎 **للاشتراك الفوري:**\n'
             '• شهرياً: \$2.99\n'
-            '• سنوياً: \$19.99\n\n'
-            'اذهب إلى الإعدادات ← الاشتراك';
+            '• سنوياً: \$19.99';
       }
     }
 
@@ -247,24 +144,22 @@ class FirebaseAiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final text = data['choices']?[0]?['message']?['content'];
-        await _incrementAiCount();
+        await UsageService.incrementChat();
         return text?.toString().trim() ?? '⚠️ لا يوجد رد.';
       } else if (response.statusCode == 401) {
         return '⚠️ مفتاح Groq غير صالح.';
       } else if (response.statusCode == 429) {
         return '⚠️ تجاوزت حد الاستخدام. حاول بعد دقيقة.';
       } else {
-        debugPrint('❌ Groq ${response.statusCode}: ${response.body}');
         return '⚠️ خطأ ${response.statusCode}.';
       }
     } catch (e) {
-      debugPrint('❌ Groq error: $e');
       return '⚠️ تعذر الاتصال: $e';
     }
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 تصحيح التلاوة
+  // 📖 تصحيح التلاوة — مع قراءة الحركات
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
@@ -274,41 +169,45 @@ class FirebaseAiService {
       return {'accuracy': 0, 'words': [], 'feedback': 'مفتاح Groq غير موجود'};
     }
 
-    if (!await isPremium()) {
-      final remaining = await remainingCorrections();
+    if (!await UsageService.isPremium()) {
+      final remaining = await UsageService.remainingRecitations();
       if (remaining <= 0) {
         return {
           'accuracy': 0,
           'words': [],
-          'feedback':
-              '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً\n💎 اشترك: \$2.99 شهرياً',
+          'feedback': '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً',
         };
       }
     }
 
     try {
       final prompt = '''
-أنت خبير في تصحيح تلاوة القرآن الكريم برواية حفص.
+أنت خبير في تصحيح تلاوة القرآن الكريم برواية حفص عن عاصم.
 
-النص الصحيح:
+النص الصحيح (بالرسم العثماني مع التشكيل الكامل):
 $correctAyah
 
 ما قرأه المستخدم:
 $userRecitation
 
+⚠️ مهم جداً:
+- قارن **مع التشكيل** (الحركات: فتحة، ضمة، كسرة، سكون، شدة، مد، تنوين)
+- إذا أخطأ في الحركة، اعتبره "wrong"
+- أعد النص الصحيح **مع التشكيل** في حقل "correct"
+
 أعد JSON فقط:
 {
   "accuracy": 85,
   "words": [
-    {"user": "الكلمة", "correct": "الصحيحة", "status": "correct"},
-    {"user": "خطأ", "correct": "صواب", "status": "wrong"},
-    {"user": "", "correct": "ناقصة", "status": "missing"},
-    {"user": "زائدة", "correct": "", "status": "extra"}
+    {"user": "الْحَمْدُ", "correct": "الْحَمْدُ", "status": "correct"},
+    {"user": "الحمد", "correct": "الْحَمْدُ", "status": "wrong"},
+    {"user": "", "correct": "لِلَّهِ", "status": "missing"},
+    {"user": "زيادة", "correct": "", "status": "extra"}
   ],
-  "feedback": "ملاحظات مختصرة"
+  "feedback": "ملاحظات عن الحركات والتشكيل"
 }
 
-⚠️ JSON فقط بدون أي نص آخر.
+⚠️ JSON فقط.
 ''';
 
       final response = await _sendRequest({
@@ -316,7 +215,7 @@ $userRecitation
           {'role': 'user', 'content': prompt}
         ],
         'max_tokens': 2000,
-        'temperature': 0.3,
+        'temperature': 0.2,
         'response_format': {'type': 'json_object'},
       });
 
@@ -324,9 +223,7 @@ $userRecitation
         return {
           'accuracy': 0,
           'words': [],
-          'feedback': response != null
-              ? 'خطأ ${response.statusCode}'
-              : 'جميع الموديلات غير متاحة',
+          'feedback': 'خطأ في الاتصال',
         };
       }
 
@@ -348,7 +245,7 @@ $userRecitation
       try {
         final decoded = jsonDecode(cleaned);
         if (decoded is Map<String, dynamic>) {
-          await _incrementCorrectionCount();
+          await UsageService.incrementRecitation();
           decoded['accuracy'] = decoded['accuracy'] ?? 0;
           decoded['words'] = decoded['words'] ?? [];
           decoded['feedback'] = decoded['feedback'] ?? '';
@@ -360,7 +257,6 @@ $userRecitation
 
       return {'accuracy': 0, 'words': [], 'feedback': text};
     } catch (e) {
-      debugPrint('❌ Groq error: $e');
       return {'accuracy': 0, 'words': [], 'feedback': 'خطأ: $e'};
     }
   }
@@ -422,31 +318,6 @@ $userRecitation
     } catch (e) {
       debugPrint('❌ identifyAyah error: $e');
       return null;
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 🔍 جلب قائمة الموديلات المتاحة (للتشخيص)
-  // ═══════════════════════════════════════════════════════════
-  static Future<List<String>> fetchAvailableModels() async {
-    if (_apiKey.isEmpty) return [];
-    try {
-      final response = await http.get(
-        Uri.parse('https://api.groq.com/openai/v1/models'),
-        headers: {'Authorization': 'Bearer $_apiKey'},
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != 200) return [];
-
-      final data = jsonDecode(response.body);
-      final List<dynamic> models = data['data'] ?? [];
-      return models
-          .map((m) => m['id']?.toString() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList();
-    } catch (e) {
-      debugPrint('❌ fetchModels error: $e');
-      return [];
     }
   }
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../quran/models/surah_model.dart';
 import '../quran/models/ayah_model.dart';
 import '../quran/services/quran_service.dart';
 import '../../core/services/firebase_ai_service.dart';
 import '../../core/services/usage_service.dart';
 
-/// نموذج كلمة في المقارنة
 class _WordFeedback {
   final String userWord;
   final String correctWord;
@@ -101,6 +101,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           }
         },
         onError: (error) {
+          debugPrint('⚠️ Speech error: $error');
           if (mounted) setState(() => _isListening = false);
         },
       );
@@ -142,6 +143,15 @@ class _RecitationScreenState extends State<RecitationScreen> {
     } catch (_) {}
   }
 
+  Future<bool> _requestMicrophonePermission() async {
+    try {
+      final status = await Permission.microphone.request();
+      return status.isGranted;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> _toggleListening() async {
     if (!_isListening) {
       final canRecite = await UsageService.canRecite();
@@ -154,7 +164,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
     if (!_speechAvailable) {
       await _initSpeech();
       if (!_speechAvailable) {
-        _showSnack('⚠️ التعرف الصوتي غير متوفر');
+        _showSnack('⚠️ التعرف الصوتي غير متوفر. تأكد من منح إذن الميكروفون.');
         return;
       }
     }
@@ -163,6 +173,26 @@ class _RecitationScreenState extends State<RecitationScreen> {
       await _speech.stop();
       if (mounted) setState(() => _isListening = false);
       return;
+    }
+
+    final hasPermission = await _requestMicrophonePermission();
+    if (!hasPermission) {
+      _showSnack('⚠️ يجب منح إذن الميكروفون من الإعدادات.');
+      return;
+    }
+
+    // ✅ ابحث عن Locale عربي متاح
+    String localeId = 'ar_SA';
+    try {
+      final locales = await _speech.locales();
+      final arabicLocale = locales.firstWhere(
+        (l) => l.localeId.startsWith('ar'),
+        orElse: () => locales.first,
+      );
+      localeId = arabicLocale.localeId;
+      debugPrint('🎤 استخدام اللغة: $localeId');
+    } catch (e) {
+      debugPrint('⚠️ فشل الحصول على اللغات: $e');
     }
 
     setState(() {
@@ -183,10 +213,12 @@ class _RecitationScreenState extends State<RecitationScreen> {
         if (!mounted) return;
         setState(() => _userRecitation = result.recognizedWords);
       },
-      listenFor: const Duration(seconds: 45),
-      pauseFor: const Duration(seconds: 4),
+      listenFor: const Duration(seconds: 60),
+      pauseFor: const Duration(seconds: 5),
       partialResults: true,
-      localeId: 'ar_SA',
+      localeId: localeId,
+      cancelOnError: false,
+      listenMode: stt.ListenMode.dictation,
     );
   }
 
@@ -255,7 +287,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
         correctAyah: _correctAyah,
       );
 
-      await UsageService.incrementRecitation();
       final remaining = await UsageService.remainingRecitations();
 
       final wordsList = <_WordFeedback>[];
@@ -713,9 +744,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
               _correctAyah,
               style: const TextStyle(
                 color: Color(0xFFD4AF37),
-                fontSize: 22,
+                fontSize: 24,
                 fontFamily: 'Amiri',
-                height: 2.0,
+                height: 2.2,
               ),
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
@@ -755,9 +786,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
             textDirection: TextDirection.rtl,
             text: TextSpan(
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 24,
                 fontFamily: 'Amiri',
-                height: 2.2,
+                height: 2.4,
               ),
               children: _buildWordSpans(),
             ),
@@ -778,7 +809,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     );
   }
 
-  // ✅ تصحيح الأخطاء: استخدام decorationColor و decorationThickness داخل TextStyle مباشرة
   List<TextSpan> _buildWordSpans() {
     final spans = <TextSpan>[];
 
@@ -819,7 +849,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         text: '$displayWord ',
         style: TextStyle(
           color: color,
-          fontSize: 22,
+          fontSize: 24,
           fontFamily: 'Amiri',
           fontWeight: fontWeight,
           decoration: decoration,
@@ -918,9 +948,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
             _userRecitation,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 20,
               fontFamily: 'Amiri',
-              height: 1.7,
+              height: 1.8,
             ),
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
