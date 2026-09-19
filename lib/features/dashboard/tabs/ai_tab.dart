@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/firebase_ai_service.dart';
@@ -123,9 +124,6 @@ class _ChatTabState extends State<_ChatTab> {
     } catch (_) {}
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📚 سجل المحادثات
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -159,7 +157,6 @@ class _ChatTabState extends State<_ChatTab> {
             _messages.map((m) => Map<String, String>.from(m)).toList(),
       };
 
-      // احذف إذا كانت نفس المحادثة موجودة (نفس آخر تاريخ)
       _savedConversations.removeWhere((c) => c['title'] == title);
       _savedConversations.insert(0, entry);
       if (_savedConversations.length > 20) {
@@ -219,7 +216,8 @@ class _ChatTabState extends State<_ChatTab> {
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Color(0xFF1C2541),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
@@ -249,7 +247,8 @@ class _ChatTabState extends State<_ChatTab> {
                         padding: EdgeInsets.all(20),
                         child: Text(
                           'لا يوجد سجل بعد',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                          style: TextStyle(
+                              color: Colors.grey, fontSize: 14),
                         ),
                       ),
                     )
@@ -306,9 +305,6 @@ class _ChatTabState extends State<_ChatTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 💬 إرسال الرسالة
-  // ═══════════════════════════════════════════════════════════
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -352,7 +348,8 @@ class _ChatTabState extends State<_ChatTab> {
             Icon(Icons.hourglass_empty, color: Color(0xFFD4AF37)),
             SizedBox(width: 8),
             Text('انتهى الحد اليومي',
-                style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18)),
+                style:
+                    TextStyle(color: Color(0xFFD4AF37), fontSize: 18)),
           ],
         ),
         content: const Text(
@@ -389,7 +386,6 @@ class _ChatTabState extends State<_ChatTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // شريط علوي
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           color: const Color(0xFF0B132B),
@@ -429,8 +425,6 @@ class _ChatTabState extends State<_ChatTab> {
             ],
           ),
         ),
-
-        // الرسائل
         Expanded(
           child: _messages.isEmpty
               ? Center(
@@ -506,11 +500,10 @@ class _ChatTabState extends State<_ChatTab> {
                   },
                 ),
         ),
-
-        // مؤشر التحميل
         if (_isLoading)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 const SizedBox(
@@ -529,8 +522,6 @@ class _ChatTabState extends State<_ChatTab> {
               ],
             ),
           ),
-
-        // حقل الإدخال
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -573,8 +564,8 @@ class _ChatTabState extends State<_ChatTab> {
                     color: Color(0xFFD4AF37),
                     shape: BoxShape.circle,
                   ),
-                  child:
-                      const Icon(Icons.send, color: Colors.black, size: 24),
+                  child: const Icon(Icons.send,
+                      color: Colors.black, size: 24),
                 ),
               ),
             ],
