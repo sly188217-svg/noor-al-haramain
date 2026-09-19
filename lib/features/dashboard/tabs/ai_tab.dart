@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/language_provider.dart';
@@ -74,7 +75,7 @@ class _AiTabState extends State<AiTab>
 }
 
 /// ═══════════════════════════════════════════════════════════
-/// تبويب المحادثة الذكية
+/// تبويب المحادثة الذكية — مع سجل المحادثات
 /// ═══════════════════════════════════════════════════════════
 class _ChatTab extends StatefulWidget {
   final bool isArabic;
@@ -91,15 +92,20 @@ class _ChatTabState extends State<_ChatTab> {
   bool _isLoading = false;
   bool _isPremium = false;
   int _remainingChats = 5;
+  List<Map<String, dynamic>> _savedConversations = [];
+
+  static const String _historyKey = 'chat_history_v1';
 
   @override
   void initState() {
     super.initState();
     _loadStatus();
+    _loadHistory();
   }
 
   @override
   void dispose() {
+    _saveCurrentChat();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -117,11 +123,196 @@ class _ChatTabState extends State<_ChatTab> {
     } catch (_) {}
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 📚 سجل المحادثات
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _loadHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_historyKey) ?? '[]';
+      final list = jsonDecode(raw) as List;
+      if (!mounted) return;
+      setState(() {
+        _savedConversations = list
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('⚠️ فشل تحميل السجل: $e');
+    }
+  }
+
+  Future<void> _saveCurrentChat() async {
+    if (_messages.isEmpty) return;
+    try {
+      final now = DateTime.now();
+      final firstText = _messages.first['text'] ?? 'محادثة';
+      final title = firstText.length > 50
+          ? '${firstText.substring(0, 50)}...'
+          : firstText;
+
+      final entry = {
+        'date':
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+        'title': title,
+        'messages':
+            _messages.map((m) => Map<String, String>.from(m)).toList(),
+      };
+
+      // احذف إذا كانت نفس المحادثة موجودة (نفس آخر تاريخ)
+      _savedConversations.removeWhere((c) => c['title'] == title);
+      _savedConversations.insert(0, entry);
+      if (_savedConversations.length > 20) {
+        _savedConversations = _savedConversations.sublist(0, 20);
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_historyKey, jsonEncode(_savedConversations));
+    } catch (e) {
+      debugPrint('⚠️ فشل حفظ السجل: $e');
+    }
+  }
+
+  void _newChat() {
+    _saveCurrentChat();
+    setState(() {
+      _messages.clear();
+    });
+  }
+
+  void _openConversation(Map<String, dynamic> conv) {
+    _saveCurrentChat();
+    setState(() {
+      _messages.clear();
+      final msgs = conv['messages'] as List? ?? [];
+      for (final m in msgs) {
+        _messages.add(Map<String, String>.from(m));
+      }
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _deleteConversation(int index) async {
+    setState(() {
+      _savedConversations.removeAt(index);
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_historyKey, jsonEncode(_savedConversations));
+  }
+
+  void _showHistory() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0B132B),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C2541),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.history, color: Color(0xFFD4AF37)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      '📚 سجل المحادثات',
+                      style: TextStyle(
+                        color: Color(0xFFD4AF37),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _savedConversations.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'لا يوجد سجل بعد',
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      itemCount: _savedConversations.length,
+                      itemBuilder: (context, index) {
+                        final c = _savedConversations[index];
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C2541)
+                                .withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: const Icon(Icons.chat,
+                                color: Color(0xFFD4AF37)),
+                            title: Text(
+                              c['title'] ?? '',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              c['date'] ?? '',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 11),
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red, size: 18),
+                              onPressed: () async {
+                                await _deleteConversation(index);
+                                if (!context.mounted) return;
+                                Navigator.pop(context);
+                                _showHistory();
+                              },
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _openConversation(c);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 💬 إرسال الرسالة
+  // ═══════════════════════════════════════════════════════════
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
 
-    // فحص الحد اليومي
     final canChat = await UsageService.canChat();
     if (!canChat) {
       _showLimitDialog();
@@ -136,8 +327,6 @@ class _ChatTabState extends State<_ChatTab> {
     _scrollToBottom();
 
     final reply = await FirebaseAiService.askQuestion(text);
-
-    await UsageService.incrementChat();
     final remaining = await UsageService.remainingChats();
 
     if (!mounted) return;
@@ -166,37 +355,9 @@ class _ChatTabState extends State<_ChatTab> {
                 style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18)),
           ],
         ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'لقد استخدمت 5 أسئلة مجانية اليوم.',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
-            SizedBox(height: 12),
-            Text(
-              '⏰ يمكنك المحاولة مجدداً غداً.',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            SizedBox(height: 16),
-            Divider(color: Colors.white24),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.star, color: Color(0xFFD4AF37), size: 18),
-                SizedBox(width: 8),
-                Text(
-                  'قريباً: نسخة Premium',
-                  style: TextStyle(
-                    color: Color(0xFFD4AF37),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        content: const Text(
+          'لقد استخدمت 5 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
+          style: TextStyle(color: Colors.white, fontSize: 14),
         ),
         actions: [
           ElevatedButton(
@@ -228,9 +389,9 @@ class _ChatTabState extends State<_ChatTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // شريط الحد اليومي
+        // شريط علوي
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           color: const Color(0xFF0B132B),
           child: Row(
             children: [
@@ -243,15 +404,33 @@ class _ChatTabState extends State<_ChatTab> {
               Text(
                 _isPremium
                     ? 'Premium — غير محدود'
-                    : 'متبقي: $_remainingChats سؤال اليوم',
+                    : 'متبقي: $_remainingChats سؤال',
                 style: const TextStyle(
-                  color: Color(0xFFD4AF37),
-                  fontSize: 11,
-                ),
+                    color: Color(0xFFD4AF37), fontSize: 11),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.history,
+                    color: Color(0xFFD4AF37), size: 20),
+                onPressed: _showHistory,
+                tooltip: 'السجل',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                icon: const Icon(Icons.add_comment,
+                    color: Color(0xFFD4AF37), size: 20),
+                onPressed: _newChat,
+                tooltip: 'محادثة جديدة',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ],
           ),
         ),
+
+        // الرسائل
         Expanded(
           child: _messages.isEmpty
               ? Center(
@@ -327,6 +506,8 @@ class _ChatTabState extends State<_ChatTab> {
                   },
                 ),
         ),
+
+        // مؤشر التحميل
         if (_isLoading)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -348,6 +529,8 @@ class _ChatTabState extends State<_ChatTab> {
               ],
             ),
           ),
+
+        // حقل الإدخال
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(

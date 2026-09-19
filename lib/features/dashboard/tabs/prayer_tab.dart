@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/hijri_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -60,6 +62,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   String _cityName = 'جاري التحميل...';
   String _nextPrayer = '--';
   bool _isLoading = true;
+  bool _isDetectingLocation = false;
   String _errorMessage = '';
   String _userName = 'مستخدم';
   List<Map<String, dynamic>> _prayerList = [];
@@ -115,9 +118,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // بيانات المستخدم
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
@@ -125,15 +125,12 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ✅ إصلاح: التحقق من قيمة المؤذن قبل الاستخدام
   Future<void> _loadMuezzinPreference() async {
     final prefs = await SharedPreferences.getInstance();
     String id = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
 
-    // ✅ التحقق: إذا كانت القيمة غير صالحة → استخدم الافتراضي
     final valid = NotificationService.muezzins.any((m) => m['file'] == id);
     if (!valid) {
-      debugPrint('⚠️ قيمة مؤذن غير صالحة: $id — استخدام الافتراضي');
       id = 'adhan_sudais';
       await prefs.setString('selected_muezzin', id);
     }
@@ -168,7 +165,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // جلب أوقات الصلاة
+  // 📍 الموقع
   // ═══════════════════════════════════════════════════════════
   Future<void> _loadLocationAndFetchTimes() async {
     final prefs = await SharedPreferences.getInstance();
@@ -206,6 +203,82 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
+    }
+  }
+
+  /// ✅ تحديد الموقع تلقائياً باستخدام GPS
+  Future<void> _detectLocationAutomatically() async {
+    if (_isDetectingLocation) return;
+
+    setState(() => _isDetectingLocation = true);
+
+    try {
+      // 1. تحقق من خدمة الموقع
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showSnack('⚠️ خدمة الموقع غير مفعّلة. فعّلها من إعدادات الهاتف.');
+        setState(() => _isDetectingLocation = false);
+        return;
+      }
+
+      // 2. طلب إذن الموقع
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showSnack('⚠️ يجب منح إذن الموقع من الإعدادات.');
+        setState(() => _isDetectingLocation = false);
+        return;
+      }
+
+      // 3. احصل على الموقع
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
+      );
+
+      // 4. احصل على اسم المدينة
+      String city = 'موقعك';
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          city = p.locality ??
+              p.subAdministrativeArea ??
+              p.administrativeArea ??
+              p.country ??
+              'موقعك';
+        }
+      } catch (e) {
+        debugPrint('⚠️ فشل geocoding: $e');
+      }
+
+      // 5. احفظ
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('user_lat', position.latitude);
+      await prefs.setDouble('user_lng', position.longitude);
+      await prefs.setString('user_city', city);
+
+      setState(() {
+        _userLat = position.latitude;
+        _userLng = position.longitude;
+        _cityName = city;
+        _lastFetchTime =
+            DateTime.now().subtract(const Duration(hours: 2));
+      });
+
+      await _loadLocationAndFetchTimes();
+      _showSnack('✅ تم تحديد الموقع: $city');
+    } catch (e) {
+      debugPrint('❌ فشل تحديد الموقع: $e');
+      _showSnack('⚠️ فشل تحديد الموقع. جرب مرة أخرى.');
+    } finally {
+      if (mounted) setState(() => _isDetectingLocation = false);
     }
   }
 
@@ -397,9 +470,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // المؤقت
-  // ═══════════════════════════════════════════════════════════
   void _startCountdownTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -462,9 +532,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ تشغيل الأذان من assets
-  // ═══════════════════════════════════════════════════════════
   Future<bool> _playAdhanFromAssets(String muezzinId) async {
     final assetSourcePath =
         await AdhanDownloadService.getAssetSourcePath(muezzinId);
@@ -476,7 +543,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource(assetSourcePath));
-      debugPrint('✅ بدأ تشغيل الأذان: $assetSourcePath');
       return true;
     } catch (e) {
       debugPrint('❌ فشل تشغيل الأذان: $e');
@@ -486,8 +552,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
   Future<void> _triggerAdhanAutomatically(String prayerName) async {
     try {
-      debugPrint('🔔 وقت صلاة $prayerName — تشغيل الأذان');
-
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
       if (!started) return;
 
@@ -495,8 +559,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
       await _audioPlayer.onPlayerComplete.first;
       if (mounted) setState(() => _isPlaying = false);
-
-      debugPrint('✅ انتهى الأذان — تشغيل الدعاء');
 
       await Future.delayed(const Duration(milliseconds: 500));
       await _playDuaAfterAdhan();
@@ -514,9 +576,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       );
       await duaPlayer.onPlayerComplete.first;
       await duaPlayer.dispose();
-      debugPrint('✅ انتهى الدعاء');
     } catch (e) {
-      debugPrint('⚠️ فشل الدعاء من assets: $e — استخدام TTS');
       await _speakDuaWithTts();
     }
   }
@@ -568,9 +628,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
       if (mounted) {
         setState(() => _isPlaying = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ تعذر تشغيل الأذان')),
-        );
       }
     }
   }
@@ -580,9 +637,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     if (mounted) setState(() => _isPlaying = false);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🤲 التبرع — منصة إحسان
-  // ═══════════════════════════════════════════════════════════
   Future<void> _openDonation() async {
     const url = 'https://ehsan.sa/';
     try {
@@ -590,30 +644,26 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('⚠️ تعذر فتح منصة إحسان')),
-          );
-        }
+        _showSnack('⚠️ تعذر فتح منصة إحسان');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('⚠️ خطأ: $e')),
-        );
-      }
+      _showSnack('⚠️ خطأ: $e');
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🧒 قصص الأطفال
-  // ═══════════════════════════════════════════════════════════
   void _openKidsStories() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => const KidsStoriesScreen(),
       ),
+    );
+  }
+
+  void _showSnack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
     );
   }
 
@@ -643,7 +693,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           ),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
-              // ✅ التحقق من أن القيمة صالحة
               final validValue = NotificationService.muezzins
                       .any((m) => m['file'] == tempMuezzinId)
                   ? tempMuezzinId
@@ -853,6 +902,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // التاريخ + المدينة
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -899,6 +949,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 10),
 
+                        // المؤذن
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
@@ -925,6 +976,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
+                        // ✅ أزرار التحكم — 5 أزرار + زر الموقع التلقائي
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -953,14 +1005,17 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               onTap: _openDonation,
                             ),
                             _buildControlButton(
-                              icon: Icons.refresh,
-                              label: 'تحديث',
-                              onTap: _loadLocationAndFetchTimes,
+                              icon: Icons.my_location,
+                              label: _isDetectingLocation
+                                  ? 'جاري...'
+                                  : 'موقعي',
+                              onTap: _detectLocationAutomatically,
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
 
+                        // جدول 7 أيام
                         if (_showWeeklyTable && _weeklyPrayers.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -1019,6 +1074,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             ),
                           ),
 
+                        // بطاقة الصلاة القادمة
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
@@ -1122,6 +1178,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 16),
 
+                        // قائمة الصلوات
                         Expanded(
                           child: ListView.builder(
                             itemCount: _prayerList.length,
