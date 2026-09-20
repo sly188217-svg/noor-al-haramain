@@ -1,42 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:qcf_quran/qcf_quran.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'services/quran_service.dart';
+import 'models/surah_model.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// شاشة المصحف الكامل — 604 صفحة بصفحات حقيقية
+/// 📖 شاشة المصحف — عرض نصي متواصل كالمصحف الحقيقي
+/// ✅ نص متواصل (ليس قائمة)
+/// ✅ أرقام الآيات في دوائر ذهبية
+/// ✅ خط Amiri
+/// ✅ تصميم احترافي
 /// ═══════════════════════════════════════════════════════════
-/// 
-/// استخدام qcf_quran:
-/// - 604 خط QCF مضمّن (مطابق للمصحف المدني)
-/// - عرض صفحة بصفحة (PageView)
-/// - تصميم احترافي
-/// 
 class MushafScreen extends StatefulWidget {
-  /// الصفحة الابتدائية (1 = الفاتحة)
-  final int initialPage;
+  final int initialSurah;
 
-  const MushafScreen({super.key, this.initialPage = 1});
+  const MushafScreen({super.key, this.initialSurah = 1});
 
   @override
   State<MushafScreen> createState() => _MushafScreenState();
 }
 
 class _MushafScreenState extends State<MushafScreen> {
-  late int _currentPage;
-  late PageController _pageController;
+  final PageController _pageController = PageController();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  List<SurahModel> _surahs = [];
+  int _currentSurahIndex = 0;
+  bool _isLoading = true;
   bool _isPlaying = false;
   String _selectedReciter = 'maher';
+  double _fontSize = 26.0;
 
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialPage;
-    _pageController = PageController(initialPage: _currentPage - 1);
-    _loadReciter();
+    _currentSurahIndex = widget.initialSurah - 1;
+    _loadQuran();
+    _loadPreferences();
   }
 
   @override
@@ -46,26 +48,33 @@ class _MushafScreenState extends State<MushafScreen> {
     super.dispose();
   }
 
-  Future<void> _loadReciter() async {
+  Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
         _selectedReciter = prefs.getString('quran_reciter') ?? 'maher';
+        _fontSize = prefs.getDouble('quran_font_size') ?? 26.0;
       });
     }
   }
 
-  /// الانتقال إلى صفحة معينة
-  void _goToPage(int page) {
-    if (page < 1 || page > 604) return;
-    _pageController.animateToPage(
-      page - 1,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  Future<void> _loadQuran() async {
+    try {
+      final surahs = await QuranService.loadQuran();
+      if (!mounted) return;
+      setState(() {
+        _surahs = surahs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('❌ فشل تحميل القرآن: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  /// عرض قائمة السور
+  // ═══════════════════════════════════════════════════════════
+  // 🔍 قائمة السور
+  // ═══════════════════════════════════════════════════════════
   void _showSurahPicker() {
     showModalBottomSheet(
       context: context,
@@ -89,18 +98,25 @@ class _MushafScreenState extends State<MushafScreen> {
                   borderRadius:
                       BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.menu_book,
+                    const Icon(Icons.menu_book,
                         color: Color(0xFFD4AF37), size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      '📖 قائمة السور',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        '📖 قائمة السور',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                    ),
+                    Text(
+                      '${_currentSurahIndex + 1} / 114',
+                      style: const TextStyle(
+                          color: Color(0xFFD4AF37), fontSize: 12),
                     ),
                   ],
                 ),
@@ -108,46 +124,49 @@ class _MushafScreenState extends State<MushafScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  itemCount: 114,
+                  itemCount: _surahs.length,
                   itemBuilder: (context, index) {
-                    final surahNum = index + 1;
-                    final surahName = getSurahNameArabic(surahNum);
-                    // احصل على صفحة بداية السورة
-                    final pageNum = getPageNumber(surahNum, 1);
+                    final surah = _surahs[index];
+                    final isActive = index == _currentSurahIndex;
 
                     return ListTile(
                       leading: Container(
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37)
-                              .withValues(alpha: 0.15),
+                          color: isActive
+                              ? const Color(0xFFD4AF37)
+                              : const Color(0xFFD4AF37)
+                                  .withValues(alpha: 0.15),
                           shape: BoxShape.circle,
-                          border: Border.all(
-                              color: const Color(0xFFD4AF37)),
+                          border:
+                              Border.all(color: const Color(0xFFD4AF37)),
                         ),
                         child: Center(
                           child: Text(
-                            '$surahNum',
-                            style: const TextStyle(
-                                color: Color(0xFFD4AF37),
+                            '${surah.number}',
+                            style: TextStyle(
+                                color: isActive
+                                    ? Colors.black
+                                    : const Color(0xFFD4AF37),
                                 fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
                       title: Text(
-                        surahName,
+                        surah.name,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 16),
                       ),
                       subtitle: Text(
-                        'صفحة $pageNum',
+                        '${surah.numberOfAyahs} آية — ${surah.revelationType == "Meccan" ? "مكية" : "مدنية"}',
                         style: const TextStyle(
                             color: Colors.grey, fontSize: 12),
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        _goToPage(pageNum);
+                        setState(() => _currentSurahIndex = index);
+                        _pageController.jumpToPage(index);
                       },
                     );
                   },
@@ -160,7 +179,38 @@ class _MushafScreenState extends State<MushafScreen> {
     );
   }
 
-  /// البحث في المصحف
+  // ═══════════════════════════════════════════════════════════
+  // 🎧 تشغيل السورة
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _playSurah() async {
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.stop();
+        if (mounted) setState(() => _isPlaying = false);
+        return;
+      }
+
+      final surahNumber = _surahs[_currentSurahIndex].number;
+      final url = QuranService.getRecitationUrl(surahNumber, _selectedReciter);
+
+      await _audioPlayer.play(UrlSource(url));
+      if (mounted) setState(() => _isPlaying = true);
+
+      _audioPlayer.onPlayerComplete.listen((_) {
+        if (mounted) setState(() => _isPlaying = false);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ تعذر تشغيل التلاوة')),
+        );
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔍 البحث
+  // ═══════════════════════════════════════════════════════════
   void _showSearchDialog() {
     final controller = TextEditingController();
     showDialog(
@@ -169,27 +219,22 @@ class _MushafScreenState extends State<MushafScreen> {
         backgroundColor: const Color(0xFF1C2541),
         title: const Text('🔍 البحث في المصحف',
             style: TextStyle(color: Color(0xFFD4AF37))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'اكتب كلمة للبحث...',
-                hintStyle: const TextStyle(color: Colors.grey),
-                prefixIcon:
-                    const Icon(Icons.search, color: Color(0xFFD4AF37)),
-                filled: true,
-                fillColor: const Color(0xFF0B132B),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'اكتب كلمة للبحث...',
+            hintStyle: const TextStyle(color: Colors.grey),
+            prefixIcon:
+                const Icon(Icons.search, color: Color(0xFFD4AF37)),
+            filled: true,
+            fillColor: const Color(0xFF0B132B),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -198,39 +243,45 @@ class _MushafScreenState extends State<MushafScreen> {
                 const Text('إلغاء', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final query = controller.text.trim();
               if (query.isEmpty) return;
 
+              Navigator.pop(context);
+
               try {
-                final results = searchWords(query);
-                Navigator.pop(context);
+                final results = await QuranService.searchQuran(query);
 
-                if (results['result'] is List &&
-                    results['result'].isNotEmpty) {
-                  final first = results['result'][0];
-                  final page = getPageNumber(
-                      first['suraNumber'], first['verseNumber']);
-                  _goToPage(page);
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '🔍 ${results['occurences']} نتيجة — أول نتيجة: صفحة $page'),
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                } else {
+                if (results.isEmpty) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('❌ لا توجد نتائج')),
                     );
                   }
+                  return;
+                }
+
+                final first = results.first;
+                final surahNumber = first['surahNumber'] as int;
+
+                final surahIndex = _surahs
+                    .indexWhere((s) => s.number == surahNumber);
+
+                if (surahIndex >= 0) {
+                  setState(() => _currentSurahIndex = surahIndex);
+                  _pageController.jumpToPage(surahIndex);
+                }
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          '🔍 ${results.length} نتيجة — ${first['surahName']} آية ${first['ayahNumber']}'),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
                 }
               } catch (e) {
-                Navigator.pop(context);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('⚠️ خطأ: $e')),
@@ -249,35 +300,172 @@ class _MushafScreenState extends State<MushafScreen> {
     );
   }
 
-  /// تشغيل تلاوة الصفحة الحالية
-  Future<void> _playCurrentSurah() async {
-    try {
-      if (_isPlaying) {
-        await _audioPlayer.stop();
-        if (mounted) setState(() => _isPlaying = false);
-        return;
-      }
+  // ═══════════════════════════════════════════════════════════
+  // 🎨 عرض السورة كنص متواصل
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildSurahPage(SurahModel surah) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ═══════════════════════════════════════════════════
+          // 📖 رأس السورة (إطار مزخرف)
+          // ═══════════════════════════════════════════════════
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFD4AF37).withValues(alpha: 0.25),
+                  const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFD4AF37),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  surah.name,
+                  style: const TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Amiri',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${surah.revelationType == "Meccan" ? "مكية" : "مدنية"} — ${surah.numberOfAyahs} آية',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-      // احصل على رقم السورة من الصفحة الحالية
-      // (صفحة 1 = الفاتحة، وهكذا — نحتاج ربط صفحة بسورة)
-      // سنشغّل سورة الفاتحة كاختبار افتراضي
-      final url = QuranService.getRecitationUrl(1, _selectedReciter);
+          // ═══════════════════════════════════════════════════
+          // 🕌 البسملة (ما عدا التوبة)
+          // ═══════════════════════════════════════════════════
+          if (surah.number != 9) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: const Text(
+                'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontSize: 28,
+                  fontFamily: 'Amiri',
+                  fontWeight: FontWeight.bold,
+                  height: 2.0,
+                ),
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
+              ),
+            ),
+          ],
 
-      await _audioPlayer.play(UrlSource(url));
-      if (mounted) setState(() => _isPlaying = true);
+          const SizedBox(height: 20),
 
-      _audioPlayer.onPlayerComplete.listen((_) {
-        if (mounted) setState(() => _isPlaying = false);
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ تعذر تشغيل التلاوة')),
-        );
-      }
-    }
+          // ═══════════════════════════════════════════════════
+          // 📖 نص السورة المتواصل (مثل المصحف الحقيقي)
+          // ═══════════════════════════════════════════════════
+          _buildContinuousText(surah),
+
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
   }
 
+  /// ✅ بناء النص المتواصل مع أرقام الآيات
+  Widget _buildContinuousText(SurahModel surah) {
+    if (surah.ayahs == null || surah.ayahs!.isEmpty) {
+      return const Center(
+        child: Text(
+          'لا توجد آيات',
+          style: TextStyle(color: Colors.white54),
+        ),
+      );
+    }
+
+    final List<InlineSpan> spans = [];
+
+    for (int i = 0; i < surah.ayahs!.length; i++) {
+      final ayah = surah.ayahs![i];
+
+      // نص الآية
+      spans.add(TextSpan(
+        text: '${ayah.text} ',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: _fontSize,
+          fontFamily: 'Amiri',
+          height: 2.2,
+        ),
+      ));
+
+      // رقم الآية داخل دائرة ذهبية
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          width: _fontSize + 10,
+          height: _fontSize + 10,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFFD4AF37),
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              _toArabicNumber(ayah.number),
+              style: TextStyle(
+                color: const Color(0xFFD4AF37),
+                fontSize: _fontSize * 0.55,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Amiri',
+              ),
+            ),
+          ),
+        ),
+      ));
+
+      // مسافة بعد الرقم
+      spans.add(const TextSpan(text: ' '));
+    }
+
+    return RichText(
+      textAlign: TextAlign.justify,
+      textDirection: TextDirection.rtl,
+      text: TextSpan(children: spans),
+    );
+  }
+
+  /// تحويل الأرقام إلى أرقام عربية (١٢٣)
+  String _toArabicNumber(int number) {
+    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return number
+        .toString()
+        .split('')
+        .map((d) => arabicDigits[int.parse(d)])
+        .join();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎨 الواجهة الرئيسية
+  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -290,13 +478,24 @@ class _MushafScreenState extends State<MushafScreen> {
           children: [
             const Icon(Icons.menu_book, size: 22),
             const SizedBox(width: 8),
-            Text(
-              'المصحف — صفحة $_currentPage / 604',
-              style: const TextStyle(fontSize: 15),
+            Expanded(
+              child: Text(
+                _surahs.isEmpty
+                    ? 'المصحف'
+                    : _surahs[_currentSurahIndex].name,
+                style: const TextStyle(fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
         actions: [
+          // زر تصغير/تكبير الخط
+          IconButton(
+            icon: const Icon(Icons.text_fields),
+            onPressed: _showFontSizeDialog,
+            tooltip: 'حجم الخط',
+          ),
           // زر البحث
           IconButton(
             icon: const Icon(Icons.search),
@@ -312,87 +511,166 @@ class _MushafScreenState extends State<MushafScreen> {
           // زر التلاوة
           IconButton(
             icon: Icon(_isPlaying ? Icons.stop : Icons.volume_up),
-            onPressed: _playCurrentSurah,
+            onPressed: _playSurah,
             tooltip: 'استمع',
           ),
         ],
       ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
+          : _surahs.isEmpty
+              ? const Center(
+                  child: Text(
+                    '⚠️ تعذر تحميل المصحف',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _surahs.length,
+                        onPageChanged: (index) {
+                          setState(() => _currentSurahIndex = index);
+                        },
+                        itemBuilder: (context, index) {
+                          return _buildSurahPage(_surahs[index]);
+                        },
+                      ),
+                    ),
 
-      body: Stack(
+                    // شريط التنقل السفلي
+                    _buildBottomNav(),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2541),
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Row(
         children: [
-          // المصحف نفسه
-          PageviewQuran(
-            controller: _pageController,
-            initialPageNumber: _currentPage,
-            onPageChanged: (page) {
-              if (mounted) setState(() => _currentPage = page);
-            },
+          // السورة السابقة
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios,
+                color: Color(0xFFD4AF37), size: 18),
+            onPressed: _currentSurahIndex > 0
+                ? () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
+            tooltip: 'السورة السابقة',
           ),
 
-          // شريط التقدم أسفل الشاشة
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C2541).withValues(alpha: 0.95),
-                border: Border(
-                  top: BorderSide(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+          // معلومات السورة
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(
+                  value: (_currentSurahIndex + 1) / 114,
+                  backgroundColor: Colors.white12,
+                  color: const Color(0xFFD4AF37),
+                  minHeight: 3,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'سورة ${_currentSurahIndex + 1} من 114',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  // زر السابق
-                  IconButton(
-                    icon: const Icon(Icons.arrow_forward,
-                        color: Color(0xFFD4AF37)),
-                    onPressed: _currentPage > 1
-                        ? () => _goToPage(_currentPage - 1)
-                        : null,
-                    tooltip: 'السابق',
-                  ),
-
-                  // شريط التقدم
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        LinearProgressIndicator(
-                          value: _currentPage / 604,
-                          backgroundColor: Colors.white12,
-                          color: const Color(0xFFD4AF37),
-                          minHeight: 4,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'صفحة $_currentPage من 604',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // زر التالي
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back,
-                        color: Color(0xFFD4AF37)),
-                    onPressed: _currentPage < 604
-                        ? () => _goToPage(_currentPage + 1)
-                        : null,
-                    tooltip: 'التالي',
-                  ),
-                ],
-              ),
+              ],
             ),
+          ),
+
+          // السورة التالية
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios,
+                color: Color(0xFFD4AF37), size: 18),
+            onPressed: _currentSurahIndex < _surahs.length - 1
+                ? () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
+            tooltip: 'السورة التالية',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔤 نافذة تغيير حجم الخط
+  // ═══════════════════════════════════════════════════════════
+  void _showFontSizeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: const Text('🔤 حجم الخط',
+            style: TextStyle(color: Color(0xFFD4AF37))),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'حجم النص: ${_fontSize.toInt()}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                Slider(
+                  value: _fontSize,
+                  min: 18,
+                  max: 40,
+                  divisions: 22,
+                  activeColor: const Color(0xFFD4AF37),
+                  label: _fontSize.toInt().toString(),
+                  onChanged: (v) {
+                    setDialogState(() => _fontSize = v);
+                    setState(() {});
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق',
+                style: TextStyle(color: Color(0xFFD4AF37))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setDouble('quran_font_size', _fontSize);
+              if (context.mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('حفظ'),
           ),
         ],
       ),
