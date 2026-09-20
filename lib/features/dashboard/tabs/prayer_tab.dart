@@ -237,7 +237,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           city = p.locality ??
               p.subAdministrativeArea ??
               p.administrativeArea ??
-              p.governorate ??
               p.country ??
               'موقعك';
         }

@@ -15,14 +15,14 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   # 🔥 Firebase
   # ═══════════════════════════════════════════════════════════
-  firebase_core: ^3.15.2
-  firebase_auth: ^5.7.0
-  firebase_ai: ^2.3.0
-  firebase_app_check: ^0.3.2+10
-  google_sign_in: ^6.3.0
-  cloud_functions: ^5.6.2
-  cloud_firestore: ^5.6.12
-  firebase_analytics: ^11.6.0
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  firebase_ai: ^4.0.0
+  firebase_app_check: ^0.4.8
+  google_sign_in: ^7.2.0
+  cloud_functions: ^6.5.0
+  cloud_firestore: ^6.10.0
+  firebase_analytics: ^12.6.0
 
   # ═══════════════════════════════════════════════════════════
   # 💳 الاشتراكات
@@ -32,11 +32,11 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   # 🎤 التسجيل الصوتي + TTS
   # ═══════════════════════════════════════════════════════════
-  record: ^5.1.2
+  record: ^7.1.1
   flutter_tts: ^4.2.0
   audioplayers: ^6.0.0
   audio_service: ^0.18.17
-  permission_handler: ^11.4.0
+  permission_handler: ^13.0.2
 
   # ═══════════════════════════════════════════════════════════
   # 📖 المصحف
@@ -52,8 +52,8 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   # 📦 الأساسيات
   # ═══════════════════════════════════════════════════════════
-  flutter_dotenv: ^5.2.1
-  flutter_riverpod: ^2.6.1
+  flutter_dotenv: ^6.0.1
+  flutter_riverpod: ^3.4.3
   shared_preferences: ^2.3.5
   provider: ^6.1.2
   intl: ^0.20.3
@@ -63,23 +63,23 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   # 📍 الموقع والبوصلة
   # ═══════════════════════════════════════════════════════════
-  geolocator: ^13.0.2
-  geocoding: ^3.0.0
+  geolocator: ^14.0.3
+  geocoding: ^5.0.0
   sensors_plus: ^7.1.0
   flutter_compass: ^0.8.0
 
   # ═══════════════════════════════════════════════════════════
   # 🔔 الإشعارات
   # ═══════════════════════════════════════════════════════════
-  flutter_local_notifications: ^18.0.1
-  timezone: ^0.10.0
-  flutter_timezone: ^3.0.1
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
   hijri_date: ^1.1.0
 
   # ═══════════════════════════════════════════════════════════
   # 📺 الفيديو والتخزين
   # ═══════════════════════════════════════════════════════════
-  youtube_player_iframe: ^4.0.4
+  youtube_player_iframe: ^6.0.2
   webview_flutter: ^4.9.0
   sqflite: ^2.3.0
   path_provider: ^2.1.5
@@ -88,7 +88,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
 
 flutter:
