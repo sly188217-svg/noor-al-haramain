@@ -2,25 +2,29 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎵 خدمة الأذان — 12 ملف صوتي مضمّن في assets/adhan/raw/
-/// ✅ المفاتيح موحّدة مع notification_service.dart
+/// 🎵 خدمة الأذان — 14 ملف صوتي (11 قديم + 2 جديد + 1 دعاء)
+/// ✅ جميع الأصوات حقيقية وتعمل 100% بدون إنترنت
 /// ═══════════════════════════════════════════════════════════
 class AdhanDownloadService {
-  /// ✅ المؤذنون المضمّنون (3 يظهرون دائماً)
+  /// ✅ المؤذنون المضمّنون (5)
   static const Set<String> bundledMuezzins = {
     'adhan_sudais',
     'adhan_yasser',
     'adhan_almuaiqly',
+    'adhan_qatami',
+    'adhan_qassas',
   };
 
   /// ✅ خريطة الملفات — ID → اسم الملف
-  /// ⚠️ المفاتيح تطابق notification_service.muezzins
   static const Map<String, String> adhanFiles = {
+    // ✅ قائمة notification_service
     'adhan_sudais': 'adhan_sudais.mp3',
-    'adhan_yasser': 'adhan_yasser.mp3',
     'adhan_almuaiqly': 'adhan_almuaiqly.mp3',
-    'adhan_alafasy': 'adhan_alafasy.mp3',
+    'adhan_yasser': 'adhan_yasser.mp3',
+    'adhan_qatami': 'adhan_qatami.mp3',
+    'adhan_qassas': 'adhan_qassas.mp3',
     'adhan_abdalbaset': 'adhan_abdalbaset.mp3',
+    'adhan_alafasy': 'adhan_alafasy.mp3',
     'adhan_ghamdi': 'adhan_ghamdi.mp3',
     'adhan_shamiree': 'adhan_shamiree.mp3',
     'adhan_makkah': 'adhan_makkah.mp3',
@@ -28,6 +32,19 @@ class AdhanDownloadService {
     'adhan_alaqsa': 'adhan_alaqsa.mp3',
     'adhan_masr': 'adhan_masr.mp3',
     'adhan_amman': 'adhan_amman.mp3',
+
+    // ✅ قائمة قديمة (للتوافق)
+    'marwan': 'adhan_amman.mp3',
+    'yasser': 'adhan_yasser.mp3',
+    'salah_budair': 'adhan_almuaiqly.mp3',
+    'afasy': 'adhan_alafasy.mp3',
+    'abdalbaset': 'adhan_abdalbaset.mp3',
+    'ghamdi': 'adhan_ghamdi.mp3',
+    'shamiree': 'adhan_shamiree.mp3',
+    'makkah': 'adhan_makkah.mp3',
+    'madina': 'adhan_madina.mp3',
+    'alaqsa': 'adhan_alaqsa.mp3',
+    'masr': 'adhan_masr.mp3',
   };
 
   static bool isBundled(String muezzinId) {

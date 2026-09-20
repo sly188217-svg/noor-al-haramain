@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🔔 خدمة الإشعارات — أذان فوري في وقته
-/// ✅ يستخدم res/raw/ لأصوات الأذان (12 مؤذن)
+/// ✅ 14 مؤذن (11 قديم + ياسر القطامي + محمد مروان القصاص)
 /// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -17,19 +17,19 @@ class NotificationService {
   static bool _initialized = false;
   static const int _persistentId = 9999;
 
-  /// 🔑 المفتاح الموحّد (يستخدمه settings_tab أيضاً)
+  /// 🔑 المفتاح الموحّد
   static const String _muezzinKey = 'selected_muezzin';
-
-  /// ✅ القيمة الافتراضية
   static const String _defaultMuezzin = 'adhan_sudais';
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 قائمة المؤذنين (12) — الأسماء مطابقة لملفات res/raw/
+  /// 🎵 قائمة المؤذنين (14) — الأسماء مطابقة لملفات assets/adhan/raw/
   /// ═══════════════════════════════════════════════════════════
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
     {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
     {'name': 'الشيخ ياسر الدوسري', 'file': 'adhan_yasser'},
+    {'name': 'الشيخ ياسر القطامي', 'file': 'adhan_qatami'},
+    {'name': 'الشيخ محمد مروان القصاص', 'file': 'adhan_qassas'},
     {'name': 'الشيخ عبد الباسط عبد الصمد', 'file': 'adhan_abdalbaset'},
     {'name': 'الشيخ مشاري العفاسي', 'file': 'adhan_alafasy'},
     {'name': 'الشيخ سعد الغامدي', 'file': 'adhan_ghamdi'},
@@ -48,7 +48,6 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_muezzinKey);
     if (saved == null || saved.isEmpty) return _defaultMuezzin;
-    // تأكد من أن الملف موجود
     final valid = muezzins.any((m) => m['file'] == saved);
     return valid ? saved : _defaultMuezzin;
   }
@@ -59,7 +58,6 @@ class NotificationService {
   static Future<void> setSelectedMuezzin(String file) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_muezzinKey, file);
-    // إعادة إنشاء القناة بالصوت الجديد
     await _createAdhanChannel();
     debugPrint('✅ تم تغيير المؤذن إلى: $file');
   }
@@ -229,7 +227,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 📅 جدولة إشعارات الأذان — ✅ فوري في وقته
+  /// 📅 جدولة إشعارات الأذان — فوري في وقته
   /// ═══════════════════════════════════════════════════════════
   static Future<void> schedulePrayerNotifications(
     Map<String, String> prayerTimes,
@@ -240,7 +238,6 @@ class NotificationService {
     if (!_initialized) await initialize();
 
     try {
-      // إلغاء الإشعارات المجدولة فقط (بدون الإشعار الدائم)
       final pending = await _notifications.pendingNotificationRequests();
       for (final p in pending) {
         if (p.id != _persistentId) {
@@ -283,7 +280,6 @@ class NotificationService {
           debugPrint('⚠️ فشل جدولة $prayerName: $e');
         }
 
-        // تذكير قبل 15 دقيقة (بدون صوت)
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
