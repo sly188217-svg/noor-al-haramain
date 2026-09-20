@@ -8,15 +8,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/providers/language_provider.dart';
 import 'core/services/notification_service.dart';
+import 'features/adhan/adhan_screen.dart';
 import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ═══════════════════════════════════════════════════════════
   // 1. تحميل ملف .env
-  // ═══════════════════════════════════════════════════════════
   try {
     await dotenv.load(fileName: '.env');
     debugPrint('✅ تم تحميل ملف .env');
@@ -24,9 +23,7 @@ Future<void> main() async {
     debugPrint('⚠️ تعذر تحميل .env: $e');
   }
 
-  // ═══════════════════════════════════════════════════════════
   // 2. تهيئة Firebase
-  // ═══════════════════════════════════════════════════════════
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -36,9 +33,7 @@ Future<void> main() async {
     debugPrint('❌ فشل تهيئة Firebase: $e');
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 3. تسجيل دخول مجهول (مطلوب لـ Firebase AI Logic)
-  // ═══════════════════════════════════════════════════════════
+  // 3. تسجيل دخول مجهول
   try {
     if (FirebaseAuth.instance.currentUser == null) {
       await FirebaseAuth.instance.signInAnonymously();
@@ -51,26 +46,19 @@ Future<void> main() async {
     debugPrint('❌ فشل تسجيل الدخول المجهول: $e');
   }
 
-  // ═══════════════════════════════════════════════════════════
   // 4. تفعيل Firebase App Check
-  // ⚠️ Debug Mode للتطوير فقط
-  // قبل النشر على Google Play: غيّر إلى AndroidProvider.playIntegrity
-  // ═══════════════════════════════════════════════════════════
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
     debugPrint('✅ تم تفعيل App Check (Debug Mode)');
-    // ⚠️ هذا الرمز يجب أن يطابق ما هو مسجل في Firebase Console
     debugPrint('🔑 Debug Token: A0CD6B2F-9F70-4037-B04C-7C1D58CE299D');
   } catch (e) {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // ═══════════════════════════════════════════════════════════
   // 5. تهيئة الإشعارات
-  // ═══════════════════════════════════════════════════════════
   try {
     await NotificationService.initialize();
     debugPrint('✅ تم تهيئة الإشعارات');
@@ -78,9 +66,7 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 6. ErrorWidget لعرض الأخطاء بدلاً من الشاشة الرمادية
-  // ═══════════════════════════════════════════════════════════
+  // 6. ErrorWidget
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -92,7 +78,8 @@ Future<void> main() async {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                const Icon(Icons.error_outline,
+                    color: Colors.red, size: 60),
                 const SizedBox(height: 16),
                 const Text(
                   'حدث خطأ',
@@ -105,7 +92,8 @@ Future<void> main() async {
                 const SizedBox(height: 12),
                 Text(
                   details.exceptionAsString(),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style:
+                      const TextStyle(color: Colors.grey, fontSize: 12),
                   textAlign: TextAlign.center,
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
@@ -131,6 +119,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'نور الحرمين',
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey, // ✅ مفتاح التنقل لفتح شاشة الأذان
         theme: ThemeData(
           primarySwatch: Colors.green,
           scaffoldBackgroundColor: const Color(0xFF0B132B),
@@ -146,6 +135,19 @@ class MyApp extends StatelessWidget {
           Locale('en', 'US'),
         ],
         locale: const Locale('ar', 'SA'),
+        routes: {
+          // ✅ مسار شاشة الأذان
+          '/adhan': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments
+                as Map<String, dynamic>?;
+            return AdhanScreen(
+              prayerName: args?['prayerName'] ?? 'الصلاة',
+              prayerTime: args?['prayerTime'] ?? '--:--',
+              cityName: args?['cityName'] ?? '',
+              muezzinName: args?['muezzinName'] ?? '',
+            );
+          },
+        },
         home: const SplashScreen(),
       ),
     );

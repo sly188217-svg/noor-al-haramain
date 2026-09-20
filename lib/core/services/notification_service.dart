@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -7,8 +8,14 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
+/// 🔑 مفتاح التنقل العام (مطلوب لفتح شاشة الأذان من الإشعار)
+/// ═══════════════════════════════════════════════════════════
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// ═══════════════════════════════════════════════════════════
 /// 🔔 خدمة الإشعارات — أذان فوري في وقته
 /// ✅ 14 مؤذن (11 قديم + ياسر القطامي + محمد مروان القصاص)
+/// ✅ شاشة أذان ملء الشاشة
 /// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -22,7 +29,7 @@ class NotificationService {
   static const String _defaultMuezzin = 'adhan_sudais';
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 قائمة المؤذنين (14) — الأسماء مطابقة لملفات assets/adhan/raw/
+  /// 🎵 قائمة المؤذنين (14)
   /// ═══════════════════════════════════════════════════════════
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
@@ -97,7 +104,15 @@ class NotificationService {
     );
 
     try {
-      await _notifications.initialize(settings);
+      await _notifications.initialize(
+        settings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          debugPrint('🔔 تم الضغط على الإشعار: ${response.payload}');
+          if (response.payload != null && response.payload!.isNotEmpty) {
+            _handleNotificationTap(response.payload!);
+          }
+        },
+      );
     } catch (e) {
       debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
       if (!Platform.isLinux) rethrow;
@@ -109,6 +124,29 @@ class NotificationService {
     }
 
     _initialized = true;
+  }
+
+  /// ═══════════════════════════════════════════════════════════
+  /// ✅ فتح شاشة الأذان عند الضغط على الإشعار
+  /// ═══════════════════════════════════════════════════════════
+  static void _handleNotificationTap(String payload) {
+    try {
+      // payload format: "صلاة|الفجر|05:30|بغداد|الشيخ السديس"
+      final parts = payload.split('|');
+      if (parts.length >= 5) {
+        navigatorKey.currentState?.pushNamed(
+          '/adhan',
+          arguments: {
+            'prayerName': parts[1],
+            'prayerTime': parts[2],
+            'cityName': parts[3],
+            'muezzinName': parts[4],
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ فشل فتح شاشة الأذان: $e');
+    }
   }
 
   /// ═══════════════════════════════════════════════════════════
@@ -176,7 +214,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔔 إشعار ثابت دائم — العد التنازلي
+  /// 🔔 إشعار ثابت دائم
   /// ═══════════════════════════════════════════════════════════
   static Future<void> showPersistentNotification({
     required String nextPrayer,
@@ -227,7 +265,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 📅 جدولة إشعارات الأذان — فوري في وقته
+  /// 📅 جدولة إشعارات الأذان
   /// ═══════════════════════════════════════════════════════════
   static Future<void> schedulePrayerNotifications(
     Map<String, String> prayerTimes,
@@ -263,6 +301,12 @@ class NotificationService {
             ? scheduledTime
             : scheduledTime.add(const Duration(days: 1));
 
+        // ✅ Payload لفتح شاشة الأذان
+        final timeStr =
+            '${finalTime.hour.toString().padLeft(2, '0')}:${finalTime.minute.toString().padLeft(2, '0')}';
+        final payload =
+            'صلاة|$prayerNameAr|$timeStr|$cityName|$muezzinName';
+
         try {
           await _notifications.zonedSchedule(
             prayerName.hashCode,
@@ -274,12 +318,14 @@ class NotificationService {
             matchDateTimeComponents: DateTimeComponents.time,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
+            payload: payload,
           );
           debugPrint('✅ جدولة $prayerNameAr في: $finalTime');
         } catch (e) {
           debugPrint('⚠️ فشل جدولة $prayerName: $e');
         }
 
+        // إشعار تذكيري قبل 15 دقيقة
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
@@ -313,6 +359,7 @@ class NotificationService {
       '🔔 اختبار الأذان',
       'يجب أن تسمع صوت الأذان الآن',
       await _adhanNotificationDetails(),
+      payload: 'صلاة|الاختبار|${DateTime.now().hour}:${DateTime.now().minute}|مدينتك|المؤذن',
     );
   }
 
