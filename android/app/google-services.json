@@ -12,7 +12,20 @@
           "package_name": "com.apexsec.noor_al_haramain_global"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "264723055815-vomgr1029ufgbf82h39fomrjee1kvgua.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.apexsec.noor_al_haramain_global",
+            "certificate_hash": "5bb985eb517af32f7caed104acefd17b0220305c"
+          }
+        },
+        {
+          "client_id": "264723055815-vomgr1029ufgbf82h39fomrjee1kvgua.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAaHUTvC6YR3hEqj9QyFRj73kWh6P6km_s"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "264723055815-vomgr1029ufgbf82h39fomrjee1kvgua.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
