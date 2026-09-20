@@ -165,7 +165,119 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📍 الموقع
+  // 📍 تحديد الموقع التلقائي (مع فتح الإعدادات تلقائياً)
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _detectLocationAutomatically() async {
+    if (_isDetectingLocation) return;
+
+    setState(() => _isDetectingLocation = true);
+
+    try {
+      // 1. التحقق من خدمة GPS
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        _showSnack('📍 خدمة الموقع مغلقة. جاري فتح الإعدادات...');
+
+        // ✅ فتح إعدادات الموقع في الهاتف تلقائياً
+        await Geolocator.openLocationSettings();
+
+        // انتظر حتى يفعّل المستخدم الموقع
+        await Future.delayed(const Duration(seconds: 3));
+
+        // تحقق مرة أخرى
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          _showSnack('⚠️ لم يتم تفعيل خدمة الموقع. حاول مرة أخرى.');
+          if (mounted) setState(() => _isDetectingLocation = false);
+          return;
+        }
+      }
+
+      // 2. طلب إذن الموقع
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showSnack('⚠️ الإذن مرفوض نهائياً. جاري فتح الإعدادات...');
+        await Geolocator.openAppSettings();
+        if (mounted) setState(() => _isDetectingLocation = false);
+        return;
+      }
+
+      if (permission == LocationPermission.denied) {
+        _showSnack('⚠️ لم يتم منح إذن الموقع.');
+        if (mounted) setState(() => _isDetectingLocation = false);
+        return;
+      }
+
+      // 3. الحصول على الموقع
+      _showSnack('📍 جاري تحديد موقعك...');
+
+      final Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 30),
+      );
+
+      debugPrint('✅ الموقع: ${position.latitude}, ${position.longitude}');
+
+      // 4. الحصول على اسم المدينة
+      String city = 'موقعك';
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          city = p.locality ??
+              p.subAdministrativeArea ??
+              p.administrativeArea ??
+              p.governorate ??
+              p.country ??
+              'موقعك';
+        }
+      } catch (e) {
+        debugPrint('⚠️ فشل geocoding: $e');
+      }
+
+      // 5. حفظ
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('user_lat', position.latitude);
+      await prefs.setDouble('user_lng', position.longitude);
+      await prefs.setString('user_city', city);
+      await prefs.setBool('location_enabled', true);
+
+      if (!mounted) return;
+
+      setState(() {
+        _userLat = position.latitude;
+        _userLng = position.longitude;
+        _cityName = city;
+        _lastFetchTime =
+            DateTime.now().subtract(const Duration(hours: 2));
+      });
+
+      // 6. جلب أوقات الصلاة
+      await _loadLocationAndFetchTimes();
+
+      _showSnack('✅ تم تحديد الموقع: $city');
+    } on TimeoutException {
+      _showSnack('⚠️ انتهت مهلة تحديد الموقع. حاول مرة أخرى.');
+    } catch (e) {
+      debugPrint('❌ فشل تحديد الموقع: $e');
+      _showSnack('⚠️ فشل تحديد الموقع. تأكد من تفعيل GPS.');
+    } finally {
+      if (mounted) setState(() => _isDetectingLocation = false);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📍 جلب أوقات الصلاة
   // ═══════════════════════════════════════════════════════════
   Future<void> _loadLocationAndFetchTimes() async {
     final prefs = await SharedPreferences.getInstance();
@@ -203,82 +315,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
-    }
-  }
-
-  /// ✅ تحديد الموقع تلقائياً باستخدام GPS
-  Future<void> _detectLocationAutomatically() async {
-    if (_isDetectingLocation) return;
-
-    setState(() => _isDetectingLocation = true);
-
-    try {
-      // 1. تحقق من خدمة الموقع
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _showSnack('⚠️ خدمة الموقع غير مفعّلة. فعّلها من إعدادات الهاتف.');
-        setState(() => _isDetectingLocation = false);
-        return;
-      }
-
-      // 2. طلب إذن الموقع
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        _showSnack('⚠️ يجب منح إذن الموقع من الإعدادات.');
-        setState(() => _isDetectingLocation = false);
-        return;
-      }
-
-      // 3. احصل على الموقع
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
-      );
-
-      // 4. احصل على اسم المدينة
-      String city = 'موقعك';
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          city = p.locality ??
-              p.subAdministrativeArea ??
-              p.administrativeArea ??
-              p.country ??
-              'موقعك';
-        }
-      } catch (e) {
-        debugPrint('⚠️ فشل geocoding: $e');
-      }
-
-      // 5. احفظ
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('user_lat', position.latitude);
-      await prefs.setDouble('user_lng', position.longitude);
-      await prefs.setString('user_city', city);
-
-      setState(() {
-        _userLat = position.latitude;
-        _userLng = position.longitude;
-        _cityName = city;
-        _lastFetchTime =
-            DateTime.now().subtract(const Duration(hours: 2));
-      });
-
-      await _loadLocationAndFetchTimes();
-      _showSnack('✅ تم تحديد الموقع: $city');
-    } catch (e) {
-      debugPrint('❌ فشل تحديد الموقع: $e');
-      _showSnack('⚠️ فشل تحديد الموقع. جرب مرة أخرى.');
-    } finally {
-      if (mounted) setState(() => _isDetectingLocation = false);
     }
   }
 
@@ -599,24 +635,13 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     try {
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
       if (!started) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('⚠️ الأذان غير متاح'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+        _showSnack('⚠️ الأذان غير متاح');
         return;
       }
 
       if (mounted) setState(() => _isPlaying = true);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('🔊 تشغيل الأذان لصلاة $prayerName')),
-        );
-      }
+      _showSnack('🔊 تشغيل الأذان لصلاة $prayerName');
 
       await _audioPlayer.onPlayerComplete.first;
       if (mounted) setState(() => _isPlaying = false);
@@ -626,9 +651,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       if (mounted) setState(() => _showDua = false);
     } catch (e) {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
-      if (mounted) {
-        setState(() => _isPlaying = false);
-      }
+      if (mounted) setState(() => _isPlaying = false);
     }
   }
 
@@ -902,7 +925,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // التاريخ + المدينة
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -949,7 +971,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 10),
 
-                        // المؤذن
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
@@ -976,7 +997,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
-                        // ✅ أزرار التحكم — 5 أزرار + زر الموقع التلقائي
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -1015,7 +1035,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 12),
 
-                        // جدول 7 أيام
                         if (_showWeeklyTable && _weeklyPrayers.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -1074,7 +1093,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             ),
                           ),
 
-                        // بطاقة الصلاة القادمة
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
@@ -1178,7 +1196,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 16),
 
-                        // قائمة الصلوات
                         Expanded(
                           child: ListView.builder(
                             itemCount: _prayerList.length,
