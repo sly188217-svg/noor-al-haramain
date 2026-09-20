@@ -6,15 +6,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'usage_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🤖 خدمة الذكاء الاصطناعي — Groq API (مجاني)
-/// ✅ يستخدم Firestore للعدادات (لا يمكن التلاعب)
-/// ✅ يقرأ التشكيل والحركات
+/// 🤖 خدمة الذكاء الاصطناعي — Groq API
+/// ✅ Whisper لتحويل الصوت إلى نص (مع تشكيل)
+/// ✅ Groq AI للمقارنة والتصحيح
+/// ✅ 6 موديلات للاحتياط التلقائي
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
-  static const String _baseUrl =
+  static const String _chatUrl =
       'https://api.groq.com/openai/v1/chat/completions';
+  static const String _whisperUrl =
+      'https://api.groq.com/openai/v1/audio/transcriptions';
 
   static const List<String> _models = [
     'openai/gpt-oss-120b',
@@ -28,64 +31,49 @@ class FirebaseAiService {
   static String? _activeModel;
   static const String _activeModelKey = 'groq_active_model';
 
-  static Future<String> _getActiveModel() async {
-    if (_activeModel != null) return _activeModel!;
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_activeModelKey);
-    if (saved != null && saved.isNotEmpty) {
-      _activeModel = saved;
-      return saved;
+  // ═══════════════════════════════════════════════════════════
+  // 🎤 Whisper: تحويل الصوت إلى نص عربي (مع تشكيل)
+  // ═══════════════════════════════════════════════════════════
+  static Future<String?> transcribeAudio(String audioFilePath) async {
+    if (_apiKey.isEmpty) {
+      debugPrint('⚠️ مفتاح Groq غير موجود');
+      return null;
     }
-    return _models.first;
-  }
 
-  static Future<void> _setActiveModel(String model) async {
-    _activeModel = model;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_activeModelKey, model);
-    debugPrint('✅ الموديل النشط: $model');
-  }
+    try {
+      debugPrint('🎤 جاري تحويل الصوت إلى نص...');
 
-  static Future<http.Response?> _sendRequest(
-    Map<String, dynamic> body, {
-    Duration timeout = const Duration(seconds: 60),
-  }) async {
-    final active = await _getActiveModel();
-    final modelsToTry = [active, ..._models.where((m) => m != active)];
+      final uri = Uri.parse(_whisperUrl);
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $_apiKey'
+        ..fields['model'] = 'whisper-large-v3'
+        ..fields['language'] = 'ar'
+        ..fields['response_format'] = 'json'
+        ..fields['temperature'] = '0'
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          audioFilePath,
+        ));
 
-    for (final model in modelsToTry) {
-      try {
-        body['model'] = model;
-        final response = await http
-            .post(
-              Uri.parse(_baseUrl),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer $_apiKey',
-              },
-              body: jsonEncode(body),
-            )
-            .timeout(timeout);
+      final streamedResponse = await request.send().timeout(
+            const Duration(seconds: 90),
+          );
 
-        if (response.statusCode == 200) {
-          await _setActiveModel(model);
-          return response;
-        }
-
-        if (response.statusCode == 404 ||
-            response.body.contains('model_not_found') ||
-            response.body.contains('does not exist')) {
-          continue;
-        }
-
-        return response;
-      } catch (e) {
-        debugPrint('⚠️ خطأ مع $model: $e');
-        continue;
+      if (streamedResponse.statusCode == 200) {
+        final body = await streamedResponse.stream.bytesToString();
+        final data = jsonDecode(body);
+        final text = data['text']?.toString() ?? '';
+        debugPrint('✅ Whisper: $text');
+        return text.isNotEmpty ? text : null;
+      } else {
+        final body = await streamedResponse.stream.bytesToString();
+        debugPrint('❌ Whisper ${streamedResponse.statusCode}: $body');
+        return null;
       }
+    } catch (e) {
+      debugPrint('❌ Whisper error: $e');
+      return null;
     }
-
-    return null;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -159,7 +147,7 @@ class FirebaseAiService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 تصحيح التلاوة — مع قراءة الحركات
+  // 📖 تصحيح التلاوة (Whisper → Groq AI)
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
@@ -184,38 +172,60 @@ class FirebaseAiService {
       final prompt = '''
 أنت خبير في تصحيح تلاوة القرآن الكريم برواية حفص عن عاصم.
 
-النص الصحيح (بالرسم العثماني مع التشكيل الكامل):
+📖 النص القرآني الصحيح (بالرسم العثماني مع التشكيل الكامل):
 $correctAyah
 
-ما قرأه المستخدم:
+🎤 ما قرأه المستخدم (محوَّل من الصوت بواسطة Whisper Large v3):
 $userRecitation
 
-⚠️ مهم جداً:
-- قارن **مع التشكيل** (الحركات: فتحة، ضمة، كسرة، سكون، شدة، مد، تنوين)
-- إذا أخطأ في الحركة، اعتبره "wrong"
-- أعد النص الصحيح **مع التشكيل** في حقل "correct"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ قواعد المقارنة الصارمة:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-أعد JSON فقط:
+1️⃣ **تجاهل التشكيل إذا كان النص المُحوَّل بدون تشكيل:**
+   - إذا كان النص المُحوَّل بدون تشكيل → قارن **بدون تشكيل**
+   - "الحمد" == "الْحَمْدُ" → correct ✅
+   - "لله" == "لِلَّهِ" → correct ✅
+   - "العالمين" == "الْعَالَمِينَ" → correct ✅
+
+2️⃣ **إذا كان النص المُحوَّل يحتوي على تشكيل:**
+   - قارن التشكيل بصرامة
+   - "الْحَمْدَ" بدلاً من "الْحَمْدُ" → wrong ❌
+
+3️⃣ **الأخطاء الحقيقية فقط:**
+   - "الناس" بدلاً من "الْعَالَمِينَ" → wrong ❌
+   - "الحميد" بدلاً من "الْحَمْدُ" → wrong ❌
+
+4️⃣ **الكلمات المفقودة والزائدة:**
+   - نسي كلمة → missing
+   - أضاف كلمة → extra
+
+5️⃣ **حساب الدقة:**
+   - accuracy = (الكلمات الصحيحة / إجمالي الكلمات) × 100
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📤 أعد JSON فقط بهذا الشكل:
 {
-  "accuracy": 85,
+  "accuracy": 95,
   "words": [
-    {"user": "الْحَمْدُ", "correct": "الْحَمْدُ", "status": "correct"},
-    {"user": "الحمد", "correct": "الْحَمْدُ", "status": "wrong"},
-    {"user": "", "correct": "لِلَّهِ", "status": "missing"},
-    {"user": "زيادة", "correct": "", "status": "extra"}
+    {"user": "الحمد", "correct": "الْحَمْدُ", "status": "correct"},
+    {"user": "لله", "correct": "لِلَّهِ", "status": "correct"},
+    {"user": "رب", "correct": "رَبِّ", "status": "correct"},
+    {"user": "الناس", "correct": "الْعَالَمِينَ", "status": "wrong"}
   ],
-  "feedback": "ملاحظات عن الحركات والتشكيل"
+  "feedback": "تلاوة جيدة، راجع الكلمات الحمراء"
 }
 
-⚠️ JSON فقط.
+⚠️ JSON فقط. لا تكتب أي شرح.
 ''';
 
       final response = await _sendRequest({
         'messages': [
           {'role': 'user', 'content': prompt}
         ],
-        'max_tokens': 2000,
-        'temperature': 0.2,
+        'max_tokens': 2500,
+        'temperature': 0.1,
         'response_format': {'type': 'json_object'},
       });
 
@@ -269,16 +279,23 @@ $userRecitation
 
     try {
       final prompt = '''
-قرأ المستخدم آية قرآنية، وهذا ما تعرّف عليه النظام من صوته:
+قرأ المستخدم آية قرآنية، وهذا ما تعرّف عليه النظام من صوته (Whisper):
 "$spokenText"
 
-حدد السورة ورقم الآية. أعد JSON فقط:
+حدد السورة ورقم الآية من القرآن الكريم (114 سورة، 6236 آية).
+
+⚠️ ملاحظات:
+- قد يكون النص المُحوَّل بدون تشكيل.
+- ابحث عن الآية الأقرب في المعنى والكلمات.
+- استخدم معرفتك الكاملة بالقرآن.
+
+أعد JSON فقط:
 {
   "surah": "اسم السورة",
   "surahNumber": 1,
   "ayahNumber": 1,
   "confidence": 95,
-  "matchedText": "النص القرآني الصحيح"
+  "matchedText": "النص القرآني الصحيح مع التشكيل"
 }
 
 إذا لم تتعرف: {"surah": null, "confidence": 0}
@@ -319,5 +336,69 @@ $userRecitation
       debugPrint('❌ identifyAyah error: $e');
       return null;
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 الموديل النشط (مع fallback تلقائي)
+  // ═══════════════════════════════════════════════════════════
+  static Future<String> _getActiveModel() async {
+    if (_activeModel != null) return _activeModel!;
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_activeModelKey);
+    if (saved != null && saved.isNotEmpty) {
+      _activeModel = saved;
+      return saved;
+    }
+    return _models.first;
+  }
+
+  static Future<void> _setActiveModel(String model) async {
+    _activeModel = model;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_activeModelKey, model);
+    debugPrint('✅ الموديل النشط: $model');
+  }
+
+  static Future<http.Response?> _sendRequest(
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    final active = await _getActiveModel();
+    final modelsToTry = [active, ..._models.where((m) => m != active)];
+
+    for (final model in modelsToTry) {
+      try {
+        body['model'] = model;
+        final response = await http
+            .post(
+              Uri.parse(_chatUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $_apiKey',
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(timeout);
+
+        if (response.statusCode == 200) {
+          await _setActiveModel(model);
+          return response;
+        }
+
+        if (response.statusCode == 404 ||
+            response.body.contains('model_not_found') ||
+            response.body.contains('does not exist')) {
+          debugPrint('⚠️ $model غير متاح، جرب التالي...');
+          continue;
+        }
+
+        return response;
+      } catch (e) {
+        debugPrint('⚠️ خطأ مع $model: $e');
+        continue;
+      }
+    }
+
+    return null;
   }
 }

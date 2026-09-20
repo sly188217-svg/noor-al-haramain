@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../quran/models/surah_model.dart';
@@ -36,15 +38,15 @@ class RecitationScreen extends StatefulWidget {
 }
 
 class _RecitationScreenState extends State<RecitationScreen> {
-  final stt.SpeechToText _speech = stt.SpeechToText();
+  final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  bool _isListening = false;
+  bool _isRecording = false;
   bool _isProcessing = false;
   bool _isSpeaking = false;
-  bool _speechAvailable = false;
   bool _isPremium = false;
   bool _autoDetectMode = true;
+  String? _recordingPath;
 
   int _remainingRecitations = 3;
 
@@ -67,14 +69,13 @@ class _RecitationScreenState extends State<RecitationScreen> {
   @override
   void initState() {
     super.initState();
-    _initSpeech();
     _loadQuran();
     _loadUserStatus();
   }
 
   @override
   void dispose() {
-    _speech.stop();
+    _recorder.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -89,26 +90,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _remainingRecitations = remaining;
       });
     } catch (_) {}
-  }
-
-  Future<void> _initSpeech() async {
-    try {
-      final available = await _speech.initialize(
-        onStatus: (status) {
-          if (status == 'notListening' && mounted) {
-            setState(() => _isListening = false);
-            if (_userRecitation.isNotEmpty) _processRecitation();
-          }
-        },
-        onError: (error) {
-          debugPrint('⚠️ Speech error: $error');
-          if (mounted) setState(() => _isListening = false);
-        },
-      );
-      if (mounted) setState(() => _speechAvailable = available);
-    } catch (e) {
-      if (mounted) setState(() => _speechAvailable = false);
-    }
   }
 
   Future<void> _loadQuran() async {
@@ -138,112 +119,125 @@ class _RecitationScreenState extends State<RecitationScreen> {
           _accuracy = 0;
           _feedback = '';
           _words = [];
+          _detectedSurahName = null;
+          _detectedSurahNumber = null;
+          _detectedAyahNumber = null;
         });
       }
     } catch (_) {}
   }
 
-  Future<bool> _requestMicrophonePermission() async {
-    try {
-      final status = await Permission.microphone.request();
-      return status.isGranted;
-    } catch (e) {
-      return false;
-    }
+  // ═══════════════════════════════════════════════════════════
+  // 🎤 التسجيل الصوتي
+  // ═══════════════════════════════════════════════════════════
+  Future<bool> _hasMicrophonePermission() async {
+    final status = await Permission.microphone.status;
+    if (status.isGranted) return true;
+    final result = await Permission.microphone.request();
+    return result.isGranted;
   }
 
-  Future<void> _toggleListening() async {
-    if (!_isListening) {
-      final canRecite = await UsageService.canRecite();
-      if (!canRecite) {
-        _showLimitDialog();
-        return;
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      try {
+        final path = await _recorder.stop();
+        debugPrint('🛑 تم إيقاف التسجيل: $path');
+        if (mounted) setState(() => _isRecording = false);
+        if (path != null) {
+          _recordingPath = path;
+          await _processAudio(path);
+        }
+      } catch (e) {
+        debugPrint('❌ خطأ: $e');
+        if (mounted) setState(() => _isRecording = false);
       }
-    }
-
-    if (!_speechAvailable) {
-      await _initSpeech();
-      if (!_speechAvailable) {
-        _showSnack('⚠️ التعرف الصوتي غير متوفر. تأكد من منح إذن الميكروفون.');
-        return;
-      }
-    }
-
-    if (_isListening) {
-      await _speech.stop();
-      if (mounted) setState(() => _isListening = false);
       return;
     }
 
-    final hasPermission = await _requestMicrophonePermission();
-    if (!hasPermission) {
-      _showSnack('⚠️ يجب منح إذن الميكروفون من الإعدادات.');
+    if (!await UsageService.canRecite()) {
+      _showLimitDialog();
       return;
     }
 
-    // ✅ ابحث عن Locale عربي متاح
-    String localeId = 'ar_SA';
+    if (!await _hasMicrophonePermission()) {
+      _showSnack('⚠️ يجب منح إذن الميكروفون.');
+      return;
+    }
+
     try {
-      final locales = await _speech.locales();
-      final arabicLocale = locales.firstWhere(
-        (l) => l.localeId.startsWith('ar'),
-        orElse: () => locales.first,
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/recitation_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: path,
       );
-      localeId = arabicLocale.localeId;
-      debugPrint('🎤 استخدام اللغة: $localeId');
+
+      if (mounted) {
+        setState(() {
+          _isRecording = true;
+          _userRecitation = '';
+          _accuracy = 0;
+          _words = [];
+          _detectedSurahName = null;
+          _detectedSurahNumber = null;
+          _detectedAyahNumber = null;
+          _feedback = '🎤 جاري التسجيل... اقرأ الآية';
+        });
+      }
     } catch (e) {
-      debugPrint('⚠️ فشل الحصول على اللغات: $e');
+      _showSnack('⚠️ فشل بدء التسجيل: $e');
     }
-
-    setState(() {
-      _isListening = true;
-      _userRecitation = '';
-      _accuracy = 0;
-      _words = [];
-      _detectedSurahName = null;
-      _detectedSurahNumber = null;
-      _detectedAyahNumber = null;
-      _feedback = _autoDetectMode
-          ? '🎤 اقرأ أي آية قرآنية...'
-          : '🎤 استمع... تلُ الآية الآن';
-    });
-
-    await _speech.listen(
-      onResult: (result) {
-        if (!mounted) return;
-        setState(() => _userRecitation = result.recognizedWords);
-      },
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 5),
-      partialResults: true,
-      localeId: localeId,
-      cancelOnError: false,
-      listenMode: stt.ListenMode.dictation,
-    );
   }
 
-  Future<void> _processRecitation() async {
-    if (_userRecitation.trim().isEmpty) return;
-
+  // ═══════════════════════════════════════════════════════════
+  // 📖 معالجة الصوت: Whisper → Groq AI
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _processAudio(String audioPath) async {
     setState(() {
       _isProcessing = true;
-      _feedback = '🔍 جاري التحليل...';
+      _feedback = '🎤 جاري تحويل الصوت إلى نص (Whisper)...';
     });
 
     try {
+      // 1. تحويل الصوت إلى نص
+      final transcribedText =
+          await FirebaseAiService.transcribeAudio(audioPath);
+
+      if (transcribedText == null || transcribedText.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _isProcessing = false;
+          _feedback = '⚠️ لم يتم التعرف على الصوت. أعد المحاولة.';
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _userRecitation = transcribedText;
+        _feedback = '🔍 جاري التصحيح...';
+      });
+
+      // 2. التعرف على الآية (في الوضع التلقائي)
       if (_autoDetectMode && _correctAyah.isEmpty) {
         setState(() {
           _feedback = '🎯 جاري التعرف على الآية...';
         });
 
-        final detected = await FirebaseAiService.identifyAyah(_userRecitation);
+        final detected =
+            await FirebaseAiService.identifyAyah(transcribedText);
 
         if (detected == null || detected['surah'] == null) {
           if (!mounted) return;
           setState(() {
             _isProcessing = false;
-            _feedback =
-                '⚠️ لم يتم التعرف على الآية. أعد المحاولة أو اختر الآية يدوياً.';
+            _feedback = '⚠️ لم يتم التعرف على الآية. اخترها يدوياً.';
           });
           return;
         }
@@ -267,7 +261,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           if (!mounted) return;
           setState(() {
             _isProcessing = false;
-            _feedback = '⚠️ تعذر جلب الآية من قاعدة البيانات.';
+            _feedback = '⚠️ تعذر جلب الآية.';
           });
           return;
         }
@@ -278,12 +272,13 @@ class _RecitationScreenState extends State<RecitationScreen> {
           _detectedSurahName = surah.name;
           _detectedSurahNumber = surahNumber;
           _detectedAyahNumber = ayahNumber;
-          _feedback = '✅ تم التعرف على الآية — جاري التصحيح...';
+          _feedback = '✅ تم التعرف — جاري التصحيح...';
         });
       }
 
+      // 3. التصحيح
       final result = await FirebaseAiService.analyzeRecitation(
-        userRecitation: _userRecitation,
+        userRecitation: transcribedText,
         correctAyah: _correctAyah,
       );
 
@@ -306,7 +301,14 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _remainingRecitations = remaining;
         _isProcessing = false;
       });
+
+      // 4. حذف الملف المؤقت
+      try {
+        final file = File(audioPath);
+        if (await file.exists()) await file.delete();
+      } catch (_) {}
     } catch (e) {
+      debugPrint('❌ خطأ: $e');
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
@@ -352,13 +354,13 @@ class _RecitationScreenState extends State<RecitationScreen> {
   void _resetRecitation() {
     setState(() {
       _userRecitation = '';
-      _correctAyah = '';
       _accuracy = 0;
       _feedback = '';
       _words = [];
       _detectedSurahName = null;
       _detectedSurahNumber = null;
       _detectedAyahNumber = null;
+      if (_autoDetectMode) _correctAyah = '';
     });
   }
 
@@ -610,78 +612,91 @@ class _RecitationScreenState extends State<RecitationScreen> {
   }
 
   Widget _buildManualSelectors() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _selectedSurah,
-            dropdownColor: const Color(0xFF1C2541),
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'السورة',
-              labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
-              filled: true,
-              fillColor: const Color(0xFF0B132B),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<int>(
+                initialValue: _selectedSurah,
+                dropdownColor: const Color(0xFF1C2541),
+                style: const TextStyle(color: Colors.white),
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'السورة (1-114)',
+                  labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                  filled: true,
+                  fillColor: const Color(0xFF0B132B),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: _surahs.map((s) {
+                  return DropdownMenuItem<int>(
+                    value: s.number,
+                    child: Text('${s.number}. ${s.name}',
+                        overflow: TextOverflow.ellipsis),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => _selectedSurah = v);
+                  _loadAyahs(v);
+                },
               ),
             ),
-            items: _surahs.map((s) {
-              return DropdownMenuItem<int>(
-                value: s.number,
-                child: Text('${s.number}. ${s.name}',
-                    overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => _selectedSurah = v);
-              _loadAyahs(v);
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _ayahs.any((a) => a.number == _selectedAyah)
-                ? _selectedAyah
-                : (_ayahs.isNotEmpty ? _ayahs.first.number : null),
-            dropdownColor: const Color(0xFF1C2541),
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'الآية',
-              labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
-              filled: true,
-              fillColor: const Color(0xFF0B132B),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<int>(
+                initialValue: _ayahs.any((a) => a.number == _selectedAyah)
+                    ? _selectedAyah
+                    : (_ayahs.isNotEmpty ? _ayahs.first.number : null),
+                dropdownColor: const Color(0xFF1C2541),
+                style: const TextStyle(color: Colors.white),
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'الآية (${_ayahs.length})',
+                  labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                  filled: true,
+                  fillColor: const Color(0xFF0B132B),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: _ayahs.map((a) {
+                  return DropdownMenuItem<int>(
+                    value: a.number,
+                    child: Text('${a.number}'),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v == null) return;
+                  final ayah = _ayahs.firstWhere((a) => a.number == v);
+                  setState(() {
+                    _selectedAyah = v;
+                    _correctAyah = ayah.text;
+                    _detectedSurahName = null;
+                    _detectedSurahNumber = null;
+                    _detectedAyahNumber = null;
+                    _userRecitation = '';
+                    _accuracy = 0;
+                    _feedback = '';
+                    _words = [];
+                  });
+                },
               ),
             ),
-            items: _ayahs.map((a) {
-              return DropdownMenuItem<int>(
-                value: a.number,
-                child: Text('${a.number}'),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              final ayah = _ayahs.firstWhere((a) => a.number == v);
-              setState(() {
-                _selectedAyah = v;
-                _correctAyah = ayah.text;
-                _detectedSurahName = null;
-                _detectedSurahNumber = null;
-                _detectedAyahNumber = null;
-                _userRecitation = '';
-                _accuracy = 0;
-                _feedback = '';
-                _words = [];
-              });
-            },
-          ),
+          ],
         ),
+        const SizedBox(height: 8),
+        // عرض عدد الآيات
+        if (_ayahs.isNotEmpty)
+          Text(
+            'سورة ${_surahs.firstWhere((s) => s.number == _selectedSurah, orElse: () => _surahs.first).name} — ${_ayahs.length} آية',
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          ),
       ],
     );
   }
@@ -799,7 +814,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
             runSpacing: 6,
             children: [
               _legendItem(Colors.green, 'صحيح'),
-              _legendItem(Colors.red, 'خطأ (تحته خط)'),
+              _legendItem(Colors.red, 'خطأ'),
               _legendItem(Colors.grey, 'ناقص'),
               _legendItem(Colors.orange, 'زائد'),
             ],
@@ -899,19 +914,22 @@ class _RecitationScreenState extends State<RecitationScreen> {
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
-            onPressed: _isProcessing ? null : _toggleListening,
-            icon: Icon(_isListening ? Icons.stop : Icons.mic, size: 20),
+            onPressed: _isProcessing ? null : _toggleRecording,
+            icon: Icon(
+              _isRecording ? Icons.stop : Icons.mic,
+              size: 20,
+            ),
             label: Text(
-              _isListening
-                  ? '⏹ إيقاف'
-                  : (_autoDetectMode ? '🎤 اقرأ أي آية' : '🎤 ابدأ التلاوة'),
+              _isRecording
+                  ? '⏹ إيقاف التسجيل'
+                  : (_autoDetectMode ? '🎤 ابدأ التسجيل' : '🎤 ابدأ التلاوة'),
               style: const TextStyle(
                   fontSize: 14, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  _isListening ? Colors.red : const Color(0xFFD4AF37),
-              foregroundColor: _isListening ? Colors.white : Colors.black,
+                  _isRecording ? Colors.red : const Color(0xFFD4AF37),
+              foregroundColor: _isRecording ? Colors.white : Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -936,7 +954,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           const Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('🎤 ما قرأته',
+              Text('🎤 ما قرأته (Whisper)',
                   style:
                       TextStyle(color: Colors.blueAccent, fontSize: 12)),
               SizedBox(width: 6),
@@ -1022,8 +1040,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
       ),
       child: Text(
         _autoDetectMode
-            ? '💡 اقرأ أي آية قرآنية، وسيتعرف التطبيق عليها تلقائياً ويعرض النص الصحيح مع تحديد الأخطاء بخط أحمر.'
-            : '💡 اختر السورة والآية يدوياً، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
+            ? '💡 اقرأ أي آية من أي سورة (114 سورة، 6236 آية)، وسيحوّلها Whisper إلى نص، ثم يصححها الذكاء الاصطناعي.'
+            : '💡 اختر السورة (114) والآية من القائمة، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
         style: const TextStyle(color: Colors.white70, fontSize: 13),
         textAlign: TextAlign.center,
       ),

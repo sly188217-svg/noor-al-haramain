@@ -12,7 +12,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # Firebase
+  # ═══════════════════════════════════════════════════════════
+  # 🔥 Firebase
+  # ═══════════════════════════════════════════════════════════
   firebase_core: ^3.15.2
   firebase_auth: ^5.7.0
   firebase_ai: ^2.3.0
@@ -22,24 +24,34 @@ dependencies:
   cloud_firestore: ^5.6.12
   firebase_analytics: ^11.6.0
 
-  # الاشتراكات
+  # ═══════════════════════════════════════════════════════════
+  # 💳 الاشتراكات
+  # ═══════════════════════════════════════════════════════════
   purchases_flutter: ^10.12.0
 
-  # الصوت
-  speech_to_text: ^7.0.0
+  # ═══════════════════════════════════════════════════════════
+  # 🎤 التسجيل الصوتي + TTS
+  # ═══════════════════════════════════════════════════════════
+  record: ^5.1.2
   flutter_tts: ^4.2.0
   audioplayers: ^6.0.0
   audio_service: ^0.18.17
   permission_handler: ^11.4.0
 
-  # المصحف
+  # ═══════════════════════════════════════════════════════════
+  # 📖 المصحف
+  # ═══════════════════════════════════════════════════════════
   quran_kit: ^0.2.0
   qcf_quran: ^0.0.5
 
-  # الحديث
+  # ═══════════════════════════════════════════════════════════
+  # 📚 الحديث
+  # ═══════════════════════════════════════════════════════════
   dorar_hadith: ^0.5.0
 
-  # الأساسيات
+  # ═══════════════════════════════════════════════════════════
+  # 📦 الأساسيات
+  # ═══════════════════════════════════════════════════════════
   flutter_dotenv: ^5.2.1
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.3.5
@@ -48,23 +60,29 @@ dependencies:
   http: ^1.3.0
   url_launcher: ^6.3.0
 
-  # الموقع والبوصلة
+  # ═══════════════════════════════════════════════════════════
+  # 📍 الموقع والبوصلة
+  # ═══════════════════════════════════════════════════════════
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   sensors_plus: ^7.1.0
   flutter_compass: ^0.8.0
 
-  # الإشعارات
+  # ═══════════════════════════════════════════════════════════
+  # 🔔 الإشعارات
+  # ═══════════════════════════════════════════════════════════
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.0
   flutter_timezone: ^3.0.1
   hijri_date: ^1.1.0
 
-  # الفيديو والتخزين
+  # ═══════════════════════════════════════════════════════════
+  # 📺 الفيديو والتخزين
+  # ═══════════════════════════════════════════════════════════
   youtube_player_iframe: ^4.0.4
   webview_flutter: ^4.9.0
   sqflite: ^2.3.0
-  path_provider: ^2.1.0
+  path_provider: ^2.1.5
   path: ^1.8.0
 
 dev_dependencies:
@@ -76,22 +94,24 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # البيانات
     - assets/data/
     - assets/data/azkar.json
     - assets/data/fatwa_library.json
     - assets/data/quran_data.json
     - assets/data/quran_full.json
+    - assets/data/kids_stories.json
 
+    # الصور
     - assets/images/
     - assets/images/flags/
     - assets/icon/
 
-    # ✅ 12 ملف أذان حقيقي
+    # الأذان
     - assets/adhan/raw/
-
-    # دعاء بعد الأذان
     - assets/adhan/dua/
 
+    # ملف .env
     - .env
 
 flutter_launcher_icons:
