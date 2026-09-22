@@ -8,6 +8,10 @@ import 'recitation_corrector.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🤖 خدمة الذكاء الاصطناعي — Groq API
+/// ✅ Whisper لتحويل الصوت إلى نص (مع prompt لتحسين الدقة)
+/// ✅ Groq AI للمساعد الذكي
+/// ✅ إعادة بناء التشكيل للتلاوة
+/// ✅ مقارنة محلية للتلاوة (RecitationCorrector)
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -29,7 +33,13 @@ class FirebaseAiService {
   static String? _activeModel;
   static const String _activeModelKey = 'groq_active_model';
 
-  static Future<String?> transcribeAudio(String audioFilePath) async {
+  // ═══════════════════════════════════════════════════════════
+  // 🎤 Whisper: تحويل الصوت إلى نص (مع prompt اختياري)
+  // ═══════════════════════════════════════════════════════════
+  static Future<String?> transcribeAudio(
+    String audioFilePath, {
+    String? correctText,
+  }) async {
     if (_apiKey.isEmpty) {
       debugPrint('⚠️ مفتاح Groq غير موجود');
       return null;
@@ -37,6 +47,12 @@ class FirebaseAiService {
 
     try {
       debugPrint('🎤 جاري تحويل الصوت إلى نص...');
+      if (correctText != null && correctText.isNotEmpty) {
+        final preview = correctText.length > 50
+            ? correctText.substring(0, 50)
+            : correctText;
+        debugPrint('📝 مع prompt: $preview...');
+      }
 
       final uri = Uri.parse(_whisperUrl);
       final request = http.MultipartRequest('POST', uri)
@@ -44,11 +60,17 @@ class FirebaseAiService {
         ..fields['model'] = 'whisper-large-v3'
         ..fields['language'] = 'ar'
         ..fields['response_format'] = 'json'
-        ..fields['temperature'] = '0'
-        ..files.add(await http.MultipartFile.fromPath(
-          'file',
-          audioFilePath,
-        ));
+        ..fields['temperature'] = '0';
+
+      // 🔑 تمرير النص الصحيح كـ prompt لتحسين استقبال الكلمات
+      if (correctText != null && correctText.isNotEmpty) {
+        request.fields['prompt'] = correctText;
+      }
+
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        audioFilePath,
+      ));
 
       final streamedResponse = await request.send().timeout(
             const Duration(seconds: 90),
@@ -71,6 +93,9 @@ class FirebaseAiService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🤖 المساعد الذكي "المرشد"
+  // ═══════════════════════════════════════════════════════════
   static Future<String> askQuestion(String question) async {
     if (_apiKey.isEmpty) {
       return '⚠️ مفتاح Groq API غير موجود.';
@@ -83,7 +108,7 @@ class FirebaseAiService {
             '⏰ يتجدد تلقائياً غداً\n\n'
             '💎 **للاشتراك الفوري:**\n'
             '• شهرياً: \$2.99\n'
-            '• سنوياً: \$22.99';
+            '• سنوياً: \$19.99';
       }
     }
 
@@ -138,6 +163,85 @@ class FirebaseAiService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 إعادة بناء التشكيل بالذكاء الاصطناعي
+  // ═══════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> reconstructTashkeel({
+    required String userText,
+    required String correctText,
+  }) async {
+    if (_apiKey.isEmpty) {
+      return {'reconstructed': userText, 'words': {}};
+    }
+
+    try {
+      final prompt = '''
+لديك آية قرآنية بالتشكيل الكامل، ونص مقروء بدون تشكيل.
+مهمتك: أعد بناء النص المقروء بإضافة التشكيل المناسب لكل كلمة، بناءً على ما قرأه المستخدم فعلاً (وليس بناءً على الآية الصحيحة).
+
+📖 الآية الصحيحة (بالتشكيل):
+$correctText
+
+🎤 ما قرأه المستخدم (بدون تشكيل):
+$userText
+
+⚠️ قواعد مهمة:
+1. حافظ على كلمات المستخدم كما هي - لا تستبدلها بكلمات الآية الصحيحة.
+2. أضف التشكيل لكل كلمة حسب ما نطق بها المستخدم فعلاً.
+3. إذا لم تستطع تحديد التشكيل بدقة، استخدم التشكيل الأقرب من الآية الصحيحة.
+4. الكلمات الناقصة أو الزائدة تبقى كما هي بدون تغيير.
+
+📤 أعد JSON فقط:
+{
+  "reconstructed": "النص المُعاد بناؤه بالتشكيل كاملاً",
+  "words": {
+    "الحمد": "الْحَمْدُ",
+    "لله": "لِلَّهِ",
+    "رب": "رَبِّ",
+    "الناس": "النَّاسِ"
+  }
+}
+
+⚠️ JSON فقط بدون شرح.
+''';
+
+      final response = await _sendRequest({
+        'messages': [
+          {'role': 'user', 'content': prompt}
+        ],
+        'max_tokens': 1500,
+        'temperature': 0.1,
+        'response_format': {'type': 'json_object'},
+      });
+
+      if (response == null || response.statusCode != 200) {
+        return {'reconstructed': userText, 'words': {}};
+      }
+
+      final data = jsonDecode(response.body);
+      final text = data['choices']?[0]?['message']?['content'] ?? '{}';
+
+      String cleaned = text.trim();
+      final start = cleaned.indexOf('{');
+      final end = cleaned.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        cleaned = cleaned.substring(start, end + 1);
+      }
+
+      final decoded = jsonDecode(cleaned);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'reconstructed': userText, 'words': {}};
+    } catch (e) {
+      debugPrint('❌ reconstructTashkeel error: $e');
+      return {'reconstructed': userText, 'words': {}};
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📖 تصحيح التلاوة الكامل (Whisper + Tashkeel AI + Local)
+  // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
     required String correctAyah,
@@ -154,9 +258,25 @@ class FirebaseAiService {
     }
 
     try {
-      final result = RecitationCorrector.compare(
+      // 1️⃣ إعادة بناء التشكيل بالذكاء الاصطناعي
+      debugPrint('🎯 جاري إعادة بناء التشكيل...');
+      final tashkeelResult = await reconstructTashkeel(
         userText: userRecitation,
         correctText: correctAyah,
+      );
+
+      final reconstructedText =
+          tashkeelResult['reconstructed']?.toString() ?? userRecitation;
+
+      debugPrint('📝 النص الأصلي: $userRecitation');
+      debugPrint('📝 النص المُعاد: $reconstructedText');
+
+      // 2️⃣ المقارنة مع التشكيل
+      final result = RecitationCorrector.compareWithTashkeel(
+        originalUser: userRecitation,
+        reconstructedUser: reconstructedText,
+        correctText: correctAyah,
+        tashkeelResult: tashkeelResult,
       );
 
       await UsageService.incrementRecitation();
@@ -171,6 +291,9 @@ class FirebaseAiService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 التعرف على الآية
+  // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>?> identifyAyah(String spokenText) async {
     if (_apiKey.isEmpty || spokenText.trim().isEmpty) return null;
 
@@ -235,6 +358,9 @@ class FirebaseAiService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 الموديل النشط (مع fallback تلقائي)
+  // ═══════════════════════════════════════════════════════════
   static Future<String> _getActiveModel() async {
     if (_activeModel != null) return _activeModel!;
     final prefs = await SharedPreferences.getInstance();
