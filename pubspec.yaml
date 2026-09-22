@@ -100,7 +100,6 @@ flutter:
     - assets/data/fatwa_library.json
     - assets/data/quran_data.json
     - assets/data/quran_full.json
-    - assets/data/kids_stories.json
 
     # الصور
     - assets/images/
