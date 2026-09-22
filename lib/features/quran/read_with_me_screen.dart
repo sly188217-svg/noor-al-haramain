@@ -10,15 +10,17 @@ import 'models/ayah_model.dart';
 import 'hifz_mode.dart';
 import '../../core/services/firebase_ai_service.dart';
 import '../../core/services/progress_service.dart';
+import '../../core/services/tajweed_colorer.dart';
+import '../../core/services/translation_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎙️ اقرأ معي — النسخة الاحترافية الشاملة
-/// ✅ التحكم بسرعة القارئ (0.5x - 1.5x)
-/// ✅ تكرار الآية (1, 3, 5, 10 مرات)
-/// ✅ تعدد القراء (6 قراء)
-/// ✅ وضع الحفظ Hifz Mode (5 مستويات)
-/// ✅ النقر على كلمة لسماعها
-/// ✅ تتبع التقدم والإنجازات
+/// 🎙️ اقرأ معي — النسخة الاحترافية الشاملة النهائية
+/// ✅ 6 قراء | ⚡ 5 سرعات | 🔁 4 تكرارات
+/// ✅ 🧠 وضع الحفظ (5 مستويات)
+/// ✅ 👆 نقرة على كلمة
+/// ✅ 📊 تتبع التقدم | 🏆 الإنجازات
+/// ✅ 🎨 تلوين التجويد | 📚 ترجمة 8 لغات
+/// ✅ 🎯 وضع الاختبار
 /// ═══════════════════════════════════════════════════════════
 class ReadWithMeScreen extends StatefulWidget {
   final int surahNumber;
@@ -48,6 +50,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   bool _isRecording = false;
   bool _isProcessing = false;
   bool _autoAdvance = true;
+  bool _hasSaved = false;
 
   // ⚡ السرعة
   double _playbackSpeed = 1.0;
@@ -58,7 +61,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   int _currentRepeat = 0;
   static const List<int> _repeatOptions = [1, 3, 5, 10];
 
-  // 🎙️ القارئ
+  // 🎙️ القراء
   String _selectedReciter = 'Husary_128kbps';
   static const List<Map<String, String>> _reciters = [
     {'id': 'Husary_128kbps', 'name': 'الحصري'},
@@ -69,12 +72,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     {'id': 'Yasser_Ad-Dussary_128kbps', 'name': 'ياسر الدوسري'},
   ];
 
-  Duration _currentPosition = Duration.zero;
-  Duration _totalDuration = Duration.zero;
-
-  final Set<int> _userCorrectWords = {};
-  final Set<int> _userWrongWords = {};
-
   // 🧠 وضع الحفظ
   int _hifzLevel = 1;
   List<bool> _hiddenMask = [];
@@ -82,8 +79,22 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   // 👆 كلمة مختارة
   int? _selectedWordIndex;
 
-  // 📊 تتبع التقدم
-  bool _hasSaved = false;
+  // 🎨 التجويد
+  bool _showTajweed = false;
+
+  // 📚 الترجمة
+  bool _showTranslation = false;
+  String _currentLang = 'ar';
+  String? _ayahTranslation;
+
+  // 🎯 وضع الاختبار
+  bool _testMode = false;
+
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = Duration.zero;
+
+  final Set<int> _userCorrectWords = {};
+  final Set<int> _userWrongWords = {};
 
   // 🎨 الألوان
   static const Color _paperColor = Color(0xFFFBF6E9);
@@ -95,9 +106,10 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   @override
   void initState() {
     super.initState();
+    _setupAudioListeners();
     _loadSurah();
     _loadPreferences();
-    _setupAudioListeners();
+    _loadTranslationPrefs();
   }
 
   @override
@@ -123,6 +135,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     });
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 💾 التحميل والحفظ
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -135,6 +150,17 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     });
   }
 
+  Future<void> _loadTranslationPrefs() async {
+    final lang = await TranslationService.getCurrentLang();
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _currentLang = lang;
+      _showTranslation = prefs.getBool('show_translation') ?? false;
+      _showTajweed = prefs.getBool('show_tajweed') ?? false;
+    });
+  }
+
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('read_speed', _playbackSpeed);
@@ -143,6 +169,14 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     await prefs.setInt('read_hifz_level', _hifzLevel);
   }
 
+  Future<void> _saveQuickPref(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📖 تحميل السورة
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadSurah() async {
     try {
       final surah = await QuranService.getSurah(widget.surahNumber);
@@ -184,6 +218,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     _currentRepeat = 0;
     _selectedWordIndex = null;
     _hasSaved = false;
+    _ayahTranslation = null;
 
     // 🧠 توليد قناع الإخفاء
     _hiddenMask = HifzMode.generateHiddenMask(
@@ -191,10 +226,27 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       _hifzLevel,
       widget.surahNumber * 1000 + ayah.number,
     );
+
+    // 📚 جلب الترجمة
+    if (_showTranslation && _currentLang != 'ar') {
+      _loadAyahTranslation();
+    }
+  }
+
+  Future<void> _loadAyahTranslation() async {
+    if (_currentAyahIndex >= _ayahs.length) return;
+    final ayah = _ayahs[_currentAyahIndex];
+    final trans = await TranslationService.getAyahTranslation(
+      surahNumber: widget.surahNumber,
+      ayahNumber: ayah.number,
+      langCode: _currentLang,
+    );
+    if (!mounted) return;
+    setState(() => _ayahTranslation = trans);
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎧 تشغيل / إيقاف
+  // 🎧 التشغيل
   // ═══════════════════════════════════════════════════════════
   Future<void> _togglePlay() async {
     if (_isPlaying) {
@@ -231,14 +283,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       _highlightedWordIndex = _currentWords.length - 1;
     });
 
-    // 🔁 التكرار
     if (_currentRepeat + 1 < _repeatCount) {
       setState(() => _currentRepeat++);
       Future.delayed(const Duration(milliseconds: 500), _playCurrentAyah);
       return;
     }
 
-    // ⏭️ التنقل التلقائي
     if (_autoAdvance) {
       Future.delayed(const Duration(milliseconds: 1500), _nextAyah);
     }
@@ -281,7 +331,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎤 التسجيل
+  // 🎤 التسجيل والتصحيح
   // ═══════════════════════════════════════════════════════════
   Future<void> _toggleRecording() async {
     if (_isRecording) {
@@ -494,11 +544,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              '⚡ 0.5x للأطفال والمبتدئين',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
-            ),
           ],
         ),
       ),
@@ -560,11 +605,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   ),
                 );
               }).toList(),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '🔁 تكرار الآية يساعد على الحفظ',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
             ),
           ],
         ),
@@ -674,11 +714,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 fontFamily: 'Amiri',
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'اختر مستوى إخفاء الكلمات لاختبار حفظك',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
-            ),
             const SizedBox(height: 16),
             ...HifzMode.levels.asMap().entries.map((entry) {
               final idx = entry.key + 1;
@@ -742,6 +777,79 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 ),
               );
             }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _paperColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.translate, color: _goldColor, size: 32),
+            const SizedBox(height: 8),
+            const Text(
+              '📚 الترجمة',
+              style: TextStyle(
+                color: _inkColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Amiri',
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'اختر لغة الترجمة',
+              style: TextStyle(color: Colors.black54, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: TranslationService.languages.map((l) {
+                final isActive = _currentLang == l['code'];
+                return GestureDetector(
+                  onTap: () async {
+                    await TranslationService.setLang(l['code']!);
+                    if (!mounted) return;
+                    setState(() {
+                      _currentLang = l['code']!;
+                      _showTranslation = l['code'] != 'ar';
+                    });
+                    await _saveQuickPref('show_translation', _showTranslation);
+                    await _loadAyahTranslation();
+                    if (mounted) Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isActive ? _goldColor : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _goldColor, width: 1.5),
+                    ),
+                    child: Text(
+                      '${l['flag']} ${l['name']}',
+                      style: TextStyle(
+                        color: isActive ? _paperColor : _inkColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),
@@ -948,24 +1056,28 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  /// 👆 النقر على كلمة
   void _onWordTap(int index) {
     if (index >= _currentWords.length) return;
 
     setState(() => _selectedWordIndex = index);
 
+    final wordTranslation =
+        TranslationService.getWordTranslation(_currentWords[index], _currentLang);
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '👆 "${_currentWords[index]}"',
+            wordTranslation != null
+                ? '👆 "${_currentWords[index]}" — $wordTranslation'
+                : '👆 "${_currentWords[index]}"',
             style: const TextStyle(
               fontFamily: 'Amiri',
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
-          duration: const Duration(seconds: 1),
+          duration: const Duration(seconds: 2),
           backgroundColor: _goldColor,
         ),
       );
@@ -1025,38 +1137,69 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
   Widget _buildSettingsBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       color: _goldColor.withValues(alpha: 0.15),
-      child: Row(
-        children: [
-          _settingChip(
-            icon: Icons.speed,
-            label: '${_playbackSpeed}x',
-            onTap: _showSpeedDialog,
-          ),
-          const SizedBox(width: 4),
-          _settingChip(
-            icon: Icons.repeat,
-            label: _repeatCount == 1 ? 'مرة' : '×$_repeatCount',
-            onTap: _showRepeatDialog,
-          ),
-          const SizedBox(width: 4),
-          _settingChip(
-            icon: Icons.person,
-            label: _reciters
-                .firstWhere(
-                  (r) => r['id'] == _selectedReciter,
-                  orElse: () => _reciters.first,
-                )['name']!,
-            onTap: _showReciterDialog,
-          ),
-          const SizedBox(width: 4),
-          _settingChip(
-            icon: Icons.psychology,
-            label: '🧠 $_hifzLevel',
-            onTap: _showHifzDialog,
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _settingChip(
+              icon: Icons.speed,
+              label: '${_playbackSpeed}x',
+              onTap: _showSpeedDialog,
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.repeat,
+              label: _repeatCount == 1 ? 'مرة' : '×$_repeatCount',
+              onTap: _showRepeatDialog,
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.person,
+              label: _reciters
+                  .firstWhere(
+                    (r) => r['id'] == _selectedReciter,
+                    orElse: () => _reciters.first,
+                  )['name']!,
+              onTap: _showReciterDialog,
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.psychology,
+              label: '🧠 $_hifzLevel',
+              onTap: _showHifzDialog,
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.palette,
+              label: _showTajweed ? '🎨 تجويد' : '🎨 عادي',
+              onTap: () {
+                setState(() => _showTajweed = !_showTajweed);
+                _saveQuickPref('show_tajweed', _showTajweed);
+              },
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.translate,
+              label: '📚 ترجمة',
+              onTap: _showLanguageDialog,
+            ),
+            const SizedBox(width: 4),
+            _settingChip(
+              icon: Icons.quiz,
+              label: _testMode ? '🎯 اختبار' : '📖 قراءة',
+              onTap: () {
+                setState(() {
+                  _testMode = !_testMode;
+                  _hifzLevel = _testMode ? 5 : 1;
+                  _prepareCurrentAyah();
+                });
+                _savePreferences();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1066,37 +1209,31 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          decoration: BoxDecoration(
-            color: _paperColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: _goldColor.withValues(alpha: 0.4),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: _paperColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _goldColor.withValues(alpha: 0.4),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: _goldColor, size: 13),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: _inkColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: _goldColor, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: _inkColor,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1125,9 +1262,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
             ),
           ),
           if (_repeatCount > 1) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.orange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
@@ -1137,16 +1274,16 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 '🔁 ${_currentRepeat + 1}/$_repeatCount',
                 style: const TextStyle(
                   color: Colors.orange,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
           if (_hifzLevel > 1) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.purple.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
@@ -1156,7 +1293,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 '🧠 $_hifzLevel/5',
                 style: const TextStyle(
                   color: Colors.purple,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1192,24 +1329,146 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Directionality(
-                textDirection: TextDirection.rtl,
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    for (int i = 0; i < _currentWords.length; i++)
-                      _buildWord(i),
-                  ],
+              if (_showTajweed && !_testMode && _hifzLevel <= 1)
+                _buildTajweedText()
+              else
+                Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (int i = 0; i < _currentWords.length; i++)
+                        _buildWord(i),
+                    ],
+                  ),
                 ),
-              ),
+              if (_showTranslation && _ayahTranslation != null) ...[
+                const SizedBox(height: 20),
+                _buildTranslationBox(),
+              ],
               const SizedBox(height: 20),
+              if (_showTajweed && !_testMode) _buildTajweedLegend(),
               if (_userCorrectWords.isNotEmpty ||
                   _userWrongWords.isNotEmpty)
                 _buildStatusBadge(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 🎨 النص مع تلوين التجويد
+  Widget _buildTajweedText() {
+    final ayah = _ayahs[_currentAyahIndex];
+    final spans = TajweedColorer.colorizeText(ayah.text);
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          children: spans.map((s) {
+            final color = TajweedColorer.colors[s.type] ?? _inkColor;
+            return TextSpan(
+              text: s.text,
+              style: TextStyle(
+                color: color,
+                fontSize: 28,
+                fontFamily: 'Amiri',
+                fontWeight: FontWeight.bold,
+                height: 2.3,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  /// 📚 صندوق الترجمة
+  Widget _buildTranslationBox() {
+    final langData = TranslationService.languages.firstWhere(
+      (l) => l['code'] == _currentLang,
+      orElse: () => {'name': 'English', 'flag': '🇬🇧'},
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.translate, color: Colors.blue, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                '📚 ${langData['flag']} ${langData['name']}',
+                style: const TextStyle(
+                  color: Colors.blue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _ayahTranslation ?? '...',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              height: 1.7,
+            ),
+            textDirection: (_currentLang == 'ar' || _currentLang == 'ur')
+                ? TextDirection.rtl
+                : TextDirection.ltr,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🎨 أسطورة ألوان التجويد
+  Widget _buildTajweedLegend() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: _paperColor,
+        border: Border.all(color: _frameColor.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 6,
+        children: TajweedColorer.colors.entries
+            .where((e) => e.key != TajweedType.normal)
+            .map((e) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration:
+                    BoxDecoration(color: e.value, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                TajweedColorer.names[e.key] ?? '',
+                style: const TextStyle(
+                    color: Colors.black54, fontSize: 10),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
