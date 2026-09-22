@@ -5,16 +5,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// خدمة المصادقة — Google + Firebase
+/// ✅ Web Client ID (المطلوب لـ google_sign_in)
 /// ═══════════════════════════════════════════════════════════
 class AuthService {
   static FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  /// ✅ serverClientId الصحيح من Google Cloud Console
+  /// ✅ Web Client ID من Google Cloud Console
   /// Project: My Project 42119 (disco-charger-507916-s1)
+  /// تم إنشاؤه: 2026-09-22
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     serverClientId:
-        '264723055815-vomgr1029ufgbf82h39fomrjee1kvgua.apps.googleusercontent.com',
+        '264723055815-1crikuhu74944hacdvoi0jmpef3fiekd.apps.googleusercontent.com',
   );
 
   static User? get currentUser => _auth.currentUser;
