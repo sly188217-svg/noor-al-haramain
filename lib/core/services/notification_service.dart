@@ -256,9 +256,10 @@ class NotificationService {
       showProgress: false,
     );
 
-    const details = NotificationDetails(
+    // ✅ final بدلاً من const — لأن androidDetails ليست ثابتة
+    final details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(presentAlert: false),
+      iOS: const DarwinNotificationDetails(presentAlert: false),
     );
 
     try {
@@ -331,6 +332,8 @@ class NotificationService {
             await _adhanNotificationDetails(),
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             matchDateTimeComponents: DateTimeComponents.time,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
             payload: payload,
           );
           debugPrint('✅ جدولة $prayerNameAr في: $finalTime');
@@ -348,6 +351,8 @@ class NotificationService {
               tz.TZDateTime.from(reminderTime, tz.local),
               _silentNotificationDetails(),
               androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
             );
           } catch (e) {}
         }
