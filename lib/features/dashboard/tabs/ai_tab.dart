@@ -96,6 +96,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   bool _isPremium = false;
   bool _isLoading = true;
   bool _isLoadingSurahs = true;
+  int _remainingReadWithMe = 4;
 
   List<SurahModel> _surahs = [];
   List<SurahModel> _filteredSurahs = [];
@@ -116,9 +117,11 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
 
   Future<void> _checkPremium() async {
     final premium = await UsageService.isPremium();
+    final remaining = await UsageService.remainingReadWithMe();
     if (!mounted) return;
     setState(() {
       _isPremium = premium;
+      _remainingReadWithMe = remaining;
       _isLoading = false;
     });
   }
@@ -168,19 +171,20 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             Icon(Icons.star, color: Color(0xFFD4AF37)),
             SizedBox(width: 8),
             Text(
-              'ميزة Premium',
+              'اشترك في Premium',
               style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18),
             ),
           ],
         ),
         content: const Text(
-          '🎙️ "اقرأ معي" متاحة للمشتركين فقط.\n\n'
-          '✨ استمع للقارئ مع تظليل الكلمات\n'
-          '✨ سجّل تلاوتك واحصل على تصحيح فوري\n'
+          '🎙️ استمتع بجميع الميزات بدون حدود:\n\n'
+          '✨ اقرأ معي غير محدود\n'
+          '✨ تصحيح تلاوة غير محدود\n'
+          '✨ أسئلة غير محدودة للمرشد\n'
           '✨ جميع سور القرآن (114 سورة)\n'
-          '✨ تتبّع تقدمك في الحفظ\n'
-          '✨ مثالية لتعليم الأطفال\n\n'
-          '💎 اشترك الآن بـ \$2.99/شهر\n'
+          '✨ تتبع تقدمك في الحفظ\n'
+          '✨ بدون إعلانات\n\n'
+          '💎 \$2.99/شهر\n'
           'أو \$22.99/سنة (وفّر 36%)',
           style: TextStyle(
             color: Colors.white,
@@ -221,6 +225,21 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     );
   }
 
+  Future<void> _tryFreeTrial() async {
+    final remaining = await UsageService.remainingReadWithMe();
+    if (remaining <= 0) {
+      _showPremiumDialog();
+      return;
+    }
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ReadWithMeScreen(surahNumber: 1),
+      ),
+    ).then((_) => _checkPremium());
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -237,7 +256,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🔒 شاشة القفل
+  // 🔒 شاشة القفل — مع تجربة مجانية
   // ═══════════════════════════════════════════════════════════
   Widget _buildPremiumLockScreen() {
     return Center(
@@ -282,66 +301,84 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                 height: 1.8,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            // 🎁 بطاقة التجربة المجانية
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C2541).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                    const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD4AF37)),
               ),
-              child: const Column(
+              child: Column(
                 children: [
                   Text(
-                    '💎 اشترك الآن',
-                    style: TextStyle(
+                    _remainingReadWithMe > 0
+                        ? '🎁 تجربة مجانية: $_remainingReadWithMe مرات'
+                        : '🔒 انتهت التجربة المجانية',
+                    style: const TextStyle(
                       color: Color(0xFFD4AF37),
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
-                    '\$2.99 / شهر',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    _remainingReadWithMe > 0
+                        ? 'جرّب الميزة مجاناً $_remainingReadWithMe مرات\nثم اشترك للاستخدام غير المحدود'
+                        : 'عاود غداً لتجربة جديدة\nأو اشترك الآن للاستخدام غير المحدود',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.6,
                     ),
-                  ),
-                  Text(
-                    'أو \$22.99 / سنة (وفّر 36%)',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _showPremiumDialog,
-              icon: const Icon(Icons.star),
-              label: const Text(
-                '💎 اشترك الآن',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            // 🎁 زر التجربة المجانية
+            if (_remainingReadWithMe > 0)
+              ElevatedButton.icon(
+                onPressed: _tryFreeTrial,
+                icon: const Icon(Icons.play_arrow, size: 22),
+                label: const Text(
+                  '🎁 ابدأ التجربة المجانية',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                foregroundColor: Colors.black,
+            const SizedBox(height: 12),
+            // 💎 زر الاشتراك
+            OutlinedButton.icon(
+              onPressed: _showPremiumDialog,
+              icon: const Icon(Icons.star, size: 20),
+              label: const Text(
+                '💎 اشترك الآن — \$2.99/شهر',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFD4AF37),
+                side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 40, vertical: 16),
+                    horizontal: 24, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _activatePremiumForTesting,
-              child: const Text(
-                '🎁 تجربة مجانية',
-                style: TextStyle(color: Color(0xFFD4AF37), fontSize: 13),
               ),
             ),
           ],
@@ -351,7 +388,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ✅ شاشة الوصول — جميع السور 114
+  // ✅ شاشة الوصول — جميع السور 114 (Premium فقط)
   // ═══════════════════════════════════════════════════════════
   Widget _buildAccessScreen() {
     return Column(
@@ -492,7 +529,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             ),
             child: Row(
               children: [
-                // رقم السورة في شكل زخرفي
                 Container(
                   width: 48,
                   height: 48,
@@ -522,7 +558,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                // اسم السورة + معلومات
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,7 +608,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                     ],
                   ),
                 ),
-                // سهم
                 const Icon(
                   Icons.arrow_forward_ios,
                   color: Color(0xFFD4AF37),
@@ -593,7 +627,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
       MaterialPageRoute(
         builder: (_) => ReadWithMeScreen(surahNumber: surahNumber),
       ),
-    );
+    ).then((_) => _checkPremium());
   }
 }
 
@@ -866,8 +900,9 @@ class _ChatTabState extends State<_ChatTab> {
           ],
         ),
         content: const Text(
-          'لقد استخدمت 3 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+          'لقد استخدمت 3 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.\n\n'
+          '💎 اشترك الآن بـ \$2.99/شهر للاستخدام غير المحدود.',
+          style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6),
         ),
         actions: [
           ElevatedButton(
