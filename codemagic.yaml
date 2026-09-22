@@ -25,9 +25,6 @@ workflows:
           echo "$KEYSTORE_BASE64" > /tmp/ks.b64
           echo "=== حجم Base64 ==="
           wc -c /tmp/ks.b64
-          echo "=== أول 20 حرف ==="
-          head -c 20 /tmp/ks.b64
-          echo ""
           echo "=== فك Base64 ==="
           base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/b64err.log || true
           cat /tmp/b64err.log
@@ -35,12 +32,17 @@ workflows:
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
           echo "=== نوع الملف ==="
           file $CM_BUILD_DIR/android/app/noor-release.jks
-          echo "=== أول 4 بايت ==="
-          xxd $CM_BUILD_DIR/android/app/noor-release.jks | head -1
-          echo "=== التحقق من المفتاح ==="
-          keytool -list -keystore $CM_BUILD_DIR/android/app/noor-release.jks \
+
+          echo ""
+          echo "════════════════════════════════════════════════════"
+          echo "🔑 SHA-1 الفعلي لـ Keystore المستخدم في البناء:"
+          echo "════════════════════════════════════════════════════"
+          keytool -list -v -keystore $CM_BUILD_DIR/android/app/noor-release.jks \
             -storepass "Noor2026Pass" \
-            -alias "noor-key" 2>&1 || echo "⚠️ فشل"
+            -alias "noor-key" 2>&1 | grep -E "SHA1:|SHA256:"
+          echo "════════════════════════════════════════════════════"
+          echo "⚠️  انسخ SHA1 أعلاه وأضفه في Firebase Console"
+          echo "════════════════════════════════════════════════════"
 
       - name: Get Flutter packages
         script: |
@@ -62,7 +64,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - sly188217@gmail.com
+          - sly188218@gmail.com
         notify:
           success: true
           failure: true
