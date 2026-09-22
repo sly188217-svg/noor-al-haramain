@@ -1,8 +1,7 @@
 /// ═══════════════════════════════════════════════════════════
-/// 🎯 مصحح التلاوة الصارم
-/// ✅ مقارنة محلية (بدون AI)
-/// ✅ يكشف: صحيح / خطأ / ناقص / زائد
-/// ✅ يهتم بالتشكيل
+/// 🎯 مصحح التلاوة التكيفي
+/// ✅ إذا النص بدون تشكيل → قارن بدون تشكيل
+/// ✅ إذا النص مع تشكيل → قارن صارماً
 /// ═══════════════════════════════════════════════════════════
 
 class LetterFeedback {
@@ -60,8 +59,18 @@ class RecitationCorrector {
     return buffer.toString();
   }
 
+  /// هل النص يحتوي على تشكيل؟
+  static bool hasTashkeel(String text) {
+    for (final r in text.runes) {
+      if (_tashkeel.contains(String.fromCharCode(r))) return true;
+    }
+    return false;
+  }
+
+  /// تطبيع: إزالة التشكيل + توحيد الحروف
   static String normalize(String text) {
-    return text
+    var result = removeTashkeel(text);
+    result = result
         .replaceAll('أ', 'ا')
         .replaceAll('إ', 'ا')
         .replaceAll('آ', 'ا')
@@ -69,9 +78,8 @@ class RecitationCorrector {
         .replaceAll('ة', 'ه')
         .replaceAll('ؤ', 'و')
         .replaceAll('ئ', 'ي')
-        .replaceAll('ـ', '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+        .replaceAll('ـ', '');
+    return result.trim();
   }
 
   static String cleanPunctuation(String text) {
@@ -85,13 +93,20 @@ class RecitationCorrector {
     final cleanUser = cleanPunctuation(userText).trim();
     final cleanCorrect = cleanPunctuation(correctText).trim();
 
-    final userWords =
-        cleanUser.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    final correctWords =
-        cleanCorrect.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    // 🔑 المفتاح: هل يقارن مع التشكيل أم لا؟
+    final userHasTashkeel = hasTashkeel(cleanUser);
+
+    final userWords = cleanUser
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    final correctWords = cleanCorrect
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
 
     final results = <WordFeedback>[];
-    final alignment = _alignWords(userWords, correctWords);
+    final alignment = _alignWords(userWords, correctWords, userHasTashkeel);
 
     for (final pair in alignment) {
       final userWord = pair.userWord;
@@ -115,7 +130,8 @@ class RecitationCorrector {
         continue;
       }
 
-      final comparison = _compareWords(userWord, correctWord);
+      final comparison =
+          _compareWords(userWord, correctWord, userHasTashkeel);
       results.add(WordFeedback(
         userWord: userWord,
         correctWord: correctWord,
@@ -138,9 +154,12 @@ class RecitationCorrector {
   static List<_WordPair> _alignWords(
     List<String> userWords,
     List<String> correctWords,
+    bool strict,
   ) {
     final result = <_WordPair>[];
     int i = 0, j = 0;
+
+    String norm(String w) => strict ? w : normalize(w);
 
     while (i < userWords.length || j < correctWords.length) {
       if (i >= userWords.length) {
@@ -154,8 +173,8 @@ class RecitationCorrector {
         continue;
       }
 
-      final uNorm = normalize(removeTashkeel(userWords[i]));
-      final cNorm = normalize(removeTashkeel(correctWords[j]));
+      final uNorm = norm(userWords[i]);
+      final cNorm = norm(correctWords[j]);
 
       if (uNorm == cNorm) {
         result.add(
@@ -163,17 +182,15 @@ class RecitationCorrector {
         i++;
         j++;
       } else {
-        final uNextNorm = i + 1 < userWords.length
-            ? normalize(removeTashkeel(userWords[i + 1]))
-            : null;
-        final cNextNorm = j + 1 < correctWords.length
-            ? normalize(removeTashkeel(correctWords[j + 1]))
-            : null;
+        final uNext =
+            i + 1 < userWords.length ? norm(userWords[i + 1]) : null;
+        final cNext =
+            j + 1 < correctWords.length ? norm(correctWords[j + 1]) : null;
 
-        if (uNextNorm == cNorm) {
+        if (uNext == cNorm) {
           result.add(_WordPair(userWord: userWords[i], correctWord: null));
           i++;
-        } else if (cNextNorm == uNorm) {
+        } else if (cNext == uNorm) {
           result.add(_WordPair(userWord: null, correctWord: correctWords[j]));
           j++;
         } else {
@@ -188,7 +205,9 @@ class RecitationCorrector {
     return result;
   }
 
-  static _WordComparison _compareWords(String userWord, String correctWord) {
+  static _WordComparison _compareWords(
+      String userWord, String correctWord, bool strict) {
+    // ✅ مطابقة تامة
     if (userWord == correctWord) {
       return _WordComparison(
         status: 'correct',
@@ -199,20 +218,26 @@ class RecitationCorrector {
       );
     }
 
-    final userNorm = normalize(userWord);
-    final correctNorm = normalize(correctWord);
-
-    if (userNorm == correctNorm) {
-      return _WordComparison(
-        status: 'wrong',
-        letters: correctWord
-            .split('')
-            .map((c) => LetterFeedback(letter: c, status: 'wrong'))
-            .toList(),
-      );
+    // ✅ مطابقة بدون تشكيل (إذا النص بدون تشكيل)
+    if (!strict) {
+      final uNorm = normalize(userWord);
+      final cNorm = normalize(correctWord);
+      if (uNorm == cNorm) {
+        return _WordComparison(
+          status: 'correct',
+          letters: correctWord
+              .split('')
+              .map((c) => LetterFeedback(letter: c, status: 'correct'))
+              .toList(),
+        );
+      }
     }
 
-    final letters = _compareLetters(userWord, correctWord);
+    // ❌ خطأ
+    final letters = _compareLetters(
+      strict ? userWord : normalize(userWord),
+      strict ? correctWord : normalize(correctWord),
+    );
     return _WordComparison(status: 'wrong', letters: letters);
   }
 
@@ -244,9 +269,15 @@ class RecitationCorrector {
 
     if (accuracy == 100) return '🌟 ممتاز! تلاوة صحيحة تماماً';
     if (accuracy >= 90) return '✅ تلاوة جيدة جداً — راجع $wrong خطأ';
-    if (accuracy >= 75) return '👍 تلاوة جيدة — $wrong خطأ، $missing ناقص';
+    if (accuracy >= 75) {
+      return '👍 تلاوة جيدة — $wrong خطأ${missing > 0 ? "، $missing ناقص" : ""}';
+    }
     if (accuracy >= 50) {
-      return '⚠️ تحتاج مراجعة — $wrong خطأ، $missing ناقص، $extra زائد';
+      final parts = <String>[];
+      if (wrong > 0) parts.add('$wrong خطأ');
+      if (missing > 0) parts.add('$missing ناقص');
+      if (extra > 0) parts.add('$extra زائد');
+      return '⚠️ راجع: ${parts.join("، ")}';
     }
     return '❌ راجع الآية جيداً ثم أعد المحاولة';
   }
