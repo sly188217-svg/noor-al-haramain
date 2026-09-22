@@ -4,12 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'usage_service.dart';
+import 'recitation_corrector.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🤖 خدمة الذكاء الاصطناعي — Groq API
-/// ✅ Whisper لتحويل الصوت إلى نص (مع تشكيل)
-/// ✅ Groq AI للمقارنة والتصحيح
-/// ✅ 6 موديلات للاحتياط التلقائي
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -31,9 +29,6 @@ class FirebaseAiService {
   static String? _activeModel;
   static const String _activeModelKey = 'groq_active_model';
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎤 Whisper: تحويل الصوت إلى نص عربي (مع تشكيل)
-  // ═══════════════════════════════════════════════════════════
   static Future<String?> transcribeAudio(String audioFilePath) async {
     if (_apiKey.isEmpty) {
       debugPrint('⚠️ مفتاح Groq غير موجود');
@@ -76,9 +71,6 @@ class FirebaseAiService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي
-  // ═══════════════════════════════════════════════════════════
   static Future<String> askQuestion(String question) async {
     if (_apiKey.isEmpty) {
       return '⚠️ مفتاح Groq API غير موجود.';
@@ -91,7 +83,7 @@ class FirebaseAiService {
             '⏰ يتجدد تلقائياً غداً\n\n'
             '💎 **للاشتراك الفوري:**\n'
             '• شهرياً: \$2.99\n'
-            '• سنوياً: \$19.99';
+            '• سنوياً: \$22.99';
       }
     }
 
@@ -146,17 +138,10 @@ class FirebaseAiService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📖 تصحيح التلاوة (Whisper → Groq AI)
-  // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
     required String correctAyah,
   }) async {
-    if (_apiKey.isEmpty) {
-      return {'accuracy': 0, 'words': [], 'feedback': 'مفتاح Groq غير موجود'};
-    }
-
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingRecitations();
       if (remaining <= 0) {
@@ -169,111 +154,23 @@ class FirebaseAiService {
     }
 
     try {
-      final prompt = '''
-أنت خبير في تصحيح تلاوة القرآن الكريم برواية حفص عن عاصم.
+      final result = RecitationCorrector.compare(
+        userText: userRecitation,
+        correctText: correctAyah,
+      );
 
-📖 النص القرآني الصحيح (بالرسم العثماني مع التشكيل الكامل):
-$correctAyah
-
-🎤 ما قرأه المستخدم (محوَّل من الصوت بواسطة Whisper Large v3):
-$userRecitation
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ قواعد المقارنة الصارمة:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-1️⃣ **تجاهل التشكيل إذا كان النص المُحوَّل بدون تشكيل:**
-   - إذا كان النص المُحوَّل بدون تشكيل → قارن **بدون تشكيل**
-   - "الحمد" == "الْحَمْدُ" → correct ✅
-   - "لله" == "لِلَّهِ" → correct ✅
-   - "العالمين" == "الْعَالَمِينَ" → correct ✅
-
-2️⃣ **إذا كان النص المُحوَّل يحتوي على تشكيل:**
-   - قارن التشكيل بصرامة
-   - "الْحَمْدَ" بدلاً من "الْحَمْدُ" → wrong ❌
-
-3️⃣ **الأخطاء الحقيقية فقط:**
-   - "الناس" بدلاً من "الْعَالَمِينَ" → wrong ❌
-   - "الحميد" بدلاً من "الْحَمْدُ" → wrong ❌
-
-4️⃣ **الكلمات المفقودة والزائدة:**
-   - نسي كلمة → missing
-   - أضاف كلمة → extra
-
-5️⃣ **حساب الدقة:**
-   - accuracy = (الكلمات الصحيحة / إجمالي الكلمات) × 100
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📤 أعد JSON فقط بهذا الشكل:
-{
-  "accuracy": 95,
-  "words": [
-    {"user": "الحمد", "correct": "الْحَمْدُ", "status": "correct"},
-    {"user": "لله", "correct": "لِلَّهِ", "status": "correct"},
-    {"user": "رب", "correct": "رَبِّ", "status": "correct"},
-    {"user": "الناس", "correct": "الْعَالَمِينَ", "status": "wrong"}
-  ],
-  "feedback": "تلاوة جيدة، راجع الكلمات الحمراء"
-}
-
-⚠️ JSON فقط. لا تكتب أي شرح.
-''';
-
-      final response = await _sendRequest({
-        'messages': [
-          {'role': 'user', 'content': prompt}
-        ],
-        'max_tokens': 2500,
-        'temperature': 0.1,
-        'response_format': {'type': 'json_object'},
-      });
-
-      if (response == null || response.statusCode != 200) {
-        return {
-          'accuracy': 0,
-          'words': [],
-          'feedback': 'خطأ في الاتصال',
-        };
-      }
-
-      final data = jsonDecode(response.body);
-      final text = data['choices']?[0]?['message']?['content'] ?? '{}';
-
-      String cleaned = text.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned
-            .replaceAll(RegExp(r'^```[a-z]*\n?'), '')
-            .replaceAll(RegExp(r'\n?```$'), '');
-      }
-      final start = cleaned.indexOf('{');
-      final end = cleaned.lastIndexOf('}');
-      if (start >= 0 && end > start) {
-        cleaned = cleaned.substring(start, end + 1);
-      }
-
-      try {
-        final decoded = jsonDecode(cleaned);
-        if (decoded is Map<String, dynamic>) {
-          await UsageService.incrementRecitation();
-          decoded['accuracy'] = decoded['accuracy'] ?? 0;
-          decoded['words'] = decoded['words'] ?? [];
-          decoded['feedback'] = decoded['feedback'] ?? '';
-          return decoded;
-        }
-      } catch (e) {
-        debugPrint('⚠️ فشل JSON: $e');
-      }
-
-      return {'accuracy': 0, 'words': [], 'feedback': text};
+      await UsageService.incrementRecitation();
+      return result.toJson();
     } catch (e) {
-      return {'accuracy': 0, 'words': [], 'feedback': 'خطأ: $e'};
+      debugPrint('❌ خطأ في المقارنة: $e');
+      return {
+        'accuracy': 0,
+        'words': [],
+        'feedback': '⚠️ تعذر التحليل: $e',
+      };
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 التعرف الديناميكي على الآية
-  // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>?> identifyAyah(String spokenText) async {
     if (_apiKey.isEmpty || spokenText.trim().isEmpty) return null;
 
@@ -338,9 +235,6 @@ $userRecitation
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 الموديل النشط (مع fallback تلقائي)
-  // ═══════════════════════════════════════════════════════════
   static Future<String> _getActiveModel() async {
     if (_activeModel != null) return _activeModel!;
     final prefs = await SharedPreferences.getInstance();

@@ -92,7 +92,7 @@ class _ChatTabState extends State<_ChatTab> {
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
   bool _isPremium = false;
-  int _remainingChats = 5;
+  int _remainingChats = 3;
   List<Map<String, dynamic>> _savedConversations = [];
 
   static const String _historyKey = 'chat_history_v1';
@@ -353,7 +353,7 @@ class _ChatTabState extends State<_ChatTab> {
           ],
         ),
         content: const Text(
-          'لقد استخدمت 5 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
+          'لقد استخدمت 3 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
         actions: [

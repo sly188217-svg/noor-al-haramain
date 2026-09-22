@@ -48,7 +48,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
   bool _autoDetectMode = true;
   String? _recordingPath;
 
-  int _remainingRecitations = 3;
+  int _remainingRecitations = 2;
 
   String _userRecitation = '';
   String _correctAyah = '';
@@ -127,9 +127,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     } catch (_) {}
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎤 التسجيل الصوتي
-  // ═══════════════════════════════════════════════════════════
   Future<bool> _hasMicrophonePermission() async {
     final status = await Permission.microphone.status;
     if (status.isGranted) return true;
@@ -195,9 +192,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📖 معالجة الصوت: Whisper → Groq AI
-  // ═══════════════════════════════════════════════════════════
   Future<void> _processAudio(String audioPath) async {
     setState(() {
       _isProcessing = true;
@@ -205,7 +199,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     });
 
     try {
-      // 1. تحويل الصوت إلى نص
       final transcribedText =
           await FirebaseAiService.transcribeAudio(audioPath);
 
@@ -224,7 +217,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _feedback = '🔍 جاري التصحيح...';
       });
 
-      // 2. التعرف على الآية (في الوضع التلقائي)
       if (_autoDetectMode && _correctAyah.isEmpty) {
         setState(() {
           _feedback = '🎯 جاري التعرف على الآية...';
@@ -276,7 +268,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
         });
       }
 
-      // 3. التصحيح
       final result = await FirebaseAiService.analyzeRecitation(
         userRecitation: transcribedText,
         correctAyah: _correctAyah,
@@ -302,7 +293,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _isProcessing = false;
       });
 
-      // 4. حذف الملف المؤقت
       try {
         final file = File(audioPath);
         if (await file.exists()) await file.delete();
@@ -387,7 +377,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ],
         ),
         content: const Text(
-          'لقد استخدمت 3 تصحيحات مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
+          'لقد استخدمت تصحيحيّن مجانيّين اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
         actions: [
@@ -691,7 +681,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        // عرض عدد الآيات
         if (_ayahs.isNotEmpty)
           Text(
             'سورة ${_surahs.firstWhere((s) => s.number == _selectedSurah, orElse: () => _surahs.first).name} — ${_ayahs.length} آية',
@@ -842,7 +831,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         case 'missing':
           color = Colors.grey;
           decoration = TextDecoration.lineThrough;
-          displayWord = w.correctWord;
+          displayWord = '(${w.correctWord})';
           break;
         case 'extra':
           color = Colors.orange;
@@ -854,7 +843,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           color = Colors.red;
           decoration = TextDecoration.underline;
           displayWord =
-              w.correctWord.isNotEmpty ? w.correctWord : w.userWord;
+              w.userWord.isNotEmpty ? w.userWord : w.correctWord;
           fontWeight = FontWeight.bold;
           thickness = 2.5;
           break;
@@ -1040,7 +1029,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
       ),
       child: Text(
         _autoDetectMode
-            ? '💡 اقرأ أي آية من أي سورة (114 سورة، 6236 آية)، وسيحوّلها Whisper إلى نص، ثم يصححها الذكاء الاصطناعي.'
+            ? '💡 اقرأ أي آية من أي سورة (114 سورة، 6236 آية)، وسيحوّلها Whisper إلى نص، ثم تتم المقارنة بدقة.'
             : '💡 اختر السورة (114) والآية من القائمة، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
         style: const TextStyle(color: Colors.white70, fontSize: 13),
         textAlign: TextAlign.center,

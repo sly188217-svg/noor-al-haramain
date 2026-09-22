@@ -9,8 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ✅ تجديد يومي تلقائي
 /// ═══════════════════════════════════════════════════════════
 class UsageService {
-  static const int _freeChats = 5;
-  static const int _freeRecitations = 3;
+  static const int _freeChats = 3;
+  static const int _freeRecitations = 2;
   static const String _guestUidKey = 'guest_uid';
 
   static Future<String> _getUid() async {
@@ -184,4 +184,3 @@ class UsageService {
     await prefs.setBool('is_premium', false);
   }
 }
-
