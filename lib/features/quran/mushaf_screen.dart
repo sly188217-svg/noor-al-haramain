@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'services/quran_service.dart';
 import 'models/surah_model.dart';
+import 'read_with_me_screen.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 📖 شاشة المصحف — تصميم كالمصحف المطبوع
@@ -12,6 +13,7 @@ import 'models/surah_model.dart';
 /// ✅ رأس سورة في شريط مزخرف
 /// ✅ بسملة في لوحة بيضاوية
 /// ✅ أرقام آيات في نجيمات ذهبية
+/// ✅ زر "اقرأ معي" (Premium)
 /// ═══════════════════════════════════════════════════════════
 class MushafScreen extends StatefulWidget {
   final int initialSurah;
@@ -77,6 +79,20 @@ class _MushafScreenState extends State<MushafScreen> {
       debugPrint('❌ فشل تحميل القرآن: $e');
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎙️ اقرأ معي
+  // ═══════════════════════════════════════════════════════════
+  void _openReadWithMe() {
+    if (_surahs.isEmpty) return;
+    final surahNumber = _surahs[_currentSurahIndex].number;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReadWithMeScreen(surahNumber: surahNumber),
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -532,6 +548,12 @@ class _MushafScreenState extends State<MushafScreen> {
           ],
         ),
         actions: [
+          // 🎙️ زر اقرأ معي
+          IconButton(
+            icon: const Icon(Icons.mic),
+            onPressed: _openReadWithMe,
+            tooltip: '🎙️ اقرأ معي',
+          ),
           IconButton(
             icon: const Icon(Icons.text_fields),
             onPressed: _showFontSizeDialog,
