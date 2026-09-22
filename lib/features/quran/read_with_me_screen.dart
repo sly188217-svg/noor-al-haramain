@@ -12,6 +12,7 @@ import '../../core/services/firebase_ai_service.dart';
 import '../../core/services/progress_service.dart';
 import '../../core/services/tajweed_colorer.dart';
 import '../../core/services/translation_service.dart';
+import '../../core/services/usage_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 🎙️ اقرأ معي — النسخة الاحترافية الشاملة النهائية
@@ -20,7 +21,7 @@ import '../../core/services/translation_service.dart';
 /// ✅ 👆 نقرة على كلمة
 /// ✅ 📊 تتبع التقدم | 🏆 الإنجازات
 /// ✅ 🎨 تلوين التجويد | 📚 ترجمة 8 لغات
-/// ✅ 🎯 وضع الاختبار
+/// ✅ 🎯 وضع الاختبار | 🎁 تجربة مجانية 4 مرات
 /// ═══════════════════════════════════════════════════════════
 class ReadWithMeScreen extends StatefulWidget {
   final int surahNumber;
@@ -51,6 +52,10 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   bool _isProcessing = false;
   bool _autoAdvance = true;
   bool _hasSaved = false;
+
+  // 🎁 تجربة مجانية
+  bool _isPremium = false;
+  int _remainingReadWithMe = 4;
 
   // ⚡ السرعة
   double _playbackSpeed = 1.0;
@@ -110,6 +115,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     _loadSurah();
     _loadPreferences();
     _loadTranslationPrefs();
+    _loadUsageStatus();
   }
 
   @override
@@ -158,6 +164,16 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       _currentLang = lang;
       _showTranslation = prefs.getBool('show_translation') ?? false;
       _showTajweed = prefs.getBool('show_tajweed') ?? false;
+    });
+  }
+
+  Future<void> _loadUsageStatus() async {
+    final isPremium = await UsageService.isPremium();
+    final remaining = await UsageService.remainingReadWithMe();
+    if (!mounted) return;
+    setState(() {
+      _isPremium = isPremium;
+      _remainingReadWithMe = remaining;
     });
   }
 
@@ -220,14 +236,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     _hasSaved = false;
     _ayahTranslation = null;
 
-    // 🧠 توليد قناع الإخفاء
     _hiddenMask = HifzMode.generateHiddenMask(
       _currentWords.length,
       _hifzLevel,
       widget.surahNumber * 1000 + ayah.number,
     );
 
-    // 📚 جلب الترجمة
     if (_showTranslation && _currentLang != 'ar') {
       _loadAyahTranslation();
     }
@@ -346,6 +360,15 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       return;
     }
 
+    // 🎁 فحص التجربة المجانية
+    if (!_isPremium) {
+      final canUse = await UsageService.canReadWithMe();
+      if (!canUse) {
+        _showLimitDialog();
+        return;
+      }
+    }
+
     if (!await _hasMicPermission()) return;
 
     try {
@@ -440,6 +463,13 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         }
       }
 
+      // 🎁 خصم من التجربة المجانية
+      if (!_isPremium) {
+        await UsageService.incrementReadWithMe();
+        final remaining = await UsageService.remainingReadWithMe();
+        if (mounted) setState(() => _remainingReadWithMe = remaining);
+      }
+
       try {
         final file = File(path);
         if (await file.exists()) await file.delete();
@@ -482,6 +512,71 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     if (newOnes.isNotEmpty) {
       await prefs.setStringList('shown_achievements', [...shown, ...newOnes]);
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎁 نافذة انتهاء التجربة
+  // ═══════════════════════════════════════════════════════════
+  void _showLimitDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _paperColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: _goldColor, width: 2),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.hourglass_empty, color: Color(0xFFB8860B)),
+            SizedBox(width: 8),
+            Text(
+              'انتهت التجربة المجانية',
+              style: TextStyle(
+                color: Color(0xFFB8860B),
+                fontSize: 18,
+                fontFamily: 'Amiri',
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'لقد استخدمت 4 تجارب مجانية لميزة "اقرأ معي".\n\n'
+          '💎 اشترك الآن بـ:\n'
+          '• \$2.99/شهر\n'
+          '• \$22.99/سنة (وفّر 36%)\n\n'
+          '⏰ أو عاود غداً لتجربة جديدة.',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 14,
+            height: 1.8,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('لاحقاً',
+                style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('💎 قريباً: صفحة الاشتراك'),
+                  backgroundColor: Color(0xFFB8860B),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB8860B),
+              foregroundColor: _paperColor,
+            ),
+            child: const Text('💎 اشترك الآن'),
+          ),
+        ],
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1244,69 +1339,123 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: _paperColor,
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: _goldColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'آية ${ayah.number}',
-              style: const TextStyle(
-                color: _paperColor,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Amiri',
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _goldColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'آية ${ayah.number}',
+                  style: const TextStyle(
+                    color: _paperColor,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Amiri',
+                  ),
+                ),
               ),
-            ),
-          ),
-          if (_repeatCount > 1) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange),
-              ),
-              child: Text(
-                '🔁 ${_currentRepeat + 1}/$_repeatCount',
+              if (_repeatCount > 1) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Text(
+                    '🔁 ${_currentRepeat + 1}/$_repeatCount',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              if (_hifzLevel > 1) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.purple),
+                  ),
+                  child: Text(
+                    '🧠 $_hifzLevel/5',
+                    style: const TextStyle(
+                      color: Colors.purple,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              Text(
+                '${_currentAyahIndex + 1} / ${_ayahs.length}',
                 style: const TextStyle(
-                  color: Colors.orange,
-                  fontSize: 10,
+                  color: _inkColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ],
-          if (_hifzLevel > 1) ...[
-            const SizedBox(width: 6),
+            ],
+          ),
+          // 🎁 شريط التجربة المجانية
+          if (!_isPremium) ...[
+            const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.purple.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.purple),
-              ),
-              child: Text(
-                '🧠 $_hifzLevel/5',
-                style: const TextStyle(
-                  color: Colors.purple,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+                color: _remainingReadWithMe > 0
+                    ? Colors.blue.withValues(alpha: 0.15)
+                    : Colors.red.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _remainingReadWithMe > 0
+                      ? Colors.blue
+                      : Colors.red,
+                  width: 1,
                 ),
               ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _remainingReadWithMe > 0
+                        ? Icons.card_giftcard
+                        : Icons.hourglass_empty,
+                    color: _remainingReadWithMe > 0
+                        ? Colors.blue
+                        : Colors.red,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _remainingReadWithMe > 0
+                        ? '🎁 متبقي: $_remainingReadWithMe تجارب مجانية'
+                        : '🔒 انتهت التجربة المجانية',
+                    style: TextStyle(
+                      color: _remainingReadWithMe > 0
+                          ? Colors.blue
+                          : Colors.red,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
-          const Spacer(),
-          Text(
-            '${_currentAyahIndex + 1} / ${_ayahs.length}',
-            style: const TextStyle(
-              color: _inkColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
         ],
       ),
     );
@@ -1359,7 +1508,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  /// 🎨 النص مع تلوين التجويد
   Widget _buildTajweedText() {
     final ayah = _ayahs[_currentAyahIndex];
     final spans = TajweedColorer.colorizeText(ayah.text);
@@ -1387,7 +1535,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  /// 📚 صندوق الترجمة
   Widget _buildTranslationBox() {
     final langData = TranslationService.languages.firstWhere(
       (l) => l['code'] == _currentLang,
@@ -1435,7 +1582,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  /// 🎨 أسطورة ألوان التجويد
   Widget _buildTajweedLegend() {
     return Container(
       padding: const EdgeInsets.all(10),

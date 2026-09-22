@@ -5,12 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 📊 خدمة الاستخدام — محفوظة في Firebase Firestore
-/// ✅ لا يمكن التلاعب بحذف التطبيق
+/// ✅ 2 تصحيح تلاوة | 3 أسئلة مرشد | 4 اقرأ معي
 /// ✅ تجديد يومي تلقائي
 /// ═══════════════════════════════════════════════════════════
 class UsageService {
   static const int _freeChats = 3;
   static const int _freeRecitations = 2;
+  static const int _freeReadWithMe = 4;
   static const String _guestUidKey = 'guest_uid';
 
   static Future<String> _getUid() async {
@@ -49,6 +50,7 @@ class UsageService {
         final initial = {
           'chats_used': 0,
           'recitations_used': 0,
+          'read_with_me_used': 0,
           'last_reset': today,
           'is_premium': false,
         };
@@ -69,12 +71,14 @@ class UsageService {
             .update({
           'chats_used': 0,
           'recitations_used': 0,
+          'read_with_me_used': 0,
           'last_reset': today,
         });
         return {
           ...data,
           'chats_used': 0,
           'recitations_used': 0,
+          'read_with_me_used': 0,
           'last_reset': today,
         };
       }
@@ -94,12 +98,14 @@ class UsageService {
     if (lastReset != today) {
       await prefs.setInt('local_chats_used', 0);
       await prefs.setInt('local_recitations_used', 0);
+      await prefs.setInt('local_read_with_me_used', 0);
       await prefs.setString('local_last_reset', today);
     }
 
     return {
       'chats_used': prefs.getInt('local_chats_used') ?? 0,
       'recitations_used': prefs.getInt('local_recitations_used') ?? 0,
+      'read_with_me_used': prefs.getInt('local_read_with_me_used') ?? 0,
       'is_premium': prefs.getBool('is_premium') ?? false,
     };
   }
@@ -118,8 +124,17 @@ class UsageService {
     return (_freeRecitations - used).clamp(0, _freeRecitations);
   }
 
+  static Future<int> remainingReadWithMe() async {
+    final data = await _getUsage();
+    if (data['is_premium'] == true) return 999999;
+    final used = (data['read_with_me_used'] as num?)?.toInt() ?? 0;
+    return (_freeReadWithMe - used).clamp(0, _freeReadWithMe);
+  }
+
   static Future<bool> canChat() async => (await remainingChats()) > 0;
   static Future<bool> canRecite() async => (await remainingRecitations()) > 0;
+  static Future<bool> canReadWithMe() async =>
+      (await remainingReadWithMe()) > 0;
 
   static Future<void> incrementChat() async {
     final uid = await _getUid();
@@ -152,6 +167,23 @@ class UsageService {
       final prefs = await SharedPreferences.getInstance();
       final used = prefs.getInt('local_recitations_used') ?? 0;
       await prefs.setInt('local_recitations_used', used + 1);
+    }
+  }
+
+  static Future<void> incrementReadWithMe() async {
+    final uid = await _getUid();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usage')
+          .doc(uid)
+          .set({
+        'read_with_me_used': FieldValue.increment(1),
+        'last_reset': _today(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      final used = prefs.getInt('local_read_with_me_used') ?? 0;
+      await prefs.setInt('local_read_with_me_used', used + 1);
     }
   }
 
