@@ -81,7 +81,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   bool _showDua = false;
 
   Timer? _timer;
-  Timer? _persistentTimer;
   String? _lastAdhanTriggeredPrayer;
   DateTime _lastFetchTime =
       DateTime.now().subtract(const Duration(hours: 1));
@@ -95,14 +94,17 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     _loadPrayerOffsets();
     _loadLocationAndFetchTimes();
     _startCountdownTimer();
-    _startPersistentNotificationUpdates();
+
+    // ✅ Chronometer: نضبط الإشعار الدائم مرة واحدة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updatePersistentNotification();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
-    _persistentTimer?.cancel();
     _audioPlayer.dispose();
     _timeRemainingNotifier.dispose();
     super.dispose();
@@ -165,7 +167,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📍 تحديد الموقع التلقائي (مع فتح الإعدادات تلقائياً)
+  // 📍 تحديد الموقع التلقائي
   // ═══════════════════════════════════════════════════════════
   Future<void> _detectLocationAutomatically() async {
     if (_isDetectingLocation) return;
@@ -173,19 +175,12 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     setState(() => _isDetectingLocation = true);
 
     try {
-      // 1. التحقق من خدمة GPS
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
         _showSnack('📍 خدمة الموقع مغلقة. جاري فتح الإعدادات...');
-
-        // ✅ فتح إعدادات الموقع في الهاتف تلقائياً
         await Geolocator.openLocationSettings();
-
-        // انتظر حتى يفعّل المستخدم الموقع
         await Future.delayed(const Duration(seconds: 3));
-
-        // تحقق مرة أخرى
         serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) {
           _showSnack('⚠️ لم يتم تفعيل خدمة الموقع. حاول مرة أخرى.');
@@ -194,7 +189,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         }
       }
 
-      // 2. طلب إذن الموقع
       LocationPermission permission = await Geolocator.checkPermission();
 
       if (permission == LocationPermission.denied) {
@@ -214,7 +208,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         return;
       }
 
-      // 3. الحصول على الموقع
       _showSnack('📍 جاري تحديد موقعك...');
 
       final Position position = await Geolocator.getCurrentPosition(
@@ -224,7 +217,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
       debugPrint('✅ الموقع: ${position.latitude}, ${position.longitude}');
 
-      // 4. الحصول على اسم المدينة
       String city = 'موقعك';
       try {
         final placemarks = await placemarkFromCoordinates(
@@ -244,7 +236,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         debugPrint('⚠️ فشل geocoding: $e');
       }
 
-      // 5. حفظ
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('user_lat', position.latitude);
       await prefs.setDouble('user_lng', position.longitude);
@@ -257,11 +248,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         _userLat = position.latitude;
         _userLng = position.longitude;
         _cityName = city;
-        _lastFetchTime =
-            DateTime.now().subtract(const Duration(hours: 2));
+        _lastFetchTime = DateTime.now().subtract(const Duration(hours: 2));
       });
 
-      // 6. جلب أوقات الصلاة
       await _loadLocationAndFetchTimes();
 
       _showSnack('✅ تم تحديد الموقع: $city');
@@ -302,8 +291,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         await _fetchPrayerTimesFromAPI();
         await _fetchWeeklyPrayers();
 
-        await prefs.setString(
-            'cached_prayer_times', jsonEncode(_prayerTimes));
+        await prefs.setString('cached_prayer_times', jsonEncode(_prayerTimes));
         await prefs.setString('cached_city', _cityName);
         _lastFetchTime = DateTime.now();
       } catch (e) {
@@ -347,6 +335,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             _cityName,
             _selectedMuezzinName,
           );
+
+          // ✅ تحديث الإشعار الدائم بعد جلب الأوقات الجديدة
+          await _updatePersistentNotification();
         }
       }
     } catch (e) {}
@@ -517,30 +508,91 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     });
   }
 
-  void _startPersistentNotificationUpdates() {
-    _persistentTimer?.cancel();
-    _updatePersistentNotification();
-    _persistentTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _updatePersistentNotification();
-    });
-  }
-
+  // ═══════════════════════════════════════════════════════════
+  // ⏱️ الإشعار الدائم — Chronometer (بدون Timer)
+  // ═══════════════════════════════════════════════════════════
   Future<void> _updatePersistentNotification() async {
     try {
       if (!mounted) return;
+      if (_prayerList.isEmpty) return;
+
       final hijri = HijriService.getHijriDate(DateTime.now());
-      final remaining = _timeRemainingNotifier.value;
-      final hours = remaining.inHours.toString().padLeft(2, '0');
-      final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+
+      // 🎯 حساب وقت الصلاة القادمة الفعلي
+      final nextPrayerTime = _calculateNextPrayerTime();
+      if (nextPrayerTime == null) {
+        debugPrint('⚠️ لم نتمكن من حساب وقت الصلاة القادمة');
+        return;
+      }
 
       await NotificationService.showPersistentNotification(
         nextPrayer: _nextPrayer,
-        timeRemaining: '$hours:$minutes',
+        targetTime: nextPrayerTime,
         hijriDate: hijri,
         city: _cityName,
       );
     } catch (e) {
       debugPrint('⚠️ تحديث الإشعار الدائم فشل: $e');
+    }
+  }
+
+  /// 🎯 حساب وقت الصلاة القادمة (DateTime)
+  DateTime? _calculateNextPrayerTime() {
+    try {
+      final now = DateTime.now();
+
+      for (var prayer in _prayerList) {
+        final timeStr = (prayer['time'] ?? '').toString();
+        final cleanTime = timeStr
+            .replaceAll(RegExp(r'\(.*\)'), '')
+            .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
+            .trim();
+        if (cleanTime.isEmpty) continue;
+
+        final parts = cleanTime.split(':');
+        if (parts.length != 2) continue;
+
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null) continue;
+
+        final prayerTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          hour,
+          minute,
+        );
+
+        if (prayerTime.isAfter(now)) {
+          return prayerTime;
+        }
+      }
+
+      // لم توجد — نرجع وقت الفجر غداً
+      if (_prayerList.isNotEmpty) {
+        final fajrStr = (_prayerList.first['time'] ?? '').toString();
+        final cleanFajr = fajrStr
+            .replaceAll(RegExp(r'\(.*\)'), '')
+            .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
+            .trim();
+        final parts = cleanFajr.split(':');
+        if (parts.length == 2) {
+          final hour = int.tryParse(parts[0]) ?? 5;
+          final minute = int.tryParse(parts[1]) ?? 0;
+          return DateTime(
+            now.year,
+            now.month,
+            now.day + 1,
+            hour,
+            minute,
+          );
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ _calculateNextPrayerTime: $e');
+      return null;
     }
   }
 

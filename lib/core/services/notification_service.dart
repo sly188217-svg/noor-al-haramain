@@ -8,14 +8,16 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🔑 مفتاح التنقل العام (مطلوب لفتح شاشة الأذان من الإشعار)
+/// 🔑 مفتاح التنقل العام
 /// ═══════════════════════════════════════════════════════════
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// ═══════════════════════════════════════════════════════════
-/// 🔔 خدمة الإشعارات — أذان فوري في وقته
-/// ✅ 14 مؤذن (11 قديم + ياسر القطامي + محمد مروان القصاص)
-/// ✅ شاشة أذان ملء الشاشة
+/// 🔔 خدمة الإشعارات — مع Chronometer حقيقي
+/// ✅ العدّاد يتجدد كل ثانية من النظام
+/// ✅ يعمل بدون فتح التطبيق
+/// ✅ يعمل بدون إنترنت
+/// ✅ 14 مؤذن
 /// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -24,7 +26,6 @@ class NotificationService {
   static bool _initialized = false;
   static const int _persistentId = 9999;
 
-  /// 🔑 المفتاح الموحّد
   static const String _muezzinKey = 'selected_muezzin';
   static const String _defaultMuezzin = 'adhan_sudais';
 
@@ -48,9 +49,6 @@ class NotificationService {
     {'name': 'أذان عمّان', 'file': 'adhan_amman'},
   ];
 
-  /// ═══════════════════════════════════════════════════════════
-  /// 🎵 جلب الملف المختار
-  /// ═══════════════════════════════════════════════════════════
   static Future<String> getSelectedMuezzin() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_muezzinKey);
@@ -59,9 +57,6 @@ class NotificationService {
     return valid ? saved : _defaultMuezzin;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// 💾 حفظ الملف المختار
-  /// ═══════════════════════════════════════════════════════════
   static Future<void> setSelectedMuezzin(String file) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_muezzinKey, file);
@@ -70,7 +65,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔔 تهيئة الإشعارات
+  /// 🔔 التهيئة
   /// ═══════════════════════════════════════════════════════════
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -126,12 +121,8 @@ class NotificationService {
     _initialized = true;
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// ✅ فتح شاشة الأذان عند الضغط على الإشعار
-  /// ═══════════════════════════════════════════════════════════
   static void _handleNotificationTap(String payload) {
     try {
-      // payload format: "صلاة|الفجر|05:30|بغداد|الشيخ السديس"
       final parts = payload.split('|');
       if (parts.length >= 5) {
         navigatorKey.currentState?.pushNamed(
@@ -150,7 +141,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🎵 إنشاء قناة الأذان
+  /// 🎵 إنشاء قنوات الإشعارات
   /// ═══════════════════════════════════════════════════════════
   static Future<void> _createAdhanChannel() async {
     final androidImpl = _notifications.resolvePlatformSpecificImplementation<
@@ -180,18 +171,31 @@ class NotificationService {
       playSound: false,
     );
 
+    // 🎯 قناة الإشعار الدائم مع Chronometer
+    const AndroidNotificationChannel persistentChannel =
+        AndroidNotificationChannel(
+      'prayer_persistent_channel_v2',
+      'الإشعار الدائم',
+      description: 'العد التنازلي للصلاة القادمة',
+      importance: Importance.low,
+      playSound: false,
+      showBadge: false,
+    );
+
     try {
       await androidImpl.deleteNotificationChannel('adhan_channel');
+      await androidImpl.deleteNotificationChannel('prayer_persistent_channel');
       await androidImpl.createNotificationChannel(adhanChannel);
       await androidImpl.createNotificationChannel(prayerChannel);
-      debugPrint('✅ قناة الأذان جاهزة بالصوت: $selectedFile');
+      await androidImpl.createNotificationChannel(persistentChannel);
+      debugPrint('✅ القنوات جاهزة بالصوت: $selectedFile');
     } catch (e) {
-      debugPrint('⚠️ فشل إنشاء القناة: $e');
+      debugPrint('⚠️ فشل إنشاء القنوات: $e');
     }
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔐 طلب أذونات أندرويد
+  /// 🔐 أذونات أندرويد
   /// ═══════════════════════════════════════════════════════════
   static Future<void> _requestAndroidPermissions() async {
     final androidImpl = _notifications.resolvePlatformSpecificImplementation<
@@ -214,21 +218,25 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🔔 إشعار ثابت دائم
+  /// ⏱️ الإشعار الدائم مع Chronometer
+  /// ✅ يتجدد كل ثانية تلقائياً من النظام
+  /// ✅ لا يحتاج تطبيق مفتوح
+  /// ✅ لا يحتاج إنترنت
   /// ═══════════════════════════════════════════════════════════
   static Future<void> showPersistentNotification({
     required String nextPrayer,
-    required String timeRemaining,
+    required DateTime targetTime,
     required String hijriDate,
     required String city,
   }) async {
     if (Platform.isLinux) return;
     if (!_initialized) await initialize();
 
-    const androidDetails = AndroidNotificationDetails(
-      'prayer_persistent_channel',
+    // ⏱️ Chronometer: يحسب من "الآن" حتى وقت الصلاة
+    final androidDetails = AndroidNotificationDetails(
+      'prayer_persistent_channel_v2',
       'الإشعار الدائم',
-      channelDescription: 'يعرض العد التنازلي للصلاة القادمة',
+      channelDescription: 'العد التنازلي للصلاة القادمة',
       importance: Importance.low,
       priority: Priority.low,
       ongoing: true,
@@ -236,9 +244,16 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      showWhen: false,
-      category: AndroidNotificationCategory.service,
+      showWhen: true,
+      when: targetTime.millisecondsSinceEpoch,
+      usesChronometer: true,
+      chronometerCountDown: true,
+      category: AndroidNotificationCategory.stopwatch,
+      visibility: NotificationVisibility.public,
       styleInformation: BigTextStyleInformation(''),
+      color: const Color(0xFFD4AF37),
+      colorized: true,
+      showProgress: false,
     );
 
     const details = NotificationDetails(
@@ -249,10 +264,11 @@ class NotificationService {
     try {
       await _notifications.show(
         _persistentId,
-        '🕌 $nextPrayer — $timeRemaining',
+        '🕌 $nextPrayer',
         '$hijriDate • $city',
         details,
       );
+      debugPrint('✅ الإشعار الدائم — Chronometer نحو $targetTime');
     } catch (e) {
       debugPrint('⚠️ فشل الإشعار الدائم: $e');
     }
@@ -301,7 +317,6 @@ class NotificationService {
             ? scheduledTime
             : scheduledTime.add(const Duration(days: 1));
 
-        // ✅ Payload لفتح شاشة الأذان
         final timeStr =
             '${finalTime.hour.toString().padLeft(2, '0')}:${finalTime.minute.toString().padLeft(2, '0')}';
         final payload =
@@ -316,8 +331,6 @@ class NotificationService {
             await _adhanNotificationDetails(),
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             matchDateTimeComponents: DateTimeComponents.time,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
             payload: payload,
           );
           debugPrint('✅ جدولة $prayerNameAr في: $finalTime');
@@ -325,7 +338,6 @@ class NotificationService {
           debugPrint('⚠️ فشل جدولة $prayerName: $e');
         }
 
-        // إشعار تذكيري قبل 15 دقيقة
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
@@ -336,8 +348,6 @@ class NotificationService {
               tz.TZDateTime.from(reminderTime, tz.local),
               _silentNotificationDetails(),
               androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-              uiLocalNotificationDateInterpretation:
-                  UILocalNotificationDateInterpretation.absoluteTime,
             );
           } catch (e) {}
         }
@@ -347,9 +357,6 @@ class NotificationService {
     }
   }
 
-  /// ═══════════════════════════════════════════════════════════
-  /// 🔔 اختبار الأذان الفوري
-  /// ═══════════════════════════════════════════════════════════
   static Future<void> showTestNotification() async {
     if (Platform.isLinux) return;
     if (!_initialized) await initialize();
