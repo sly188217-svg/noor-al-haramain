@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/language_provider.dart';
 import '../../core/services/background_service.dart';
 import '../../core/services/translation_service.dart';
-import '../../core/services/auth_service.dart';
 import '../../widgets/saudi_flag.dart';
 import '../location/location_permission_screen.dart';
 import 'tabs/prayer_tab.dart';
@@ -25,11 +23,9 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   String _userName = 'مستخدم';
-  String? _userPhoto;
   String _userCity = 'مكة المكرمة';
   bool _isLocationReady = false;
   int _currentBackground = 0;
-  bool _isGoogleSignedIn = false;
 
   @override
   void initState() {
@@ -40,14 +36,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    final isGoogle = !(prefs.getBool('is_guest') ?? true);
     if (!mounted) return;
     setState(() {
       _userName = prefs.getString('user_name') ?? 'مستخدم';
-      _userPhoto = prefs.getString('user_photo');
       _userCity = prefs.getString('user_city') ?? 'مكة المكرمة';
       _isLocationReady = prefs.getBool('location_enabled') ?? false;
-      _isGoogleSignedIn = isGoogle;
     });
   }
 
@@ -68,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     setState(() => _currentIndex = index);
     _loadBackground();
-    _loadUserData(); // ✅ إعادة تحميل بيانات المستخدم بعد أي تغيير
+    _loadUserData();
   }
 
   Widget _buildCurrentTab() {
@@ -90,47 +83,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔐 تسجيل الدخول بحساب Google
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _signInWithGoogle() async {
-    try {
-      final result = await AuthService.signInWithGoogle();
-      if (result != null && mounted) {
-        await _loadUserData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ مرحباً ${result['displayName']}!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('⚠️ فشل تسجيل الدخول: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 🚪 تسجيل الخروج
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _signOut() async {
-    await AuthService.signOut();
-    await _loadUserData();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('👋 تم تسجيل الخروج')),
-      );
-    }
-  }
-
   void _showUserMenu() {
     showModalBottomSheet(
       context: context,
@@ -143,69 +95,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // صورة وأسم
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-              backgroundImage: _userPhoto != null && _userPhoto!.isNotEmpty
-                  ? NetworkImage(_userPhoto!)
-                  : null,
-              child: _userPhoto == null || _userPhoto!.isEmpty
-                  ? const Icon(Icons.person,
-                      color: Color(0xFFD4AF37), size: 40)
-                  : null,
+            // 🎨 صورة المستخدم
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(
+                  colors: [Color(0xFF2C3E50), Color(0xFF0B132B)],
+                ),
+                border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+              ),
+              child: const Center(
+                child: Icon(Icons.person, color: Color(0xFFD4AF37), size: 40),
+              ),
             ),
             const SizedBox(height: 12),
+
+            // 👤 اسم المستخدم
             Text(
               _userName,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Amiri',
+              ),
             ),
             const SizedBox(height: 6),
-            Text(
-              _isGoogleSignedIn ? '✅ مسجّل بحساب Google' : '👤 مستخدم زائر',
-              style: TextStyle(
-                color: _isGoogleSignedIn ? Colors.green : Colors.orange,
-                fontSize: 13,
+
+            // 🏷️ نوع المستخدم
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                ),
+              ),
+              child: const Text(
+                '👤 مستخدم',
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(height: 8),
+
+            // 📍 الموقع
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.location_on,
+                    color: Color(0xFFD4AF37), size: 14),
+                const SizedBox(width: 4),
+                Text(
+                  _userCity,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+
             const Divider(color: Colors.grey, height: 30),
 
-            if (!_isGoogleSignedIn)
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _signInWithGoogle();
-                },
-                icon: const Icon(Icons.login),
-                label: const Text('تسجيل الدخول بحساب Google'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: Colors.black,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              )
-            else
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _signOut();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('تسجيل الخروج'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
+            // 📱 معلومات
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B132B).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
                 ),
               ),
-            const SizedBox(height: 8),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'الاشتراك يُدار تلقائياً عبر Google Play عند الحاجة',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // إغلاق
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('إغلاق',
-                  style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                'إغلاق',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ],
         ),
@@ -221,7 +215,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
       appBar: PreferredSize(
-        // ✅ إصلاح: ارتفاع الشريط + ارتفاع شريط الحالة
         preferredSize: Size.fromHeight(70 + topPadding),
         child: _buildCustomAppBar(),
       ),
@@ -234,7 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 الشريط العلوي (مُصلَّح)
+  // 🎨 الشريط العلوي
   // ═══════════════════════════════════════════════════════════
   Widget _buildCustomAppBar() {
     return Container(
@@ -261,7 +254,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          // ✅ ارتفاع ثابت للمحتوى بعد خصم status bar
           height: 70,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -331,7 +323,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const Spacer(),
 
-                // زر المستخدم (يفتح القائمة)
+                // زر المستخدم
                 InkWell(
                   onTap: _showUserMenu,
                   borderRadius: BorderRadius.circular(20),
@@ -339,51 +331,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _isGoogleSignedIn
-                          ? Colors.green.withValues(alpha: 0.15)
-                          : const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _isGoogleSignedIn
-                            ? Colors.green.withValues(alpha: 0.5)
-                            : const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
                         width: 0.8,
                       ),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // صورة المستخدم
-                        ClipOval(
-                          child: _userPhoto != null && _userPhoto!.isNotEmpty
-                              ? Image.network(
-                                  _userPhoto!,
-                                  width: 20,
-                                  height: 20,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.person,
-                                    color: Color(0xFFD4AF37),
-                                    size: 18,
-                                  ),
-                                )
-                              : Icon(
-                                  _isGoogleSignedIn
-                                      ? Icons.verified_user
-                                      : Icons.person,
-                                  color: _isGoogleSignedIn
-                                      ? Colors.green
-                                      : const Color(0xFFD4AF37),
-                                  size: 18,
-                                ),
-                        ),
-                        const SizedBox(width: 4),
+                        Icon(Icons.person,
+                            color: Color(0xFFD4AF37), size: 18),
+                        SizedBox(width: 4),
                         Text(
-                          _isGoogleSignedIn ? _userName : 'تسجيل',
+                          'حسابي',
                           style: TextStyle(
-                            color: _isGoogleSignedIn
-                                ? Colors.green
-                                : const Color(0xFFD4AF37),
+                            color: Color(0xFFD4AF37),
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
