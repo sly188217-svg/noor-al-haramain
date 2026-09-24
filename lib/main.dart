@@ -58,10 +58,12 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // 5. تهيئة الإشعارات
+  // 5. تهيئة الإشعارات + طلب صلاحية ملء الشاشة
   try {
     await NotificationService.initialize();
-    debugPrint('✅ تم تهيئة الإشعارات');
+    // ✅ طلب صلاحية ملء الشاشة (مطلوب لأندرويد 14+)
+    await NotificationService.requestFullScreenIntentPermission();
+    debugPrint('✅ تم تهيئة الإشعارات + طلب صلاحية ملء الشاشة');
   } catch (e) {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
@@ -119,7 +121,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'نور الحرمين',
         debugShowCheckedModeBanner: false,
-        navigatorKey: navigatorKey, // ✅ مفتاح التنقل لفتح شاشة الأذان
+        navigatorKey: navigatorKey,
         theme: ThemeData(
           primarySwatch: Colors.green,
           scaffoldBackgroundColor: const Color(0xFF0B132B),
@@ -136,7 +138,6 @@ class MyApp extends StatelessWidget {
         ],
         locale: const Locale('ar', 'SA'),
         routes: {
-          // ✅ مسار شاشة الأذان
           '/adhan': (context) {
             final args = ModalRoute.of(context)!.settings.arguments
                 as Map<String, dynamic>?;

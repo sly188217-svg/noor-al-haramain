@@ -13,11 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// ═══════════════════════════════════════════════════════════
-/// 🔔 خدمة الإشعارات — مع Chronometer حقيقي
-/// ✅ العدّاد يتجدد كل ثانية من النظام
-/// ✅ يعمل بدون فتح التطبيق
-/// ✅ يعمل بدون إنترنت
-/// ✅ 14 مؤذن
+/// 🔔 خدمة الإشعارات — مع Chronometer + Full Screen
 /// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -213,6 +209,25 @@ class NotificationService {
       debugPrint('✅ إذن المنبهات الدقيقة');
     } catch (e) {
       debugPrint('⚠️ requestExactAlarms: $e');
+    }
+  }
+
+  /// ═══════════════════════════════════════════════════════════
+  /// 🖥️ طلب صلاحية ملء الشاشة (مطلوب لأندرويد 14+)
+  /// ═══════════════════════════════════════════════════════════
+  static Future<void> requestFullScreenIntentPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final androidImpl =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl == null) return;
+
+      // ✅ فتح شاشة الإعدادات ليسمح المستخدم بالصلاحية
+      await androidImpl.requestFullScreenIntentPermission();
+      debugPrint('✅ طلب صلاحية ملء الشاشة');
+    } catch (e) {
+      debugPrint('⚠️ فشل طلب صلاحية ملء الشاشة: $e');
     }
   }
 
