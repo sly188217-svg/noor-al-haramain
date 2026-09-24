@@ -1,5 +1,6 @@
 class AyahModel {
-  final int number;
+  final int number;          // الرقم العالمي (1-6236)
+  final int numberInSurah;   // ✅ الرقم داخل السورة (1-7، 1-286...)
   final String text;
   final String? translation;
   final int? page;
@@ -7,6 +8,7 @@ class AyahModel {
 
   AyahModel({
     required this.number,
+    required this.numberInSurah,
     required this.text,
     this.translation,
     this.page,
@@ -15,11 +17,16 @@ class AyahModel {
 
   factory AyahModel.fromJson(Map<String, dynamic> json) {
     return AyahModel(
-      number: json['number'] ?? 0,
-      text: json['text'] ?? '',
-      translation: json['translation'] ?? json['translation']?['text'],
-      page: json['page'],
-      juz: json['juz'],
+      number: (json['number'] as num?)?.toInt() ?? 0,
+      // ✅ نأخذ numberInSurah، وإن لم يوجد نستخدم number
+      numberInSurah: (json['numberInSurah'] as num?)?.toInt() ??
+          (json['number'] as num?)?.toInt() ??
+          0,
+      text: json['text']?.toString() ?? '',
+      translation: json['translation']?.toString() ??
+          json['translation']?['text']?.toString(),
+      page: (json['page'] as num?)?.toInt(),
+      juz: (json['juz'] as num?)?.toInt(),
     );
   }
 }
