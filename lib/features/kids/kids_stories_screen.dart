@@ -4,10 +4,10 @@ import 'services/kids_stories_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
 /// 📚 شاشة مكتبة القصص للأطفال
-/// ✅ تحميل من الإنترنت
+/// ✅ تحميل من Assets المحلية (50 قصة)
 /// ✅ TTS للقراءة الصوتية
 /// ✅ بحث وتصنيفات
-/// ✅ آمنة على Linux (TTS لا يعمل، لكن لا ينهار)
+/// ✅ إصلاح: استخدام حقل 'icon' بدل 'emoji'
 /// ═══════════════════════════════════════════════════════════
 class KidsStoriesScreen extends StatefulWidget {
   const KidsStoriesScreen({super.key});
@@ -51,7 +51,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎤 تهيئة TTS (آمنة)
+  // 🎤 تهيئة TTS
   // ═══════════════════════════════════════════════════════════
   Future<void> _initTts() async {
     try {
@@ -114,7 +114,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
       final q = _searchQuery.trim();
       final matchSearch = q.isEmpty ||
           (s['title'] ?? '').toString().contains(q) ||
-          (s['text'] ?? '').toString().contains(q);
+          (s['desc'] ?? '').toString().contains(q);
       return matchCat && matchSearch;
     }).toList();
   }
@@ -147,7 +147,10 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
 
     setState(() => _isSpeaking = true);
     try {
-      await _tts.speak(_activeStory!['text'].toString());
+      // نستخدم النص الكامل للقصة
+      final text = (_activeStory!['text'] ?? _activeStory!['desc'] ?? '')
+          .toString();
+      await _tts.speak(text);
     } catch (e) {
       debugPrint('⚠️ فشل TTS: $e');
       if (mounted) setState(() => _isSpeaking = false);
@@ -326,8 +329,11 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               _buildCategoryChip('all', 'الكل', '📚'),
-              ..._categories.map(
-                  (c) => _buildCategoryChip(c['id'], c['name'], c['emoji'])),
+              ..._categories.map((c) => _buildCategoryChip(
+                    c['id']?.toString() ?? '',
+                    c['name']?.toString() ?? '',
+                    c['icon']?.toString() ?? '📖',
+                  )),
             ],
           ),
         ),
@@ -340,8 +346,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             children: [
               Text(
                 '📖 ${_filteredStories.length} قصة',
-                style:
-                    const TextStyle(color: Colors.white70, fontSize: 12),
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),
@@ -362,7 +367,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                     final story = _filteredStories[index];
                     final cat = _categories.firstWhere(
                       (c) => c['id'] == story['category'],
-                      orElse: () => {'name': '', 'emoji': ''},
+                      orElse: () => {'name': '', 'icon': '📖'},
                     );
                     return _buildStoryCard(story, cat);
                   },
@@ -372,7 +377,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
     );
   }
 
-  Widget _buildCategoryChip(String id, String name, String emoji) {
+  Widget _buildCategoryChip(String id, String name, String icon) {
     final isActive = _selectedCategory == id;
     return GestureDetector(
       onTap: () => setState(() => _selectedCategory = id),
@@ -389,7 +394,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
         ),
         child: Center(
           child: Text(
-            '$emoji $name',
+            '$icon $name',
             style: TextStyle(
               color: isActive ? Colors.black : Colors.white,
               fontWeight: FontWeight.bold,
@@ -403,9 +408,9 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
 
   Widget _buildStoryCard(
       Map<String, dynamic> story, Map<String, dynamic> cat) {
-    final text = (story['text'] ?? '').toString();
-    final preview =
-        text.length > 100 ? '${text.substring(0, 100)}...' : text;
+    final desc = (story['desc'] ?? '').toString();
+    final preview = desc.length > 100 ? '${desc.substring(0, 100)}...' : desc;
+    final duration = story['duration'];
 
     return GestureDetector(
       onTap: () => _openStory(story),
@@ -425,15 +430,18 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
         ),
         child: Row(
           children: [
-            Text(story['emoji'] ?? '📖',
-                style: const TextStyle(fontSize: 40)),
+            // 🎨 أيقونة القصة
+            Text(
+              story['icon']?.toString() ?? '📖',
+              style: const TextStyle(fontSize: 40),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    story['title'] ?? '',
+                    story['title']?.toString() ?? '',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -454,18 +462,19 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
+                      // 🏷️ التصنيف
                       Text(
-                        '${cat['emoji']} ${cat['name']}',
+                        '${cat['icon'] ?? '📖'} ${cat['name'] ?? ''}',
                         style: const TextStyle(
                             color: Color(0xFFD4AF37), fontSize: 10),
                       ),
-                      if (story['duration'] != null) ...[
+                      if (duration != null) ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.access_time,
                             color: Colors.white38, size: 10),
                         const SizedBox(width: 2),
                         Text(
-                          story['duration'].toString(),
+                          '$duration د',
                           style: const TextStyle(
                               color: Colors.white38, fontSize: 10),
                         ),
@@ -488,6 +497,9 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
   // ═══════════════════════════════════════════════════════════
   Widget _buildReader() {
     final story = _activeStory!;
+    final text = (story['text'] ?? story['desc'] ?? '').toString();
+    final duration = story['duration'];
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -513,13 +525,13 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   children: [
                     Center(
                       child: Text(
-                        story['emoji'] ?? '📖',
+                        story['icon']?.toString() ?? '📖',
                         style: const TextStyle(fontSize: 60),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      story['title'] ?? '',
+                      story['title']?.toString() ?? '',
                       style: const TextStyle(
                         color: Color(0xFFD4AF37),
                         fontSize: 24,
@@ -528,7 +540,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (story['duration'] != null) ...[
+                    if (duration != null) ...[
                       const SizedBox(height: 8),
                       Center(
                         child: Container(
@@ -540,7 +552,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '⏱️ ${story['duration']}',
+                            '⏱️ $duration دقائق',
                             style: const TextStyle(
                                 color: Color(0xFFD4AF37), fontSize: 11),
                           ),
@@ -548,23 +560,42 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       ),
                     ],
                     const Divider(color: Colors.white24, height: 30),
-                    Text(
-                      story['text'] ?? '',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontFamily: 'Amiri',
-                        height: 2.0,
+                    if (text.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            'لا يوجد نص كامل لهذه القصة بعد.\n'
+                            'سيتم إضافة النص الكامل قريباً.',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                              height: 1.8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontFamily: 'Amiri',
+                          height: 2.0,
+                        ),
+                        textAlign: TextAlign.right,
+                        textDirection: TextDirection.rtl,
                       ),
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
-                    ),
                   ],
                 ),
               ),
             ),
           ),
           const SizedBox(height: 16),
+
+          // زر التشغيل
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -588,6 +619,8 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             ),
           ),
           const SizedBox(height: 8),
+
+          // سرعة القراءة
           Row(
             children: [
               const Text('🐢', style: TextStyle(fontSize: 18)),
