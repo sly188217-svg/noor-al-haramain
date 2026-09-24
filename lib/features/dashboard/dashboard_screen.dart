@@ -24,7 +24,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   String _userName = 'مستخدم';
   String _userCity = 'مكة المكرمة';
-  bool _isLocationReady = false;
   int _currentBackground = 0;
 
   @override
@@ -40,21 +39,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _userName = prefs.getString('user_name') ?? 'مستخدم';
       _userCity = prefs.getString('user_city') ?? 'مكة المكرمة';
-      _isLocationReady = prefs.getBool('location_enabled') ?? false;
     });
   }
 
   Future<void> _loadBackground() async {
     final index = await BackgroundService.getCurrentIndex();
     if (mounted) setState(() => _currentBackground = index);
-  }
-
-  Future<void> _refreshLocation() async {
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LocationPermissionScreen()),
-    );
   }
 
   void _onTabSelected(int index) {
@@ -83,130 +73,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _showUserMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1C2541),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 🎨 صورة المستخدم
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [Color(0xFF2C3E50), Color(0xFF0B132B)],
-                ),
-                border: Border.all(color: const Color(0xFFD4AF37), width: 2),
-              ),
-              child: const Center(
-                child: Icon(Icons.person, color: Color(0xFFD4AF37), size: 40),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 👤 اسم المستخدم
-            Text(
-              _userName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Amiri',
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            // 🏷️ نوع المستخدم
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                ),
-              ),
-              child: const Text(
-                '👤 مستخدم',
-                style: TextStyle(
-                  color: Color(0xFFD4AF37),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // 📍 الموقع
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.location_on,
-                    color: Color(0xFFD4AF37), size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  _userCity,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-
-            const Divider(color: Colors.grey, height: 30),
-
-            // 📱 معلومات
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0B132B).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'الاشتراك يُدار تلقائياً عبر Google Play عند الحاجة',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // إغلاق
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'إغلاق',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageProvider>().currentLang;
@@ -227,7 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 الشريط العلوي
+  // 🎨 الشريط العلوي — بدون زر "حسابي"
   // ═══════════════════════════════════════════════════════════
   Widget _buildCustomAppBar() {
     return Container(
@@ -259,7 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
-                // شعار التطبيق
+                // 🕌 شعار التطبيق
                 Container(
                   width: 42,
                   height: 42,
@@ -285,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 8),
 
-                // اسم التطبيق
+                // 📛 اسم التطبيق
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -323,42 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const Spacer(),
 
-                // زر المستخدم
-                InkWell(
-                  onTap: _showUserMenu,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.person,
-                            color: Color(0xFFD4AF37), size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'حسابي',
-                          style: TextStyle(
-                            color: Color(0xFFD4AF37),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-
-                // علم السعودية
+                // 🇸🇦 علم السعودية
                 const SaudiFlag(
                   height: 22,
                   width: 32,
@@ -366,7 +197,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 6),
 
-                // شعار ApexSec
+                // 🛡️ شعار ApexSec
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
