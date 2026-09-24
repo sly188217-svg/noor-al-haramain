@@ -171,7 +171,6 @@ class NotificationService {
       playSound: false,
     );
 
-    // 🎯 قناة الإشعار الدائم مع Chronometer
     const AndroidNotificationChannel persistentChannel =
         AndroidNotificationChannel(
       'prayer_persistent_channel_v2',
@@ -219,9 +218,6 @@ class NotificationService {
 
   /// ═══════════════════════════════════════════════════════════
   /// ⏱️ الإشعار الدائم مع Chronometer
-  /// ✅ يتجدد كل ثانية تلقائياً من النظام
-  /// ✅ لا يحتاج تطبيق مفتوح
-  /// ✅ لا يحتاج إنترنت
   /// ═══════════════════════════════════════════════════════════
   static Future<void> showPersistentNotification({
     required String nextPrayer,
@@ -232,7 +228,6 @@ class NotificationService {
     if (Platform.isLinux) return;
     if (!_initialized) await initialize();
 
-    // ⏱️ Chronometer: يحسب من "الآن" حتى وقت الصلاة
     final androidDetails = AndroidNotificationDetails(
       'prayer_persistent_channel_v2',
       'الإشعار الدائم',
@@ -256,7 +251,6 @@ class NotificationService {
       showProgress: false,
     );
 
-    // ✅ final بدلاً من const — لأن androidDetails ليست ثابتة
     final details = NotificationDetails(
       android: androidDetails,
       iOS: const DarwinNotificationDetails(presentAlert: false),
@@ -398,6 +392,10 @@ class NotificationService {
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
         timeoutAfter: 120000,
+        autoCancel: false,
+        ongoing: false,
+        color: const Color(0xFFD4AF37),
+        colorized: true,
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
