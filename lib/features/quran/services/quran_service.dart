@@ -96,22 +96,32 @@ class QuranService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 4. تحويل JSON إلى نماذج
+  // 4. تحويل JSON إلى نماذج (✅ إصلاح numberOfAyahs)
   // ═══════════════════════════════════════════════════════════
   static List<SurahModel> _parseSurahs(List surahsList) {
     return surahsList.map((s) {
+      // ✅ نحول ayahs أولاً لحساب العدد الصحيح
+      final ayahsList = s['ayahs'] != null
+          ? (s['ayahs'] as List)
+              .map((a) => AyahModel.fromJson(a))
+              .toList()
+          : <AyahModel>[];
+
+      // ✅ إذا numberOfAyahs مفقود أو 0، نأخذ عدد الآيات من القائمة
+      final numberOfAyahs =
+          (s['numberOfAyahs'] as num?)?.toInt() ?? ayahsList.length;
+      final finalNumberOfAyahs =
+          numberOfAyahs > 0 ? numberOfAyahs : ayahsList.length;
+
       return SurahModel(
-        number: s['number'] ?? 0,
-        name: s['name'] ?? '',
-        englishName: s['englishName'] ?? '',
-        englishNameTranslation: s['englishNameTranslation'] ?? '',
-        numberOfAyahs: s['numberOfAyahs'] ?? 0,
-        revelationType: s['revelationType'] ?? '',
-        ayahs: s['ayahs'] != null
-            ? (s['ayahs'] as List)
-                .map((a) => AyahModel.fromJson(a))
-                .toList()
-            : [],
+        number: (s['number'] as num?)?.toInt() ?? 0,
+        name: s['name']?.toString() ?? '',
+        englishName: s['englishName']?.toString() ?? '',
+        englishNameTranslation:
+            s['englishNameTranslation']?.toString() ?? '',
+        numberOfAyahs: finalNumberOfAyahs,
+        revelationType: s['revelationType']?.toString() ?? '',
+        ayahs: ayahsList,
       );
     }).toList();
   }
@@ -227,53 +237,38 @@ class QuranService {
   // ═══════════════════════════════════════════════════════════
   // 11. ✅ رابط التلاوة — 8 قراء يعملون 100%
   // ═══════════════════════════════════════════════════════════
-  /// المصادر المختبرة:
-  /// - server8.mp3quran.net  → ماهر، العفاسي
-  /// - server7.mp3quran.net  → عبد الباسط، الشريم
-  /// - server10.mp3quran.net → المنشاوي
-  /// - server13.mp3quran.net → الحصري
-  /// - server11.mp3quran.net → الدوسري، السديس
   static String getRecitationUrl(int surahNumber, String reciterId) {
     final padded = surahNumber.toString().padLeft(3, '0');
 
     switch (reciterId) {
-      // ماهر المعيقلي
       case 'maher':
         return 'https://server8.mp3quran.net/afs/$padded.mp3';
 
-      // عبد الباسط عبد الصمد (مرتل)
       case 'basit':
         return 'https://server7.mp3quran.net/basit/$padded.mp3';
 
-      // محمد صديق المنشاوي (مرتل)
       case 'minsh':
       case 'minshawi':
         return 'https://server10.mp3quran.net/minsh/$padded.mp3';
 
-      // محمود خليل الحصري
       case 'husr':
       case 'husary':
         return 'https://server13.mp3quran.net/husr/$padded.mp3';
 
-      // مشاري العفاسي
       case 'afs':
       case 'afasy':
         return 'https://server8.mp3quran.net/afs/$padded.mp3';
 
-      // ياسر الدوسري
       case 'yasser':
         return 'https://server11.mp3quran.net/yasser/$padded.mp3';
 
-      // عبد الرحمن السديس
       case 'sudais':
         return 'https://server11.mp3quran.net/sudais/$padded.mp3';
 
-      // سعود الشريم
       case 'shur':
       case 'ghamdi':
         return 'https://server7.mp3quran.net/shur/$padded.mp3';
 
-      // افتراضي: ماهر المعيقلي
       default:
         return 'https://server8.mp3quran.net/afs/$padded.mp3';
     }
