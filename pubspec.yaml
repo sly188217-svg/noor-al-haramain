@@ -99,9 +99,6 @@ flutter:
   # 🔤 الخطوط
   # ═══════════════════════════════════════════════════════════
   fonts:
-    - family: UthmanicHafs
-      fonts:
-        - asset: assets/fonts/UthmanicHafs.ttf
     - family: Amiri
       fonts:
         - asset: assets/fonts/Amiri-Regular.ttf

@@ -34,7 +34,7 @@ class _MushafScreenState extends State<MushafScreen> {
   double _fontSize = 26.0;
 
   // 🔤 الخط العثماني
-  static const String _quranFont = 'UthmanicHafs';
+  static const String _quranFont = 'Amiri';
   // بديل: 'Amiri' - إذا لم يعمل الخط العثماني
 
   // 🎨 الألوان
