@@ -7,12 +7,11 @@ import 'models/surah_model.dart';
 import 'read_with_me_screen.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 📖 شاشة المصحف — مطابقة تماماً للمصحف المدني المطبوع
-/// ✅ إطار ذهبي مزخرف كامل
-/// ✅ شريط سورة بأرابيسك متصل
-/// ✅ مداليات ذهبية كبيرة
-/// ✅ أرقام محلية لكل سورة (1، 2، 3...)
-/// ✅ البسملة آية 1 في الفاتحة
+/// 📖 شاشة المصحف — بالخط العثماني
+/// ✅ خط KFGQPC Uthmanic Hafs
+/// ✅ شريط سورة مزخرف
+/// ✅ مداليات ذهبية
+/// ✅ خلفية بيضاء نقية
 /// ═══════════════════════════════════════════════════════════
 class MushafScreen extends StatefulWidget {
   final int initialSurah;
@@ -34,13 +33,17 @@ class _MushafScreenState extends State<MushafScreen> {
   String _selectedReciter = 'maher';
   double _fontSize = 26.0;
 
-  // 🎨 الألوان (مطابقة للمصحف المطبوع)
-  static const Color _bgColor = Color(0xFFEDE4D0);
-  static const Color _paperColor = Color(0xFFFFFEF7);
+  // 🔤 الخط العثماني
+  static const String _quranFont = 'UthmanicHafs';
+  // بديل: 'Amiri' - إذا لم يعمل الخط العثماني
+
+  // 🎨 الألوان
+  static const Color _bgColor = Color(0xFFF5F1E8);
+  static const Color _paperColor = Color(0xFFFFFDF7);
   static const Color _inkColor = Color(0xFF1A1A1A);
-  static const Color _goldColor = Color(0xFFB8935A);
-  static const Color _goldDark = Color(0xFF7A5F1A);
-  static const Color _goldLight = Color(0xFFD4B876);
+  static const Color _goldColor = Color(0xFFB8860B);
+  static const Color _decorColor = Color(0xFF9C7A3C);
+  static const Color _frameColor = Color(0xFF2B2B2B);
 
   @override
   void initState() {
@@ -135,7 +138,7 @@ class _MushafScreenState extends State<MushafScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
-                  color: _goldDark,
+                  color: _decorColor,
                   borderRadius:
                       BorderRadius.vertical(top: Radius.circular(24)),
                 ),
@@ -183,16 +186,16 @@ class _MushafScreenState extends State<MushafScreen> {
                         height: 44,
                         decoration: BoxDecoration(
                           color: isActive
-                              ? _goldDark
+                              ? _decorColor
                               : _goldColor.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
-                          border: Border.all(color: _goldDark),
+                          border: Border.all(color: _decorColor),
                         ),
                         child: Center(
                           child: Text(
                             '${surah.number}',
                             style: TextStyle(
-                              color: isActive ? _paperColor : _goldDark,
+                              color: isActive ? _paperColor : _decorColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -210,7 +213,7 @@ class _MushafScreenState extends State<MushafScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '${surah.ayahCount} آية • ${surah.revelationTypeAr}',
+                        '${surah.numberOfAyahs} آية • ${surah.revelationType == "Meccan" ? "مكية" : "مدنية"}',
                         style: const TextStyle(
                             color: Colors.black54, fontSize: 12),
                       ),
@@ -238,10 +241,10 @@ class _MushafScreenState extends State<MushafScreen> {
         backgroundColor: _paperColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _goldDark, width: 1.5),
+          side: const BorderSide(color: _decorColor, width: 1.5),
         ),
         title: const Text('🔍 البحث في المصحف',
-            style: TextStyle(color: _goldDark, fontFamily: 'Amiri')),
+            style: TextStyle(color: _decorColor, fontFamily: 'Amiri')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -249,20 +252,20 @@ class _MushafScreenState extends State<MushafScreen> {
           decoration: InputDecoration(
             hintText: 'اكتب كلمة للبحث...',
             hintStyle: const TextStyle(color: Colors.black38),
-            prefixIcon: const Icon(Icons.search, color: _goldDark),
+            prefixIcon: const Icon(Icons.search, color: _decorColor),
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  BorderSide(color: _goldColor.withValues(alpha: 0.5)),
+              borderSide: BorderSide(color: _goldColor.withValues(alpha: 0.5)),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('إلغاء', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -296,7 +299,7 @@ class _MushafScreenState extends State<MushafScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _goldDark,
+              backgroundColor: _decorColor,
               foregroundColor: _paperColor,
             ),
             child: const Text('بحث'),
@@ -306,61 +309,38 @@ class _MushafScreenState extends State<MushafScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 صفحة السورة — مطابقة للمصحف المدني المطبوع
-  // ═══════════════════════════════════════════════════════════
   Widget _buildSurahPage(SurahModel surah) {
     return Container(
       color: _bgColor,
-      padding: const EdgeInsets.all(6),
-      child: CustomPaint(
-        painter: _OrnateFramePainter(
-          goldColor: _goldColor,
-          goldDark: _goldDark,
-          goldLight: _goldLight,
-          paperColor: _paperColor,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 📜 شريط السورة المزخرف
-                _buildSurahBand(surah),
-                const SizedBox(height: 20),
-
-                // 📖 النص القرآني
-                _buildContinuousText(surah),
-
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSurahBand(surah),
+            const SizedBox(height: 18),
+            _buildContinuousText(surah),
+            const SizedBox(height: 30),
+          ],
         ),
       ),
     );
   }
 
-  /// 📜 شريط السورة المزخرف (مطابق للصورة)
   Widget _buildSurahBand(SurahModel surah) {
     return SizedBox(
-      height: 48,
+      height: 46,
       child: CustomPaint(
         painter: _SurahBandPainter(
           goldColor: _goldColor,
-          darkGold: _goldDark,
-          lightGold: _goldLight,
+          darkGold: _decorColor,
           paperColor: _paperColor,
         ),
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 110),
+            padding: const EdgeInsets.symmetric(horizontal: 95),
             child: Text(
-              'سُورَةُ ${surah.name.replaceAll("سورة ", "").replaceAll("سُورَةُ ", "")}',
+              'سُورَةُ ${surah.name.replaceAll("سورة ", "")}',
               style: const TextStyle(
                 color: _inkColor,
                 fontSize: 19,
@@ -377,7 +357,6 @@ class _MushafScreenState extends State<MushafScreen> {
     );
   }
 
-  /// 📖 النص القرآني (البسملة كآية 1، أرقام محلية)
   Widget _buildContinuousText(SurahModel surah) {
     if (surah.ayahs == null || surah.ayahs!.isEmpty) {
       return const Center(
@@ -396,22 +375,22 @@ class _MushafScreenState extends State<MushafScreen> {
     for (int i = 0; i < surah.ayahs!.length; i++) {
       final ayah = surah.ayahs![i];
 
-      // 📝 نص الآية
+      // 📝 نص الآية بالخط العثماني
       spans.add(TextSpan(
         text: '${ayah.text} ',
         style: TextStyle(
           color: _inkColor,
           fontSize: _fontSize,
-          fontFamily: 'Amiri',
-          height: 2.3,
-          letterSpacing: 0.2,
+          fontFamily: _quranFont, // 🔤 الخط العثماني
+          height: 2.2,
+          letterSpacing: 0.1,
         ),
       ));
 
-      // ⭕ مدالية رقم الآية (✅ نستخدم numberInSurah للأرقام المحلية)
+      // ⭕ مدالية رقم الآية
       spans.add(WidgetSpan(
         alignment: PlaceholderAlignment.middle,
-        child: _buildAyahMedallion(ayah.numberInSurah),
+        child: _buildAyahMedallion(ayah.number),
       ));
 
       spans.add(const TextSpan(text: '  '));
@@ -424,25 +403,21 @@ class _MushafScreenState extends State<MushafScreen> {
     );
   }
 
-  /// ⭕ مدالية رقم الآية (ذهبية كبيرة)
   Widget _buildAyahMedallion(int number) {
-    final size = _fontSize + 6;
+    final size = _fontSize + 4;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
       child: SizedBox(
         width: size,
         height: size,
         child: CustomPaint(
-          painter: _AyahMedallionPainter(
-            color: _goldDark,
-            lightColor: _goldLight,
-          ),
+          painter: _AyahMedallionPainter(color: _decorColor),
           child: Center(
             child: Text(
               _toArabicNumber(number),
               style: TextStyle(
-                color: _goldDark,
-                fontSize: _fontSize * 0.36,
+                color: _inkColor,
+                fontSize: _fontSize * 0.38,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Amiri',
                 height: 1.0,
@@ -463,15 +438,12 @@ class _MushafScreenState extends State<MushafScreen> {
         .join();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 الواجهة الرئيسية
-  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: _goldDark,
+        backgroundColor: _decorColor,
         foregroundColor: _paperColor,
         elevation: 0,
         centerTitle: true,
@@ -524,7 +496,7 @@ class _MushafScreenState extends State<MushafScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: _goldDark))
+          ? const Center(child: CircularProgressIndicator(color: _decorColor))
           : _surahs.isEmpty
               ? const Center(
                   child: Text(
@@ -555,7 +527,7 @@ class _MushafScreenState extends State<MushafScreen> {
   Widget _buildBottomNav() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: const BoxDecoration(color: _goldDark),
+      decoration: const BoxDecoration(color: _decorColor),
       child: Row(
         children: [
           IconButton(
@@ -579,7 +551,7 @@ class _MushafScreenState extends State<MushafScreen> {
                   child: LinearProgressIndicator(
                     value: (_currentSurahIndex + 1) / 114,
                     backgroundColor: _paperColor.withValues(alpha: 0.2),
-                    color: _goldLight,
+                    color: _goldColor,
                     minHeight: 3,
                   ),
                 ),
@@ -619,10 +591,10 @@ class _MushafScreenState extends State<MushafScreen> {
         backgroundColor: _paperColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _goldDark, width: 1.5),
+          side: const BorderSide(color: _decorColor, width: 1.5),
         ),
         title: const Text('🔤 حجم الخط',
-            style: TextStyle(color: _goldDark, fontFamily: 'Amiri')),
+            style: TextStyle(color: _decorColor, fontFamily: 'Amiri')),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return Column(
@@ -637,7 +609,7 @@ class _MushafScreenState extends State<MushafScreen> {
                   min: 18,
                   max: 40,
                   divisions: 22,
-                  activeColor: _goldDark,
+                  activeColor: _decorColor,
                   label: _fontSize.toInt().toString(),
                   onChanged: (v) {
                     setDialogState(() => _fontSize = v);
@@ -651,7 +623,8 @@ class _MushafScreenState extends State<MushafScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق', style: TextStyle(color: _goldDark)),
+            child:
+                const Text('إغلاق', style: TextStyle(color: _decorColor)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -660,7 +633,7 @@ class _MushafScreenState extends State<MushafScreen> {
               if (context.mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _goldDark,
+              backgroundColor: _decorColor,
               foregroundColor: _paperColor,
             ),
             child: const Text('حفظ'),
@@ -675,161 +648,13 @@ class _MushafScreenState extends State<MushafScreen> {
 // 🎨 Custom Painters
 // ═══════════════════════════════════════════════════════════════
 
-/// 🖼️ الإطار الذهبي المزخرف الكامل
-class _OrnateFramePainter extends CustomPainter {
-  final Color goldColor;
-  final Color goldDark;
-  final Color goldLight;
-  final Color paperColor;
-
-  _OrnateFramePainter({
-    required this.goldColor,
-    required this.goldDark,
-    required this.goldLight,
-    required this.paperColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // 1️⃣ خلفية بيضاء للصفحة
-    final bgPaint = Paint()..color = paperColor;
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bgPaint);
-
-    // 2️⃣ الإطار الخارجي (مستطيل ذهبي سميك)
-    final outerRect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(4, 4, w - 4, h - 4),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(
-      outerRect,
-      Paint()
-        ..color = goldDark
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-
-    // 3️⃣ الإطار الثاني (رفيع داخلي)
-    final inner1Rect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(10, 10, w - 10, h - 10),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(
-      inner1Rect,
-      Paint()
-        ..color = goldColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-
-    // 4️⃣ الإطار الثالث (أرق)
-    final inner2Rect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(14, 14, w - 14, h - 14),
-      const Radius.circular(2),
-    );
-    canvas.drawRRect(
-      inner2Rect,
-      Paint()
-        ..color = goldColor.withValues(alpha: 0.5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.6,
-    );
-
-    // 5️⃣ زخارف الزوايا الأربع
-    _drawCornerOrnament(canvas, Offset(20, 20), 1, goldDark);
-    _drawCornerOrnament(canvas, Offset(w - 20, 20), 2, goldDark);
-    _drawCornerOrnament(canvas, Offset(20, h - 20), 3, goldDark);
-    _drawCornerOrnament(canvas, Offset(w - 20, h - 20), 4, goldDark);
-
-    // 6️⃣ زخارف على منتصف الأطراف
-    _drawMiddleOrnament(canvas, Offset(w / 2, 12), false, goldDark);
-    _drawMiddleOrnament(canvas, Offset(w / 2, h - 12), false, goldDark);
-  }
-
-  void _drawCornerOrnament(
-      Canvas canvas, Offset center, int corner, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    // دائرة
-    canvas.drawCircle(center, 6, paint);
-    canvas.drawCircle(center, 3, fillPaint);
-
-    // خطوط صغيرة باتجاه داخل الصفحة
-    for (int i = 0; i < 2; i++) {
-      final angle = _getCornerAngle(corner, i);
-      final x1 = center.dx + 8 * math.cos(angle);
-      final y1 = center.dy + 8 * math.sin(angle);
-      final x2 = center.dx + 14 * math.cos(angle);
-      final y2 = center.dy + 14 * math.sin(angle);
-      canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
-    }
-  }
-
-  double _getCornerAngle(int corner, int index) {
-    switch (corner) {
-      case 1: // يسار أعلى
-        return index == 0 ? (math.pi / 4) : 0;
-      case 2: // يمين أعلى
-        return index == 0 ? (3 * math.pi / 4) : math.pi;
-      case 3: // يسار أسفل
-        return index == 0 ? (-math.pi / 4) : 0;
-      case 4: // يمين أسفل
-        return index == 0 ? (-3 * math.pi / 4) : math.pi;
-      default:
-        return 0;
-    }
-  }
-
-  void _drawMiddleOrnament(
-      Canvas canvas, Offset center, bool vertical, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    // زخرفة على شكل ورقة صغيرة
-    canvas.drawCircle(center, 4, paint);
-    canvas.drawCircle(center, 2, fillPaint);
-    canvas.drawLine(
-      Offset(center.dx - 15, center.dy),
-      Offset(center.dx - 7, center.dy),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx + 7, center.dy),
-      Offset(center.dx + 15, center.dy),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// 📜 شريط السورة المزخرف
 class _SurahBandPainter extends CustomPainter {
   final Color goldColor;
   final Color darkGold;
-  final Color lightGold;
   final Color paperColor;
-
   _SurahBandPainter({
     required this.goldColor,
     required this.darkGold,
-    required this.lightGold,
     required this.paperColor,
   });
 
@@ -838,164 +663,144 @@ class _SurahBandPainter extends CustomPainter {
     final paint = Paint()
       ..color = darkGold
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 1.2;
 
-    final goldFill = Paint()
-      ..color = lightGold.withValues(alpha: 0.25)
+    final fillPaint = Paint()
+      ..color = goldColor
+      ..style = PaintingStyle.fill;
+
+    final bgFill = Paint()
+      ..color = goldColor.withValues(alpha: 0.25)
       ..style = PaintingStyle.fill;
 
     final h = size.height;
     final w = size.width;
     final cy = h / 2;
 
-    // 1️⃣ المستطيل الرئيسي (خلفية ذهبية فاتحة)
-    final mainRect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(70, 4, w - 70, h - 4),
+    final outerRect = RRect.fromRectAndRadius(
+      Rect.fromLTRB(60, 2, w - 60, h - 2),
       const Radius.circular(4),
     );
-    canvas.drawRRect(mainRect, goldFill);
-    canvas.drawRRect(mainRect, paint);
+    canvas.drawRRect(outerRect, bgFill);
+    canvas.drawRRect(outerRect, paint);
 
-    // 2️⃣ الإطار الداخلي
     final innerRect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(73, 7, w - 73, h - 7),
+      Rect.fromLTRB(63, 5, w - 63, h - 5),
       const Radius.circular(3),
     );
     canvas.drawRRect(
       innerRect,
       Paint()
-        ..color = darkGold.withValues(alpha: 0.6)
+        ..color = darkGold.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.6,
     );
 
-    // 3️⃣ دوائر صغيرة عند أطراف المستطيل
-    canvas.drawCircle(Offset(75, cy), 2.5, Paint()..color = darkGold);
-    canvas.drawCircle(Offset(w - 75, cy), 2.5, Paint()..color = darkGold);
+    _drawArabesque(canvas, Offset(30, cy), 22, 11, paint, fillPaint, false);
+    _drawArabesque(canvas, Offset(w - 30, cy), 22, 11, paint, fillPaint, true);
 
-    // 4️⃣ أرابيسك يسار
-    _drawArabesque(canvas, Offset(35, cy), 32, paint, darkGold, false);
+    canvas.drawLine(Offset(50, cy), Offset(60, cy), paint);
+    canvas.drawLine(Offset(w - 50, cy), Offset(w - 60, cy), paint);
 
-    // 5️⃣ أرابيسك يمين
-    _drawArabesque(canvas, Offset(w - 35, cy), 32, paint, darkGold, true);
+    canvas.drawCircle(Offset(62, cy), 2, fillPaint);
+    canvas.drawCircle(Offset(w - 62, cy), 2, fillPaint);
   }
 
   void _drawArabesque(
     Canvas canvas,
     Offset center,
-    double width,
-    Paint paint,
-    Color color,
+    double outerWidth,
+    double radius,
+    Paint stroke,
+    Paint fill,
     bool flip,
   ) {
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final h = center.dy;
-
-    // شكل زخرفي (نصف دائرة + خطوط)
     final path = Path();
     if (!flip) {
-      path.moveTo(center.dx + width / 2, h);
+      path.moveTo(center.dx + outerWidth / 2, center.dy);
       path.quadraticBezierTo(
-        center.dx + width / 4,
-        h - 12,
+        center.dx + outerWidth / 4,
+        center.dy - radius,
         center.dx,
-        h - 6,
+        center.dy - radius * 0.5,
       );
       path.quadraticBezierTo(
-        center.dx - width / 4,
-        h,
-        center.dx - width / 2,
-        h,
-      );
-      path.quadraticBezierTo(
-        center.dx - width / 4,
-        h + 12,
+        center.dx - outerWidth / 4,
+        center.dy,
         center.dx,
-        h + 6,
+        center.dy + radius * 0.5,
       );
       path.quadraticBezierTo(
-        center.dx + width / 4,
-        h,
-        center.dx + width / 2,
-        h,
+        center.dx + outerWidth / 4,
+        center.dy + radius,
+        center.dx + outerWidth / 2,
+        center.dy,
       );
     } else {
-      path.moveTo(center.dx - width / 2, h);
+      path.moveTo(center.dx - outerWidth / 2, center.dy);
       path.quadraticBezierTo(
-        center.dx - width / 4,
-        h - 12,
+        center.dx - outerWidth / 4,
+        center.dy - radius,
         center.dx,
-        h - 6,
+        center.dy - radius * 0.5,
       );
       path.quadraticBezierTo(
-        center.dx + width / 4,
-        h,
-        center.dx + width / 2,
-        h,
-      );
-      path.quadraticBezierTo(
-        center.dx + width / 4,
-        h + 12,
+        center.dx + outerWidth / 4,
+        center.dy,
         center.dx,
-        h + 6,
+        center.dy + radius * 0.5,
       );
       path.quadraticBezierTo(
-        center.dx - width / 4,
-        h,
-        center.dx - width / 2,
-        h,
+        center.dx - outerWidth / 4,
+        center.dy + radius,
+        center.dx - outerWidth / 2,
+        center.dy,
       );
     }
     path.close();
 
-    // ملء وإطار
     canvas.drawPath(
       path,
       Paint()
-        ..color = lightGold.withValues(alpha: 0.3)
+        ..color = const Color(0xFFE8D8A8)
         ..style = PaintingStyle.fill,
     );
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, stroke);
 
-    // نقاط زخرفية
-    for (int i = 0; i < 6; i++) {
-      final angle = i * (math.pi / 3);
-      final x = center.dx + 8 * math.cos(angle);
-      final y = center.dy + 4 * math.sin(angle);
-      canvas.drawCircle(Offset(x, y), 1.2, fillPaint);
+    for (int i = 0; i < 8; i++) {
+      final angle = i * (math.pi / 4) - math.pi / 2;
+      final x = center.dx + (radius * 1.4) * math.cos(angle);
+      final y = center.dy + (radius * 0.8) * math.sin(angle);
+      canvas.drawCircle(Offset(x, y), 1.5, fill);
     }
 
-    // دائرة مركزية
-    canvas.drawCircle(center, 3, fillPaint);
-    canvas.drawCircle(center, 1.5, Paint()..color = paperColor);
+    canvas.drawCircle(center, 3, fill);
+    canvas.drawCircle(
+      center,
+      1.5,
+      Paint()
+        ..color = paperColor
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// ⭕ مدالية رقم الآية (كبيرة وواضحة)
 class _AyahMedallionPainter extends CustomPainter {
   final Color color;
-  final Color lightColor;
-
-  _AyahMedallionPainter({
-    required this.color,
-    required this.lightColor,
-  });
+  _AyahMedallionPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
+      ..strokeWidth = 1.0;
 
-    final lightFill = Paint()
-      ..color = lightColor.withValues(alpha: 0.2)
+    final fillPaint = Paint()
+      ..color = color.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
 
     final accentFill = Paint()
@@ -1005,10 +810,8 @@ class _AyahMedallionPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final outerR = size.width / 2 - 1;
 
-    // 1️⃣ دائرة خارجية
     canvas.drawCircle(center, outerR, paint);
 
-    // 2️⃣ نجمة زهرية (12 رأس)
     final flowerPath = Path();
     const petals = 12;
     for (int i = 0; i < petals * 2; i++) {
@@ -1024,21 +827,17 @@ class _AyahMedallionPainter extends CustomPainter {
     }
     flowerPath.close();
 
-    canvas.drawPath(flowerPath, lightFill);
+    canvas.drawPath(flowerPath, fillPaint);
     canvas.drawPath(flowerPath, paint);
 
-    // 3️⃣ حلقة داخلية
-    canvas.drawCircle(center, outerR * 0.65, paint..strokeWidth = 0.8);
-
-    // 4️⃣ حلقة حول الرقم
+    canvas.drawCircle(center, outerR * 0.65, paint..strokeWidth = 0.7);
     canvas.drawCircle(center, outerR * 0.42, paint..strokeWidth = 0.5);
 
-    // 5️⃣ نقاط على الرؤوس
     for (int i = 0; i < petals; i++) {
       final angle = (i * 2 * math.pi / petals) - (math.pi / 2);
       final x = center.dx + outerR * 0.88 * math.cos(angle);
       final y = center.dy + outerR * 0.88 * math.sin(angle);
-      canvas.drawCircle(Offset(x, y), 1.2, accentFill);
+      canvas.drawCircle(Offset(x, y), 1.0, accentFill);
     }
   }
 
