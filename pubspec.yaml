@@ -80,8 +80,6 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   youtube_player_iframe: ^4.0.4
   webview_flutter: ^4.9.0
-  video_player: ^2.9.2
-  chewie: ^1.8.5
   sqflite: ^2.3.0
   path_provider: ^2.1.5
   path: ^1.8.0
@@ -94,15 +92,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # ═══════════════════════════════════════════════════════════
-  # 🔤 الخطوط
-  # ═══════════════════════════════════════════════════════════
-  fonts:
-    - family: Amiri
-      fonts:
-        - asset: assets/fonts/Amiri-Regular.ttf
-
   assets:
     # البيانات
     - assets/data/
