@@ -94,6 +94,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # ═══════════════════════════════════════════════════════════
+  # 🔤 الخطوط
+  # ═══════════════════════════════════════════════════════════
+  fonts:
+    - family: UthmanicHafs
+      fonts:
+        - asset: assets/fonts/UthmanicHafs.ttf
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+
   assets:
     # البيانات
     - assets/data/
