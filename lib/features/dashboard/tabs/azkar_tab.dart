@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/providers/language_provider.dart';
 
@@ -78,22 +80,28 @@ class _AzkarTabState extends State<AzkarTab>
   ];
 
   // ═══════════════════════════════════════════════════════════
-  // البث المباشر — قناتان فقط
+  // ✅ البث المباشر — قناتان (بعد الإصلاح)
   // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _liveStreams = [
     {
       'name': 'الحرم المكي',
       'nameEn': 'Makkah Live',
       'icon': '🕋',
-      'url':
+      'channelId': 'UC4UVn5kYW3wEcIvY9N-Hrhw',
+      'embedUrl':
           'https://www.youtube.com/embed/live_stream?channel=UC4UVn5kYW3wEcIvY9N-Hrhw',
+      'watchUrl':
+          'https://www.youtube.com/channel/UC4UVn5kYW3wEcIvY9N-Hrhw/live',
     },
     {
       'name': 'المسجد النبوي',
       'nameEn': 'Madinah Live',
       'icon': '🕌',
-      'url':
-          'https://www.youtube.com/embed/live_stream?',
+      'channelId': 'UC8S4YojbcQ6nFCFrQxCyKjA',
+      'embedUrl':
+          'https://www.youtube.com/embed/live_stream?channel=UC8S4YojbcQ6nFCFrQxCyKjA',
+      'watchUrl':
+          'https://www.youtube.com/channel/UC8S4YojbcQ6nFCFrQxCyKjA/live',
     },
   ];
 
@@ -257,16 +265,62 @@ class _AzkarTabState extends State<AzkarTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // البث المباشر
+  // ✅ البث المباشر — الطريقة المُصلَحة
   // ═══════════════════════════════════════════════════════════
-  void _showLiveStream(String url, String title) {
+  static const String _youtubeUA =
+      'Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+  Future<void> _openInYouTubeApp(String watchUrl) async {
+    final uri = Uri.parse(watchUrl);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ تعذر فتح يوتيوب')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ خطأ: $e')),
+      );
+    }
+  }
+
+  void _showLiveStream(Map<String, String> stream, String title) {
+    final embedUrl = stream['embedUrl']!;
+    final watchUrl = stream['watchUrl']!;
+
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
+      // ✅ User-Agent حقيقي لتجاوز حجب يوتيوب داخل WebView
+      ..setUserAgent(_youtubeUA)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (error) {
+            debugPrint('🌐 WebView error: ${error.description}');
+          },
+          onNavigationRequest: (request) {
+            // نمنع فتح روابط خارجية داخل الـ WebView
+            if (request.url.contains('youtube.com/watch') ||
+                request.url.contains('youtu.be/')) {
+              _openInYouTubeApp(request.url);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
       ..loadRequest(
-        Uri.parse(url),
+        Uri.parse(embedUrl),
         headers: const {
           'Referer': 'https://www.youtube.com/',
+          'User-Agent': _youtubeUA,
+          'Accept-Language': 'ar,en;q=0.9',
         },
       );
 
@@ -277,16 +331,17 @@ class _AzkarTabState extends State<AzkarTab>
         backgroundColor: Colors.black,
         insetPadding: const EdgeInsets.all(12),
         child: Container(
-          height: 320,
+          height: 340,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFD4AF37)),
           ),
           child: Column(
             children: [
+              // شريط العنوان
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: const BoxDecoration(
                   color: Color(0xFF1C2541),
                   borderRadius:
@@ -315,6 +370,14 @@ class _AzkarTabState extends State<AzkarTab>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    // ✅ زر فتح في يوتيوب (خطة بديلة)
+                    IconButton(
+                      icon: const Icon(Icons.open_in_new,
+                          color: Color(0xFFD4AF37), size: 18),
+                      tooltip: 'فتح في يوتيوب',
+                      onPressed: () => _openInYouTubeApp(watchUrl),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.close,
                           color: Color(0xFFD4AF37), size: 20),
@@ -323,6 +386,8 @@ class _AzkarTabState extends State<AzkarTab>
                   ],
                 ),
               ),
+
+              // عارض الفيديو
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
@@ -574,7 +639,7 @@ class _AzkarTabState extends State<AzkarTab>
               size: 40,
             ),
             onTap: () => _showLiveStream(
-              stream['url']!,
+              stream,
               isArabic ? stream['name']! : stream['nameEn']!,
             ),
           ),
