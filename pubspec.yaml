@@ -80,6 +80,7 @@ dependencies:
   # ═══════════════════════════════════════════════════════════
   youtube_player_iframe: ^4.0.4
   webview_flutter: ^4.9.0
+  better_player: ^0.0.83
   sqflite: ^2.3.0
   path_provider: ^2.1.5
   path: ^1.8.0

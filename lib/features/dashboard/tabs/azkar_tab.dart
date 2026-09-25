@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:better_player/better_player.dart';
 import '../../../core/providers/language_provider.dart';
 
 class AzkarTab extends StatefulWidget {
@@ -78,22 +78,25 @@ class _AzkarTabState extends State<AzkarTab>
   ];
 
   // ═══════════════════════════════════════════════════════════
-  // البث المباشر — قناتان فقط
+  // 📺 البث المباشر — روابط m3u8 تعمل عالمياً
   // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _liveStreams = [
     {
       'name': 'الحرم المكي',
       'nameEn': 'Makkah Live',
       'icon': '🕋',
-      'url':
-          'https://www.youtube.com/embed/live_stream?channel=UC4UVn5kYW3wEcIvY9N-Hrhw',
+      // 🕋 قناة القرآن الكريم - رابط m3u8
+      'url': 'https://win.holol.com/live/quran/playlist.m3u8',
+      // بديل 1: http://m.live.net.sa:1935/live/quran/playlist.m3u8
+      // بديل 2: http://213.254.12.7/saudiquran/index.m3u8
     },
     {
       'name': 'المسجد النبوي',
       'nameEn': 'Madinah Live',
       'icon': '🕌',
-      'url':
-          'https://www.youtube.com/embed/live_stream?channel=UC5f6FygRcnVm5NKMGNsVGwQ',
+      // 🕌 قناة السنة النبوية - رابط m3u8
+      'url': 'http://m.live.net.sa:1935/live/sunnah/playlist.m3u8',
+      // بديل: https://win.holol.com/live/sunnah/playlist.m3u8
     },
   ];
 
@@ -257,18 +260,29 @@ class _AzkarTabState extends State<AzkarTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // البث المباشر
+  // 📺 عرض البث المباشر (m3u8)
   // ═══════════════════════════════════════════════════════════
   void _showLiveStream(String url, String title) {
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black)
-      ..loadRequest(
-        Uri.parse(url),
+    final controller = BetterPlayerController(
+      const BetterPlayerConfiguration(
+        autoPlay: true,
+        aspectRatio: 16 / 9,
+        fit: BoxFit.contain,
+        allowedScreenSleep: false,
+        autoDispose: true,
+        handleLifecycle: true,
+      ),
+      betterPlayerDataSource: BetterPlayerDataSource(
+        BetterPlayerDataSourceType.network,
+        url,
+        liveStream: true,
+        videoFormat: BetterPlayerVideoFormat.hls,
         headers: const {
-          'Referer': 'https://www.youtube.com/',
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
         },
-      );
+      ),
+    );
 
     showDialog(
       context: context,
@@ -284,6 +298,7 @@ class _AzkarTabState extends State<AzkarTab>
           ),
           child: Column(
             children: [
+              // شريط العنوان
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -318,23 +333,32 @@ class _AzkarTabState extends State<AzkarTab>
                     IconButton(
                       icon: const Icon(Icons.close,
                           color: Color(0xFFD4AF37), size: 20),
-                      onPressed: () => Navigator.pop(dialogContext),
+                      onPressed: () {
+                        controller.dispose();
+                        Navigator.pop(dialogContext);
+                      },
                     ),
                   ],
                 ),
               ),
+              // مشغل الفيديو
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(11)),
-                  child: WebViewWidget(controller: controller),
+                  child: BetterPlayer(controller: controller),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // تنظيف عند الإغلاق
+      try {
+        controller.dispose();
+      } catch (_) {}
+    });
   }
 
   // ═══════════════════════════════════════════════════════════
