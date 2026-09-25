@@ -95,7 +95,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     _loadLocationAndFetchTimes();
     _startCountdownTimer();
 
-    // ✅ Chronometer: نضبط الإشعار الدائم مرة واحدة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updatePersistentNotification();
     });
@@ -336,7 +335,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             _selectedMuezzinName,
           );
 
-          // ✅ تحديث الإشعار الدائم بعد جلب الأوقات الجديدة
           await _updatePersistentNotification();
         }
       }
@@ -508,9 +506,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ⏱️ الإشعار الدائم — Chronometer (بدون Timer)
-  // ═══════════════════════════════════════════════════════════
   Future<void> _updatePersistentNotification() async {
     try {
       if (!mounted) return;
@@ -518,7 +513,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
 
       final hijri = HijriService.getHijriDate(DateTime.now());
 
-      // 🎯 حساب وقت الصلاة القادمة الفعلي
       final nextPrayerTime = _calculateNextPrayerTime();
       if (nextPrayerTime == null) {
         debugPrint('⚠️ لم نتمكن من حساب وقت الصلاة القادمة');
@@ -536,7 +530,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
-  /// 🎯 حساب وقت الصلاة القادمة (DateTime)
   DateTime? _calculateNextPrayerTime() {
     try {
       final now = DateTime.now();
@@ -569,7 +562,6 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         }
       }
 
-      // لم توجد — نرجع وقت الفجر غداً
       if (_prayerList.isNotEmpty) {
         final fajrStr = (_prayerList.first['time'] ?? '').toString();
         final cleanFajr = fajrStr
@@ -619,17 +611,27 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎵 تشغيل الأذان من Assets
+  // ═══════════════════════════════════════════════════════════
   Future<bool> _playAdhanFromAssets(String muezzinId) async {
+    debugPrint('🎵 محاولة تشغيل الأذان: $muezzinId');
+
     final assetSourcePath =
         await AdhanDownloadService.getAssetSourcePath(muezzinId);
+
     if (assetSourcePath == null) {
       debugPrint('⚠️ الأذان غير متاح: $muezzinId');
       return false;
     }
 
+    debugPrint('📁 مسار الأذان: $assetSourcePath');
+
     try {
       await _audioPlayer.stop();
+      await _audioPlayer.setVolume(1.0);
       await _audioPlayer.play(AssetSource(assetSourcePath));
+      debugPrint('✅ بدأ الأذان');
       return true;
     } catch (e) {
       debugPrint('❌ فشل تشغيل الأذان: $e');
@@ -637,33 +639,79 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🔔 الأذان التلقائي عند دخول الوقت
+  // ═══════════════════════════════════════════════════════════
   Future<void> _triggerAdhanAutomatically(String prayerName) async {
+    debugPrint('🔔 بدء الأذان التلقائي لصلاة $prayerName');
+
     try {
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
-      if (!started) return;
+
+      if (!started) {
+        debugPrint('⚠️ فشل تشغيل الأذان — الانتقال للدعاء');
+        await _playDuaAfterAdhan();
+        return;
+      }
 
       if (mounted) setState(() => _isPlaying = true);
 
-      await _audioPlayer.onPlayerComplete.first;
+      try {
+        await _audioPlayer.onPlayerComplete.first
+            .timeout(const Duration(minutes: 10));
+        debugPrint('✅ انتهى الأذان');
+      } catch (timeoutError) {
+        debugPrint('⚠️ انتهت مدة الأذان أو توقف');
+      }
+
       if (mounted) setState(() => _isPlaying = false);
 
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      debugPrint('🤲 جاري تشغيل دعاء الأذان...');
       await _playDuaAfterAdhan();
     } catch (e) {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
       if (mounted) setState(() => _isPlaying = false);
+
+      try {
+        await _playDuaAfterAdhan();
+      } catch (duaError) {
+        debugPrint('❌ فشل الدعاء أيضاً: $duaError');
+      }
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🤲 تشغيل دعاء الأذان
+  // ═══════════════════════════════════════════════════════════
   Future<void> _playDuaAfterAdhan() async {
+    debugPrint('🤲 محاولة تشغيل دعاء الأذان...');
+
+    final AudioPlayer duaPlayer = AudioPlayer();
+
     try {
-      final duaPlayer = AudioPlayer();
+      await duaPlayer.setVolume(1.0);
+
+      debugPrint('📁 مسار الدعاء: adhan/dua/dua_after_adhan.mp3');
       await duaPlayer.play(
         AssetSource('adhan/dua/dua_after_adhan.mp3'),
       );
+
+      debugPrint('✅ بدأ تشغيل الدعاء');
+
       await duaPlayer.onPlayerComplete.first;
+
+      debugPrint('✅ انتهى الدعاء');
+
       await duaPlayer.dispose();
     } catch (e) {
+      debugPrint('❌ فشل تشغيل الدعاء: $e');
+
+      try {
+        await duaPlayer.dispose();
+      } catch (_) {}
+
       await _speakDuaWithTts();
     }
   }
@@ -682,7 +730,12 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🔊 التشغيل اليدوي للأذان
+  // ═══════════════════════════════════════════════════════════
   Future<void> _playAdhan(String prayerName) async {
+    debugPrint('🎵 تشغيل يدوي للأذان: $prayerName');
+
     try {
       final started = await _playAdhanFromAssets(_selectedMuezzinId);
       if (!started) {
@@ -691,15 +744,24 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       }
 
       if (mounted) setState(() => _isPlaying = true);
-
       _showSnack('🔊 تشغيل الأذان لصلاة $prayerName');
 
-      await _audioPlayer.onPlayerComplete.first;
+      try {
+        await _audioPlayer.onPlayerComplete.first
+            .timeout(const Duration(minutes: 10));
+      } catch (_) {}
+
       if (mounted) setState(() => _isPlaying = false);
 
-      if (mounted) setState(() => _showDua = true);
-      await Future.delayed(const Duration(seconds: 5));
-      if (mounted) setState(() => _showDua = false);
+      debugPrint('🤲 تشغيل الدعاء بعد الأذان...');
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _playDuaAfterAdhan();
+
+      if (mounted) {
+        setState(() => _showDua = true);
+        await Future.delayed(const Duration(seconds: 5));
+        if (mounted) setState(() => _showDua = false);
+      }
     } catch (e) {
       debugPrint('❌ خطأ في تشغيل الأذان: $e');
       if (mounted) setState(() => _isPlaying = false);
