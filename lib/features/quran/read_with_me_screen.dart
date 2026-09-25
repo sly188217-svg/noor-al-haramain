@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/quran_service.dart';
 import 'models/ayah_model.dart';
+import 'models/surah_model.dart';
 import 'hifz_mode.dart';
 import '../../core/services/firebase_ai_service.dart';
 import '../../core/services/progress_service.dart';
@@ -21,7 +22,8 @@ import '../../core/services/usage_service.dart';
 /// ✅ 👆 نقرة على كلمة
 /// ✅ 📊 تتبع التقدم | 🏆 الإنجازات
 /// ✅ 🎨 تلوين التجويد | 📚 ترجمة 8 لغات
-/// ✅ 🎯 وضع الاختبار | 🎁 تجربة مجانية 4 مرات
+/// ✅ 🔄 زر تغيير السورة
+/// ✅ 🔒 قفل كامل عند انتهاء التجربة المجانية
 /// ═══════════════════════════════════════════════════════════
 class ReadWithMeScreen extends StatefulWidget {
   final int surahNumber;
@@ -46,6 +48,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   int _currentAyahIndex = 0;
   int _highlightedWordIndex = -1;
 
+  // 🔄 السورة الحالية (قابلة للتغيير)
+  late int _currentSurahNumber;
+
   bool _isLoading = true;
   bool _isPlaying = false;
   bool _isRecording = false;
@@ -55,7 +60,13 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
   // 🎁 تجربة مجانية
   bool _isPremium = false;
-  int _remainingReadWithMe = 4;
+  int _remainingReadWithMe = 3;
+
+  // 🔒 قفل الميزة بالكامل
+  bool _isLocked = false;
+
+  // 📚 قائمة كل السور
+  List<SurahModel> _allSurahs = [];
 
   // ⚡ السرعة
   double _playbackSpeed = 1.0;
@@ -111,7 +122,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentSurahNumber = widget.surahNumber;
     _setupAudioListeners();
+    _loadAllSurahs();
     _loadSurah();
     _loadPreferences();
     _loadTranslationPrefs();
@@ -139,6 +152,228 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       if (!mounted) return;
       _handleAyahComplete();
     });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📚 تحميل كل السور + تغيير السورة
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _loadAllSurahs() async {
+    try {
+      final surahs = await QuranService.loadQuran();
+      if (!mounted) return;
+      setState(() => _allSurahs = surahs);
+    } catch (e) {
+      debugPrint('⚠️ فشل تحميل السور: $e');
+    }
+  }
+
+  /// 📖 اسم السورة الحالية
+  String _getCurrentSurahName() {
+    if (_allSurahs.isEmpty) return 'اقرأ معي';
+    try {
+      final surah = _allSurahs.firstWhere(
+        (s) => s.number == _currentSurahNumber,
+      );
+      return surah.name.replaceAll('سورة ', '');
+    } catch (_) {
+      return 'اقرأ معي';
+    }
+  }
+
+  /// 🔄 تغيير السورة
+  Future<void> _changeSurah(int newSurahNumber) async {
+    _audioPlayer.stop();
+    setState(() {
+      _isPlaying = false;
+      _isLoading = true;
+      _currentAyahIndex = 0;
+      _highlightedWordIndex = -1;
+      _userCorrectWords.clear();
+      _userWrongWords.clear();
+      _currentSurahNumber = newSurahNumber;
+    });
+
+    try {
+      final surah = await QuranService.getSurah(newSurahNumber);
+      if (surah?.ayahs == null || surah!.ayahs!.isEmpty) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _ayahs = surah.ayahs!;
+        _currentAyahIndex = 0;
+        _isLoading = false;
+      });
+      _prepareCurrentAyah();
+    } catch (e) {
+      debugPrint('❌ فشل تغيير السورة: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// 📋 نافذة اختيار السورة
+  void _showSurahPicker() {
+    final searchController = TextEditingController();
+    List<SurahModel> filtered = List.from(_allSurahs);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _paperColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: _goldColor,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.menu_book,
+                            color: _paperColor, size: 24),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            '📚 اختر سورة',
+                            style: TextStyle(
+                              color: _paperColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Amiri',
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon:
+                              const Icon(Icons.close, color: _paperColor),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (q) {
+                        setModalState(() {
+                          if (q.isEmpty) {
+                            filtered = List.from(_allSurahs);
+                          } else {
+                            filtered = _allSurahs.where((s) {
+                              return s.name.contains(q) ||
+                                  s.number.toString() == q ||
+                                  s.number.toString().startsWith(q);
+                            }).toList();
+                          }
+                        });
+                      },
+                      style: const TextStyle(color: _inkColor),
+                      decoration: InputDecoration(
+                        hintText: '🔍 ابحث عن سورة...',
+                        hintStyle: const TextStyle(color: Colors.black38),
+                        prefixIcon:
+                            const Icon(Icons.search, color: _goldColor),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: _goldColor.withValues(alpha: 0.5)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(
+                            child: Text('لا توجد نتائج',
+                                style: TextStyle(color: Colors.black54)),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final surah = filtered[index];
+                              final isCurrent =
+                                  surah.number == _currentSurahNumber;
+                              return ListTile(
+                                leading: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent
+                                        ? _goldColor
+                                        : _goldColor
+                                            .withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: _goldColor),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${surah.number}',
+                                      style: TextStyle(
+                                        color: isCurrent
+                                            ? _paperColor
+                                            : _goldColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  surah.name,
+                                  style: TextStyle(
+                                    color: _inkColor,
+                                    fontSize: 16,
+                                    fontFamily: 'Amiri',
+                                    fontWeight: isCurrent
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${surah.numberOfAyahs} آية • ${surah.revelationType == "Meccan" ? "مكية" : "مدنية"}',
+                                  style: const TextStyle(
+                                      color: Colors.black54, fontSize: 11),
+                                ),
+                                trailing: isCurrent
+                                    ? const Icon(Icons.check_circle,
+                                        color: Color(0xFFB8860B))
+                                    : null,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  if (!isCurrent) {
+                                    _changeSurah(surah.number);
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -174,6 +409,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     setState(() {
       _isPremium = isPremium;
       _remainingReadWithMe = remaining;
+      // 🔒 قفل الميزة إذا انتهت التجربة
+      _isLocked = !isPremium && remaining <= 0;
     });
   }
 
@@ -195,7 +432,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   // ═══════════════════════════════════════════════════════════
   Future<void> _loadSurah() async {
     try {
-      final surah = await QuranService.getSurah(widget.surahNumber);
+      final surah = await QuranService.getSurah(_currentSurahNumber);
       if (surah?.ayahs == null || surah!.ayahs!.isEmpty) {
         if (mounted) setState(() => _isLoading = false);
         return;
@@ -239,7 +476,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     _hiddenMask = HifzMode.generateHiddenMask(
       _currentWords.length,
       _hifzLevel,
-      widget.surahNumber * 1000 + ayah.number,
+      _currentSurahNumber * 1000 + ayah.number,
     );
 
     if (_showTranslation && _currentLang != 'ar') {
@@ -251,7 +488,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     if (_currentAyahIndex >= _ayahs.length) return;
     final ayah = _ayahs[_currentAyahIndex];
     final trans = await TranslationService.getAyahTranslation(
-      surahNumber: widget.surahNumber,
+      surahNumber: _currentSurahNumber,
       ayahNumber: ayah.number,
       langCode: _currentLang,
     );
@@ -275,7 +512,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
   Future<void> _playCurrentAyah() async {
     final ayah = _ayahs[_currentAyahIndex];
-    final surahStr = widget.surahNumber.toString().padLeft(3, '0');
+    final surahStr = _currentSurahNumber.toString().padLeft(3, '0');
     final ayahStr = ayah.number.toString().padLeft(3, '0');
     final url =
         'https://everyayah.com/data/$_selectedReciter/$surahStr$ayahStr.mp3';
@@ -348,6 +585,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   // 🎤 التسجيل والتصحيح
   // ═══════════════════════════════════════════════════════════
   Future<void> _toggleRecording() async {
+    // 🔒 فحص القفل أولاً
+    if (_isLocked) {
+      setState(() => _isLocked = true);
+      return;
+    }
+
     if (_isRecording) {
       try {
         final path = await _recorder.stop();
@@ -364,7 +607,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     if (!_isPremium) {
       final canUse = await UsageService.canReadWithMe();
       if (!canUse) {
-        _showLimitDialog();
+        setState(() => _isLocked = true);
         return;
       }
     }
@@ -447,7 +690,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
           _hasSaved = true;
 
           await ProgressService.saveAyahResult(
-            surahNumber: widget.surahNumber,
+            surahNumber: _currentSurahNumber,
             ayahNumber: ayah.number,
             accuracy: acc,
             correctWords: correct,
@@ -467,7 +710,15 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       if (!_isPremium) {
         await UsageService.incrementReadWithMe();
         final remaining = await UsageService.remainingReadWithMe();
-        if (mounted) setState(() => _remainingReadWithMe = remaining);
+        if (mounted) {
+          setState(() {
+            _remainingReadWithMe = remaining;
+            // 🔒 إذا انتهت التجربة → قفل
+            if (remaining <= 0) {
+              _isLocked = true;
+            }
+          });
+        }
       }
 
       try {
@@ -515,66 +766,150 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎁 نافذة انتهاء التجربة
+  // 🔒 شاشة القفل الكامل
   // ═══════════════════════════════════════════════════════════
-  void _showLimitDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _paperColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _goldColor, width: 2),
+  Widget _buildLockScreen() {
+    return Scaffold(
+      backgroundColor: _paperColor,
+      appBar: AppBar(
+        backgroundColor: _goldColor,
+        foregroundColor: _paperColor,
+        elevation: 0,
+        title: const Text(
+          '🎙️ اقرأ معي',
+          style:
+              TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold),
         ),
-        title: const Row(
-          children: [
-            Icon(Icons.hourglass_empty, color: Color(0xFFB8860B)),
-            SizedBox(width: 8),
-            Text(
-              'انتهت التجربة المجانية',
-              style: TextStyle(
-                color: Color(0xFFB8860B),
-                fontSize: 18,
-                fontFamily: 'Amiri',
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'لقد استخدمت 4 تجارب مجانية لميزة "اقرأ معي".\n\n'
-          '💎 اشترك الآن بـ:\n'
-          '• \$2.99/شهر\n'
-          '• \$22.99/سنة (وفّر 36%)\n\n'
-          '⏰ أو عاود غداً لتجربة جديدة.',
-          style: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontSize: 14,
-            height: 1.8,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لاحقاً',
-                style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('💎 قريباً: صفحة الاشتراك'),
-                  backgroundColor: Color(0xFFB8860B),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _goldColor.withValues(alpha: 0.15),
+                  border: Border.all(color: _goldColor, width: 2),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB8860B),
-              foregroundColor: _paperColor,
-            ),
-            child: const Text('💎 اشترك الآن'),
+                child: const Icon(
+                  Icons.lock,
+                  color: Color(0xFFB8860B),
+                  size: 60,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '🔒 انتهت التجربة المجانية',
+                style: TextStyle(
+                  color: Color(0xFFB8860B),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Amiri',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'لقد استخدمت 3 تجارب مجانية\nمن ميزة "اقرأ معي"',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 15,
+                  height: 1.7,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _goldColor.withValues(alpha: 0.3),
+                      _goldColor.withValues(alpha: 0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _goldColor, width: 2),
+                ),
+                child: const Column(
+                  children: [
+                    Text(
+                      '💎 اشترك في Premium',
+                      style: TextStyle(
+                        color: Color(0xFFB8860B),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      '\$2.99 / شهر',
+                      style: TextStyle(
+                        color: Color(0xFF1A1A1A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'أو \$22.99 / سنة (وفّر 36%)',
+                      style:
+                          TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      '✨ تصحيح تلاوة غير محدود\n'
+                      '✨ اقرأ معي غير محدود\n'
+                      '✨ أسئلة غير محدودة للمرشد\n'
+                      '✨ جميع القراء والميزات',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        height: 1.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('💎 قريباً: صفحة الاشتراك'),
+                        backgroundColor: Color(0xFFB8860B),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.star, size: 24),
+                  label: const Text(
+                    '💎 اشترك الآن',
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _goldColor,
+                    foregroundColor: _paperColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '⏰ أو عاود غداً لتجربة جديدة',
+                style: TextStyle(color: Colors.black54, fontSize: 13),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -921,7 +1256,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                       _currentLang = l['code']!;
                       _showTranslation = l['code'] != 'ar';
                     });
-                    await _saveQuickPref('show_translation', _showTranslation);
+                    await _saveQuickPref(
+                        'show_translation', _showTranslation);
                     await _loadAyahTranslation();
                     if (mounted) Navigator.pop(context);
                   },
@@ -1024,7 +1360,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        isUnlocked ? Icons.check_circle : Icons.lock_outline,
+                        isUnlocked
+                            ? Icons.check_circle
+                            : Icons.lock_outline,
                         color: isUnlocked ? Colors.green : Colors.grey,
                         size: 16,
                       ),
@@ -1033,7 +1371,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                         child: Text(
                           '${a['name']} — ${a['desc']}',
                           style: TextStyle(
-                            color: isUnlocked ? _inkColor : Colors.grey,
+                            color:
+                                isUnlocked ? _inkColor : Colors.grey,
                             fontSize: 12,
                           ),
                         ),
@@ -1048,8 +1387,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق',
-                style: TextStyle(color: _goldColor)),
+            child:
+                const Text('إغلاق', style: TextStyle(color: _goldColor)),
           ),
         ],
       ),
@@ -1156,8 +1495,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
     setState(() => _selectedWordIndex = index);
 
-    final wordTranslation =
-        TranslationService.getWordTranslation(_currentWords[index], _currentLang);
+    final wordTranslation = TranslationService.getWordTranslation(
+        _currentWords[index], _currentLang);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1188,20 +1527,47 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
+    // 🔒 إذا كانت الميزة مقفلة → شاشة القفل
+    if (_isLocked) {
+      return _buildLockScreen();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0E8D0),
       appBar: AppBar(
         backgroundColor: _goldColor,
         foregroundColor: _paperColor,
         elevation: 0,
-        title: const Text(
-          '🎙️ اقرأ معي',
-          style: TextStyle(
-            fontFamily: 'Amiri',
-            fontWeight: FontWeight.bold,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'رجوع',
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.mic, size: 18),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                _getCurrentSurahName(),
+                style: const TextStyle(
+                  fontFamily: 'Amiri',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         actions: [
+          // 🔄 زر تغيير السورة
+          IconButton(
+            icon: const Icon(Icons.menu_book),
+            onPressed: _showSurahPicker,
+            tooltip: '📚 تغيير السورة',
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
             onPressed: _showProgressDialog,
