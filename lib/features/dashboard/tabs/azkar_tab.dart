@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/providers/language_provider.dart';
 
 class AzkarTab extends StatefulWidget {
@@ -79,25 +78,27 @@ class _AzkarTabState extends State<AzkarTab>
   ];
 
   // ═══════════════════════════════════════════════════════════
-  // 📺 البث المباشر — روابط m3u8 تعمل عالمياً
+  // البث المباشر — قناتان فقط
   // ═══════════════════════════════════════════════════════════
   final List<Map<String, String>> _liveStreams = [
     {
       'name': 'الحرم المكي',
       'nameEn': 'Makkah Live',
       'icon': '🕋',
-      'url': 'https://win.holol.com/live/quran/playlist.m3u8',
+      'url':
+          'https://www.youtube.com/embed/live_stream?channel=UC4UVn5kYW3wEcIvY9N-Hrhw',
     },
     {
       'name': 'المسجد النبوي',
       'nameEn': 'Madinah Live',
       'icon': '🕌',
-      'url': 'https://win.holol.com/live/sunnah/playlist.m3u8',
+      'url':
+          'https://www.youtube.com/embed/live_stream?',
     },
   ];
 
   // ═══════════════════════════════════════════════════════════
-  // السبحة
+  // السبحة — عداد منفصل لكل ذكر
   // ═══════════════════════════════════════════════════════════
   int _tasbihCount = 0;
   String _selectedDhikr = 'سبحان الله';
@@ -256,153 +257,84 @@ class _AzkarTabState extends State<AzkarTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📺 عرض البث المباشر (m3u8)
+  // البث المباشر
   // ═══════════════════════════════════════════════════════════
-  Future<void> _showLiveStream(String url, String title) async {
-    // شاشة تحميل
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
-      ),
-    );
-
-    try {
-      // إنشاء video player controller
-      final videoController = VideoPlayerController.networkUrl(
+  void _showLiveStream(String url, String title) {
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..loadRequest(
         Uri.parse(url),
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: false,
-          allowBackgroundPlayback: false,
-        ),
-        httpHeaders: const {
-          'User-Agent':
-              'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36',
+        headers: const {
+          'Referer': 'https://www.youtube.com/',
         },
       );
 
-      await videoController.initialize();
-      await videoController.play();
-
-      // إغلاق شاشة التحميل
-      if (!mounted) return;
-      Navigator.pop(context);
-
-      // إنشاء chewie controller
-      final chewieController = ChewieController(
-        videoPlayerController: videoController,
-        autoPlay: true,
-        looping: false,
-        showControls: true,
-        allowFullScreen: true,
-        allowMuting: true,
-        aspectRatio: videoController.value.aspectRatio > 0
-            ? videoController.value.aspectRatio
-            : 16 / 9,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: const Color(0xFFD4AF37),
-          handleColor: const Color(0xFFD4AF37),
-          backgroundColor: Colors.grey,
-          bufferedColor: Colors.white54,
-        ),
-      );
-
-      // عرض النافذة
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogContext) => Dialog(
-          backgroundColor: Colors.black,
-          insetPadding: const EdgeInsets.all(12),
-          child: Container(
-            height: 320,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFD4AF37)),
-            ),
-            child: Column(
-              children: [
-                // شريط العنوان
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1C2541),
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(11)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.live_tv,
-                          color: Color(0xFFD4AF37), size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            color: Color(0xFFD4AF37),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const Text(
-                        '🔴 LIVE',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 11,
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Container(
+          height: 320,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD4AF37)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1C2541),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(11)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.live_tv,
+                        color: Color(0xFFD4AF37), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xFFD4AF37),
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close,
-                            color: Color(0xFFD4AF37), size: 20),
-                        onPressed: () {
-                          chewieController.dispose();
-                          videoController.dispose();
-                          Navigator.pop(dialogContext);
-                        },
+                    ),
+                    const Text(
+                      '🔴 LIVE',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close,
+                          color: Color(0xFFD4AF37), size: 20),
+                      onPressed: () => Navigator.pop(dialogContext),
+                    ),
+                  ],
                 ),
-                // مشغل الفيديو
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(11)),
-                    child: Chewie(controller: chewieController),
-                  ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(11)),
+                  child: WebViewWidget(controller: controller),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ).then((_) {
-        // تنظيف عند الإغلاق
-        try {
-          chewieController.dispose();
-          videoController.dispose();
-        } catch (_) {}
-      });
-    } catch (e) {
-      // إغلاق شاشة التحميل
-      if (mounted) Navigator.pop(context);
-
-      // إظهار الخطأ
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('⚠️ تعذر تحميل البث: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      debugPrint('❌ Live stream error: $e');
-    }
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════
