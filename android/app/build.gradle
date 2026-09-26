@@ -23,6 +23,15 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🔑 تحميل بيانات التوقيع من key.properties (إن وُجد)
+// ═══════════════════════════════════════════════════════════
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.apexsec.noor_al_haramain_global"
     compileSdkVersion 36
@@ -42,12 +51,15 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // 🔐 إعدادات التوقيع
+    // ═══════════════════════════════════════════════════════════
     signingConfigs {
         release {
-            keyAlias 'noor-key'
-            keyPassword 'Noor2026Pass'
+            keyAlias keystoreProperties['keyAlias'] ?: 'noor-key'
+            keyPassword keystoreProperties['keyPassword'] ?: System.getenv("KEY_PASSWORD") ?: 'Noor2026Pass'
             storeFile file('noor-release.jks')
-            storePassword 'Noor2026Pass'
+            storePassword keystoreProperties['storePassword'] ?: System.getenv("KEYSTORE_PASSWORD") ?: 'Noor2026Pass'
             storeType 'JKS'
         }
     }

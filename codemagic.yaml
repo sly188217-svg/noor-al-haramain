@@ -1,9 +1,9 @@
 workflows:
   # ═══════════════════════════════════════════════════════════
-  # 🤖 Android Build
+  # 🤖 Android Build (APK + AAB)
   # ═══════════════════════════════════════════════════════════
   android-workflow:
-    name: Build APK
+    name: Build Android (APK + AAB)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -40,14 +40,19 @@ workflows:
         script: |
           cd $CM_BUILD_DIR
           flutter build apk --release
-
-      - name: Verify APK
-        script: |
+          echo "✅ APK created"
           ls -lh $CM_BUILD_DIR/build/app/outputs/flutter-apk/
-          file $CM_BUILD_DIR/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Build AAB (for Google Play)
+        script: |
+          cd $CM_BUILD_DIR
+          flutter build appbundle --release
+          echo "✅ AAB created"
+          ls -lh $CM_BUILD_DIR/build/app/outputs/bundle/release/
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:
@@ -57,7 +62,7 @@ workflows:
           failure: true
 
   # ═══════════════════════════════════════════════════════════
-  # 🍎 iOS Build
+  # 🍎 iOS Build (IPA)
   # ═══════════════════════════════════════════════════════════
   ios-workflow:
     name: Build iOS IPA

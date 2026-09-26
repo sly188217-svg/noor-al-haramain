@@ -112,3 +112,6 @@ Thumbs.db
 Grop
 Group
 *.txt
+android/app/*.jks
+android/app/*.keystore
+android/key.properties
