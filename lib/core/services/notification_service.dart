@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -13,7 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// ═══════════════════════════════════════════════════════════
-/// 🔔 خدمة الإشعارات — مع Chronometer + Full Screen
+/// 🔔 خدمة الإشعارات — الأذان + الإقامة + Chronometer
+/// ✅ إشعار الأذان عند وقت الصلاة
+/// ✅ إشعار الإقامة بعد X دقيقة تلقائياً
+/// ✅ إشعار دائم بالعد التنازلي
 /// ═══════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -59,6 +63,17 @@ class NotificationService {
     await _createAdhanChannel();
     debugPrint('✅ تم تغيير المؤذن إلى: $file');
   }
+
+  /// ═══════════════════════════════════════════════════════════
+  /// 🕌 الأوقات الافتراضية للإقامة لكل صلاة
+  /// ═══════════════════════════════════════════════════════════
+  static const Map<String, int> defaultIqamaTimes = {
+    'الفجر': 20,
+    'الظهر': 15,
+    'العصر': 15,
+    'المغرب': 7,
+    'العشاء': 15,
+  };
 
   /// ═══════════════════════════════════════════════════════════
   /// 🔔 التهيئة
@@ -117,10 +132,16 @@ class NotificationService {
     _initialized = true;
   }
 
+  /// ═══════════════════════════════════════════════════════════
+  /// 🎯 معالج الضغط على الإشعار
+  /// ═══════════════════════════════════════════════════════════
   static void _handleNotificationTap(String payload) {
     try {
       final parts = payload.split('|');
       if (parts.length >= 5) {
+        // parts[0] = نوع الإشعار: "صلاة" أو "إقامة"
+        final isIqamaOnly = parts[0] == 'إقامة';
+
         navigatorKey.currentState?.pushNamed(
           '/adhan',
           arguments: {
@@ -128,6 +149,7 @@ class NotificationService {
             'prayerTime': parts[2],
             'cityName': parts[3],
             'muezzinName': parts[4],
+            'isIqamaOnly': isIqamaOnly,
           },
         );
       }
@@ -148,8 +170,8 @@ class NotificationService {
 
     final AndroidNotificationChannel adhanChannel = AndroidNotificationChannel(
       'adhan_channel',
-      'الأذان',
-      description: 'صوت الأذان عند دخول وقت الصلاة',
+      'الأذان والإقامة',
+      description: 'صوت الأذان والإقامة عند دخول الوقت',
       importance: Importance.max,
       playSound: true,
       sound: RawResourceAndroidNotificationSound(selectedFile),
@@ -213,7 +235,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 🖥️ طلب صلاحية ملء الشاشة (مطلوب لأندرويد 14+)
+  /// 🖥️ طلب صلاحية ملء الشاشة
   /// ═══════════════════════════════════════════════════════════
   static Future<void> requestFullScreenIntentPermission() async {
     if (!Platform.isAndroid) return;
@@ -223,7 +245,6 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl == null) return;
 
-      // ✅ فتح شاشة الإعدادات ليسمح المستخدم بالصلاحية
       await androidImpl.requestFullScreenIntentPermission();
       debugPrint('✅ طلب صلاحية ملء الشاشة');
     } catch (e) {
@@ -291,7 +312,7 @@ class NotificationService {
   }
 
   /// ═══════════════════════════════════════════════════════════
-  /// 📅 جدولة إشعارات الأذان
+  /// 📅 جدولة إشعارات الأذان + الإقامة
   /// ═══════════════════════════════════════════════════════════
   static Future<void> schedulePrayerNotifications(
     Map<String, String> prayerTimes,
@@ -302,6 +323,7 @@ class NotificationService {
     if (!_initialized) await initialize();
 
     try {
+      // إلغاء الإشعارات القديمة
       final pending = await _notifications.pendingNotificationRequests();
       for (final p in pending) {
         if (p.id != _persistentId) {
@@ -329,7 +351,11 @@ class NotificationService {
 
         final timeStr =
             '${finalTime.hour.toString().padLeft(2, '0')}:${finalTime.minute.toString().padLeft(2, '0')}';
-        final payload =
+
+        // ═══════════════════════════════════════════════════
+        // 1️⃣ إشعار الأذان
+        // ═══════════════════════════════════════════════════
+        final adhanPayload =
             'صلاة|$prayerNameAr|$timeStr|$cityName|$muezzinName';
 
         try {
@@ -343,13 +369,48 @@ class NotificationService {
             matchDateTimeComponents: DateTimeComponents.time,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
-            payload: payload,
+            payload: adhanPayload,
           );
-          debugPrint('✅ جدولة $prayerNameAr في: $finalTime');
+          debugPrint('✅ جدولة أذان $prayerNameAr في: $finalTime');
         } catch (e) {
-          debugPrint('⚠️ فشل جدولة $prayerName: $e');
+          debugPrint('⚠️ فشل جدولة أذان $prayerName: $e');
         }
 
+        // ═══════════════════════════════════════════════════
+        // 2️⃣ إشعار الإقامة (بعد X دقيقة)
+        // ═══════════════════════════════════════════════════
+        final iqamaMinutes = await _getIqamaMinutesForPrayer(prayerNameAr);
+        final iqamaTime = finalTime.add(Duration(minutes: iqamaMinutes));
+
+        if (iqamaTime.isAfter(now)) {
+          final iqamaTimeStr =
+              '${iqamaTime.hour.toString().padLeft(2, '0')}:${iqamaTime.minute.toString().padLeft(2, '0')}';
+          final iqamaPayload =
+              'إقامة|$prayerNameAr|$iqamaTimeStr|$cityName|$muezzinName';
+
+          try {
+            await _notifications.zonedSchedule(
+              'iqama_$prayerName'.hashCode,
+              '🕌 إقامة صلاة $prayerNameAr',
+              'حان وقت الإقامة — قد قامت الصلاة',
+              tz.TZDateTime.from(iqamaTime, tz.local),
+              await _iqamaNotificationDetails(),
+              androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+              matchDateTimeComponents: DateTimeComponents.time,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
+              payload: iqamaPayload,
+            );
+            debugPrint(
+                '✅ جدولة إقامة $prayerNameAr في: $iqamaTime (بعد $iqamaMinutes دقيقة)');
+          } catch (e) {
+            debugPrint('⚠️ فشل جدولة إقامة $prayerName: $e');
+          }
+        }
+
+        // ═══════════════════════════════════════════════════
+        // 3️⃣ تذكير قبل 15 دقيقة
+        // ═══════════════════════════════════════════════════
         final reminderTime = finalTime.subtract(const Duration(minutes: 15));
         if (reminderTime.isAfter(now)) {
           try {
@@ -371,6 +432,26 @@ class NotificationService {
     }
   }
 
+  /// ═══════════════════════════════════════════════════════════
+  /// 🕌 جلب وقت الإقامة لكل صلاة
+  /// ═══════════════════════════════════════════════════════════
+  static Future<int> _getIqamaMinutesForPrayer(String prayerNameAr) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final prayerKey = 'iqama_$prayerNameAr';
+
+      int? saved = prefs.getInt(prayerKey);
+      if (saved != null) return saved;
+
+      return defaultIqamaTimes[prayerNameAr] ?? 15;
+    } catch (e) {
+      return 15;
+    }
+  }
+
+  /// ═══════════════════════════════════════════════════════════
+  /// 🧪 اختبار
+  /// ═══════════════════════════════════════════════════════════
   static Future<void> showTestNotification() async {
     if (Platform.isLinux) return;
     if (!_initialized) await initialize();
@@ -380,7 +461,22 @@ class NotificationService {
       '🔔 اختبار الأذان',
       'يجب أن تسمع صوت الأذان الآن',
       await _adhanNotificationDetails(),
-      payload: 'صلاة|الاختبار|${DateTime.now().hour}:${DateTime.now().minute}|مدينتك|المؤذن',
+      payload:
+          'صلاة|الاختبار|${DateTime.now().hour}:${DateTime.now().minute}|مدينتك|المؤذن',
+    );
+  }
+
+  static Future<void> showTestIqamaNotification() async {
+    if (Platform.isLinux) return;
+    if (!_initialized) await initialize();
+
+    await _notifications.show(
+      8889,
+      '🕌 اختبار الإقامة',
+      'حان وقت الإقامة — قد قامت الصلاة',
+      await _iqamaNotificationDetails(),
+      payload:
+          'إقامة|الاختبار|${DateTime.now().hour}:${DateTime.now().minute}|مدينتك|المؤذن',
     );
   }
 
@@ -400,22 +496,58 @@ class NotificationService {
         'الأذان',
         channelDescription: 'صوت الأذان عند دخول وقت الصلاة',
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
         playSound: true,
         sound: RawResourceAndroidNotificationSound(selectedFile),
         enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
-        timeoutAfter: 120000,
-        autoCancel: false,
+        timeoutAfter: 180000,
+        autoCancel: true,
         ongoing: false,
         color: const Color(0xFFD4AF37),
         colorized: true,
+        visibility: NotificationVisibility.public,
+        ticker: 'حان وقت الصلاة',
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentSound: true,
         presentBadge: true,
+        interruptionLevel: InterruptionLevel.critical,
+      ),
+    );
+  }
+
+  static Future<NotificationDetails> _iqamaNotificationDetails() async {
+    final selectedFile = await getSelectedMuezzin();
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'adhan_channel',
+        'الإقامة',
+        channelDescription: 'صوت الإقامة',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(selectedFile),
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 800, 400, 800, 400, 800]),
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        timeoutAfter: 180000,
+        autoCancel: true,
+        ongoing: false,
+        color: const Color(0xFFFFB74D),
+        colorized: true,
+        visibility: NotificationVisibility.public,
+        ticker: 'حان وقت الإقامة',
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        presentBadge: true,
+        interruptionLevel: InterruptionLevel.critical,
       ),
     );
   }

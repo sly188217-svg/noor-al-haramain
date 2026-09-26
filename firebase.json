@@ -1,5 +1,23 @@
 {
-  "firestore": {
-    "rules": "firestore.rules"
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "disco-charger-507916-s1",
+          "projectNumber": "264723055815",
+          "appId": "1:264723055815:android:1c5a4a2fcb5e4c8a2f3e02",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "disco-charger-507916-s1",
+          "projectNumber": "264723055815",
+          "appId": "1:264723055815:ios:abe4963e42c386e50f6ae2",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      }
+    }
   }
 }

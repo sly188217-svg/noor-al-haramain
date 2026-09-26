@@ -16,14 +16,10 @@ import '../../core/services/translation_service.dart';
 import '../../core/services/usage_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎙️ اقرأ معي — النسخة الاحترافية الشاملة النهائية
-/// ✅ 6 قراء | ⚡ 5 سرعات | 🔁 4 تكرارات
-/// ✅ 🧠 وضع الحفظ (5 مستويات)
-/// ✅ 👆 نقرة على كلمة
-/// ✅ 📊 تتبع التقدم | 🏆 الإنجازات
-/// ✅ 🎨 تلوين التجويد | 📚 ترجمة 8 لغات
-/// ✅ 🔄 زر تغيير السورة
-/// ✅ 🔒 قفل كامل عند انتهاء التجربة المجانية
+/// 🎙️ اقرأ معي — مع دعم التشكيل
+/// ✅ مقارنة مزدوجة (بدون/مع تشكيل)
+/// ✅ عرض تفاصيل أخطاء التشكيل
+/// ✅ معالجة أخطاء كاملة
 /// ═══════════════════════════════════════════════════════════
 class ReadWithMeScreen extends StatefulWidget {
   final int surahNumber;
@@ -48,7 +44,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   int _currentAyahIndex = 0;
   int _highlightedWordIndex = -1;
 
-  // 🔄 السورة الحالية (قابلة للتغيير)
   late int _currentSurahNumber;
 
   bool _isLoading = true;
@@ -58,26 +53,24 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   bool _autoAdvance = true;
   bool _hasSaved = false;
 
-  // 🎁 تجربة مجانية
+  String _processingStatus = '';
+  String _processingError = '';
+  String _lastTranscription = '';
+  double _accuracy = 0;
+
   bool _isPremium = false;
   int _remainingReadWithMe = 3;
-
-  // 🔒 قفل الميزة بالكامل
   bool _isLocked = false;
 
-  // 📚 قائمة كل السور
   List<SurahModel> _allSurahs = [];
 
-  // ⚡ السرعة
   double _playbackSpeed = 1.0;
   static const List<double> _speeds = [0.5, 0.75, 1.0, 1.25, 1.5];
 
-  // 🔁 التكرار
   int _repeatCount = 1;
   int _currentRepeat = 0;
   static const List<int> _repeatOptions = [1, 3, 5, 10];
 
-  // 🎙️ القراء
   String _selectedReciter = 'Husary_128kbps';
   static const List<Map<String, String>> _reciters = [
     {'id': 'Husary_128kbps', 'name': 'الحصري'},
@@ -88,31 +81,31 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     {'id': 'Yasser_Ad-Dussary_128kbps', 'name': 'ياسر الدوسري'},
   ];
 
-  // 🧠 وضع الحفظ
   int _hifzLevel = 1;
   List<bool> _hiddenMask = [];
 
-  // 👆 كلمة مختارة
   int? _selectedWordIndex;
 
-  // 🎨 التجويد
   bool _showTajweed = false;
-
-  // 📚 الترجمة
   bool _showTranslation = false;
   String _currentLang = 'ar';
   String? _ayahTranslation;
 
-  // 🎯 وضع الاختبار
   bool _testMode = false;
 
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
+  // ═══════════════════════════════════════════════════════
+  // 📊 نتائج التصحيح التفصيلية
+  // ═══════════════════════════════════════════════════════
   final Set<int> _userCorrectWords = {};
   final Set<int> _userWrongWords = {};
+  final Set<int> _userMissingWords = {};
+  final Set<int> _userExtraWords = {};
+  final Set<int> _userTashkeelWrongWords = {};
+  final Map<int, String> _wordDetails = {};
 
-  // 🎨 الألوان
   static const Color _paperColor = Color(0xFFFBF6E9);
   static const Color _inkColor = Color(0xFF1A1A1A);
   static const Color _goldColor = Color(0xFFB8860B);
@@ -154,9 +147,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📚 تحميل كل السور + تغيير السورة
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadAllSurahs() async {
     try {
       final surahs = await QuranService.loadQuran();
@@ -167,7 +157,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     }
   }
 
-  /// 📖 اسم السورة الحالية
   String _getCurrentSurahName() {
     if (_allSurahs.isEmpty) return 'اقرأ معي';
     try {
@@ -180,7 +169,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     }
   }
 
-  /// 🔄 تغيير السورة
   Future<void> _changeSurah(int newSurahNumber) async {
     _audioPlayer.stop();
     setState(() {
@@ -188,9 +176,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       _isLoading = true;
       _currentAyahIndex = 0;
       _highlightedWordIndex = -1;
-      _userCorrectWords.clear();
-      _userWrongWords.clear();
+      _clearResults();
       _currentSurahNumber = newSurahNumber;
+      _processingStatus = '';
+      _processingError = '';
+      _lastTranscription = '';
+      _accuracy = 0;
     });
 
     try {
@@ -213,7 +204,15 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     }
   }
 
-  /// 📋 نافذة اختيار السورة
+  void _clearResults() {
+    _userCorrectWords.clear();
+    _userWrongWords.clear();
+    _userMissingWords.clear();
+    _userExtraWords.clear();
+    _userTashkeelWrongWords.clear();
+    _wordDetails.clear();
+  }
+
   void _showSurahPicker() {
     final searchController = TextEditingController();
     List<SurahModel> filtered = List.from(_allSurahs);
@@ -300,72 +299,66 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                     ),
                   ),
                   Expanded(
-                    child: filtered.isEmpty
-                        ? const Center(
-                            child: Text('لا توجد نتائج',
-                                style: TextStyle(color: Colors.black54)),
-                          )
-                        : ListView.builder(
-                            controller: scrollController,
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final surah = filtered[index];
-                              final isCurrent =
-                                  surah.number == _currentSurahNumber;
-                              return ListTile(
-                                leading: Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: isCurrent
-                                        ? _goldColor
-                                        : _goldColor
-                                            .withValues(alpha: 0.15),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: _goldColor),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${surah.number}',
-                                      style: TextStyle(
-                                        color: isCurrent
-                                            ? _paperColor
-                                            : _goldColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final surah = filtered[index];
+                        final isCurrent =
+                            surah.number == _currentSurahNumber;
+                        return ListTile(
+                          leading: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? _goldColor
+                                  : _goldColor.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: _goldColor),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${surah.number}',
+                                style: TextStyle(
+                                  color: isCurrent
+                                      ? _paperColor
+                                      : _goldColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
                                 ),
-                                title: Text(
-                                  surah.name,
-                                  style: TextStyle(
-                                    color: _inkColor,
-                                    fontSize: 16,
-                                    fontFamily: 'Amiri',
-                                    fontWeight: isCurrent
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${surah.numberOfAyahs} آية • ${surah.revelationType == "Meccan" ? "مكية" : "مدنية"}',
-                                  style: const TextStyle(
-                                      color: Colors.black54, fontSize: 11),
-                                ),
-                                trailing: isCurrent
-                                    ? const Icon(Icons.check_circle,
-                                        color: Color(0xFFB8860B))
-                                    : null,
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  if (!isCurrent) {
-                                    _changeSurah(surah.number);
-                                  }
-                                },
-                              );
-                            },
+                              ),
+                            ),
                           ),
+                          title: Text(
+                            surah.name,
+                            style: TextStyle(
+                              color: _inkColor,
+                              fontSize: 16,
+                              fontFamily: 'Amiri',
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${surah.numberOfAyahs} آية',
+                            style: const TextStyle(
+                                color: Colors.black54, fontSize: 11),
+                          ),
+                          trailing: isCurrent
+                              ? const Icon(Icons.check_circle,
+                                  color: Color(0xFFB8860B))
+                              : null,
+                          onTap: () {
+                            Navigator.pop(context);
+                            if (!isCurrent) {
+                              _changeSurah(surah.number);
+                            }
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ],
               );
@@ -376,9 +369,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 💾 التحميل والحفظ
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -409,7 +399,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     setState(() {
       _isPremium = isPremium;
       _remainingReadWithMe = remaining;
-      // 🔒 قفل الميزة إذا انتهت التجربة
       _isLocked = !isPremium && remaining <= 0;
     });
   }
@@ -427,9 +416,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     await prefs.setBool(key, value);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📖 تحميل السورة
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadSurah() async {
     try {
       final surah = await QuranService.getSurah(_currentSurahNumber);
@@ -464,14 +450,17 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     _currentWords =
         ayah.text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     _highlightedWordIndex = -1;
-    _userCorrectWords.clear();
-    _userWrongWords.clear();
+    _clearResults();
     _currentPosition = Duration.zero;
     _totalDuration = Duration.zero;
     _currentRepeat = 0;
     _selectedWordIndex = null;
     _hasSaved = false;
     _ayahTranslation = null;
+    _processingStatus = '';
+    _processingError = '';
+    _lastTranscription = '';
+    _accuracy = 0;
 
     _hiddenMask = HifzMode.generateHiddenMask(
       _currentWords.length,
@@ -496,16 +485,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     setState(() => _ayahTranslation = trans);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎧 التشغيل
-  // ═══════════════════════════════════════════════════════════
   Future<void> _togglePlay() async {
     if (_isPlaying) {
       await _audioPlayer.pause();
       if (mounted) setState(() => _isPlaying = false);
       return;
     }
-
     if (_currentAyahIndex >= _ayahs.length) return;
     await _playCurrentAyah();
   }
@@ -556,9 +541,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ⏭️ التنقل
-  // ═══════════════════════════════════════════════════════════
   void _nextAyah() {
     if (_currentAyahIndex < _ayahs.length - 1) {
       _audioPlayer.stop();
@@ -581,11 +563,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎤 التسجيل والتصحيح
-  // ═══════════════════════════════════════════════════════════
   Future<void> _toggleRecording() async {
-    // 🔒 فحص القفل أولاً
     if (_isLocked) {
       setState(() => _isLocked = true);
       return;
@@ -598,12 +576,16 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         if (path != null) await _processRecording(path);
       } catch (e) {
         debugPrint('❌ stop: $e');
-        if (mounted) setState(() => _isRecording = false);
+        if (mounted) {
+          setState(() {
+            _isRecording = false;
+            _processingError = '⚠️ فشل إيقاف التسجيل';
+          });
+        }
       }
       return;
     }
 
-    // 🎁 فحص التجربة المجانية
     if (!_isPremium) {
       final canUse = await UsageService.canReadWithMe();
       if (!canUse) {
@@ -612,7 +594,14 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       }
     }
 
-    if (!await _hasMicPermission()) return;
+    if (!await _hasMicPermission()) {
+      if (mounted) {
+        setState(() {
+          _processingError = '⚠️ يجب منح إذن الميكروفون';
+        });
+      }
+      return;
+    }
 
     try {
       final dir = await getTemporaryDirectory();
@@ -631,12 +620,18 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       if (mounted) {
         setState(() {
           _isRecording = true;
-          _userCorrectWords.clear();
-          _userWrongWords.clear();
+          _clearResults();
+          _processingStatus = '';
+          _processingError = '';
+          _lastTranscription = '';
+          _accuracy = 0;
         });
       }
     } catch (e) {
       debugPrint('❌ record start: $e');
+      if (mounted) {
+        setState(() => _processingError = '⚠️ فشل بدء التسجيل');
+      }
     }
   }
 
@@ -647,126 +642,506 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     return result.isGranted;
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 معالجة التسجيل
+  // ═══════════════════════════════════════════════════════════
   Future<void> _processRecording(String path) async {
-    setState(() => _isProcessing = true);
+    final file = File(path);
+    if (!await file.exists()) {
+      if (mounted) {
+        setState(() {
+          _processingError = '⚠️ ملف التسجيل غير موجود';
+          _isProcessing = false;
+        });
+      }
+      return;
+    }
+
+    final fileSize = await file.length();
+    if (fileSize < 1000) {
+      if (mounted) {
+        setState(() {
+          _processingError = '⚠️ التسجيل قصير جداً';
+          _isProcessing = false;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isProcessing = true;
+        _processingStatus = '📤 جاري إرسال الصوت...';
+        _processingError = '';
+      });
+    }
+
     try {
       final ayah = _ayahs[_currentAyahIndex];
-      final transcribed = await FirebaseAiService.transcribeAudio(
-        path,
-        correctText: ayah.text,
-      );
+
+      // 1️⃣ Whisper
+      if (mounted) {
+        setState(() => _processingStatus = '🎤 جاري تحويل الصوت إلى نص...');
+      }
+
+      String? transcribed;
+      try {
+        transcribed = await FirebaseAiService.transcribeAudio(
+          path,
+          correctText: ayah.text,
+        ).timeout(
+          const Duration(seconds: 90),
+          onTimeout: () {
+            debugPrint('⏱️ انتهت مهلة Whisper');
+            return null;
+          },
+        );
+      } catch (e) {
+        transcribed = null;
+      }
 
       if (transcribed == null || transcribed.trim().isEmpty) {
-        if (mounted) setState(() => _isProcessing = false);
+        if (!mounted) return;
+        setState(() {
+          _isProcessing = false;
+          _processingStatus = '';
+          _processingError =
+              '⚠️ لم يتم التعرف على الصوت.\n\n'
+              'تحقق من:\n'
+              '• القراءة بصوت واضح\n'
+              '• قرب الميكروفون\n'
+              '• عدم وجود ضوضاء';
+        });
+        _deleteFile(path);
         return;
       }
 
-      final result = await FirebaseAiService.analyzeRecitation(
-        userRecitation: transcribed,
-        correctAyah: ayah.text,
-      );
+      if (mounted) {
+        setState(() {
+          _lastTranscription = transcribed!;
+          _processingStatus = '🔍 جاري تحليل التلاوة مع التشكيل...';
+        });
+      }
 
+      // 2️⃣ التحليل
+      Map<String, dynamic> result;
+      try {
+        result = await FirebaseAiService.analyzeRecitation(
+          userRecitation: transcribed,
+          correctAyah: ayah.text,
+        ).timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            return <String, dynamic>{
+              'accuracy': 0,
+              'words': [],
+              'stats': {},
+              'feedback': '⏱️ انتهت مهلة التحليل.',
+            };
+          },
+        );
+      } catch (e) {
+        result = <String, dynamic>{
+          'accuracy': 0,
+          'words': [],
+          'stats': {},
+          'feedback': '⚠️ تعذر التحليل: $e',
+        };
+      }
+
+      // 3️⃣ استخراج النتائج
       final words = result['words'] as List?;
+      final accuracy = (result['accuracy'] as num?)?.toDouble() ?? 0;
+      final feedback = result['feedback']?.toString() ?? '';
+      final stats = result['stats'] as Map<String, dynamic>?;
+
       if (words != null) {
         for (int i = 0; i < words.length && i < _currentWords.length; i++) {
-          final status = words[i]['status']?.toString();
-          if (status == 'correct') {
-            _userCorrectWords.add(i);
-          } else if (status == 'wrong') {
-            _userWrongWords.add(i);
+          final w = words[i];
+          if (w is! Map) continue;
+
+          final status = w['status']?.toString();
+          final userWord = w['user']?.toString() ?? '';
+          final correctWord = w['correct']?.toString() ?? '';
+          final tashkeelIssue = w['tashkeel_issue']?.toString();
+
+          switch (status) {
+            case 'correct':
+              _userCorrectWords.add(i);
+              break;
+            case 'wrong':
+              _userWrongWords.add(i);
+              if (userWord.isNotEmpty && userWord != correctWord) {
+                _wordDetails[i] = 'قرأت: $userWord\nالصحيح: $correctWord';
+              }
+              break;
+            case 'missing':
+              _userMissingWords.add(i);
+              _wordDetails[i] = 'لم تقرأها';
+              break;
+            case 'extra':
+              _userExtraWords.add(i);
+              _wordDetails[i] = 'كلمة زائدة';
+              break;
+            case 'tashkeel_wrong':
+              _userTashkeelWrongWords.add(i);
+              if (tashkeelIssue != null) {
+                _wordDetails[i] = tashkeelIssue;
+              }
+              break;
           }
         }
       }
 
-      if (mounted) setState(() => _isProcessing = false);
+      if (!mounted) return;
+      setState(() {
+        _accuracy = accuracy;
+        _isProcessing = false;
+        _processingStatus = '';
+      });
 
-      // 📊 حفظ التقدم
+      _showResultDialog(feedback, accuracy, stats);
+
+      // حفظ التقدم
       if (!_hasSaved) {
         final correct = _userCorrectWords.length;
-        final wrong = _userWrongWords.length;
+        final wrong = _userWrongWords.length +
+            _userMissingWords.length +
+            _userExtraWords.length +
+            _userTashkeelWrongWords.length;
         final total = correct + wrong;
         if (total > 0) {
-          final acc = (correct / total * 100).round();
           _hasSaved = true;
-
-          await ProgressService.saveAyahResult(
-            surahNumber: _currentSurahNumber,
-            ayahNumber: ayah.number,
-            accuracy: acc,
-            correctWords: correct,
-            totalWords: total,
-          );
-
-          if (mounted) {
-            final unlocked = await ProgressService.getUnlockedAchievements();
-            if (unlocked.isNotEmpty) {
-              await _showAchievementIfNew(unlocked);
-            }
+          try {
+            await ProgressService.saveAyahResult(
+              surahNumber: _currentSurahNumber,
+              ayahNumber: ayah.number,
+              accuracy: accuracy.round(),
+              correctWords: correct,
+              totalWords: _currentWords.length,
+            );
+          } catch (e) {
+            debugPrint('⚠️ فشل حفظ التقدم: $e');
           }
         }
       }
 
-      // 🎁 خصم من التجربة المجانية
+      // خصم من التجربة
       if (!_isPremium) {
         await UsageService.incrementReadWithMe();
         final remaining = await UsageService.remainingReadWithMe();
         if (mounted) {
           setState(() {
             _remainingReadWithMe = remaining;
-            // 🔒 إذا انتهت التجربة → قفل
-            if (remaining <= 0) {
-              _isLocked = true;
-            }
+            if (remaining <= 0) _isLocked = true;
           });
         }
       }
 
-      try {
-        final file = File(path);
-        if (await file.exists()) await file.delete();
-      } catch (_) {}
+      _deleteFile(path);
     } catch (e) {
-      debugPrint('❌ process: $e');
-      if (mounted) setState(() => _isProcessing = false);
+      debugPrint('❌ process error: $e');
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _processingStatus = '';
+          _processingError = '⚠️ تعذر التحليل: $e';
+        });
+      }
+      _deleteFile(path);
     }
   }
 
-  Future<void> _showAchievementIfNew(Set<String> unlocked) async {
-    final prefs = await SharedPreferences.getInstance();
-    final shown = prefs.getStringList('shown_achievements') ?? [];
-    final newOnes = unlocked.where((id) => !shown.contains(id)).toList();
-
-    for (final id in newOnes) {
-      final ach = ProgressService.allAchievements.firstWhere(
-        (a) => a['id'] == id,
-        orElse: () => <String, dynamic>{},
-      );
-      if (ach.isEmpty) continue;
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '🏆 ${ach['name']} — ${ach['desc']}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-            backgroundColor: _goldColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-
-    if (newOnes.isNotEmpty) {
-      await prefs.setStringList('shown_achievements', [...shown, ...newOnes]);
-    }
+  void _deleteFile(String path) {
+    try {
+      File(path).delete().catchError((_) => File(path));
+    } catch (_) {}
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🔒 شاشة القفل الكامل
+  // 📊 نافذة النتيجة (مع تفاصيل التشكيل)
+  // ═══════════════════════════════════════════════════════════
+  void _showResultDialog(
+      String feedback, double accuracy, Map<String, dynamic>? stats) {
+    final correct = _userCorrectWords.length;
+    final wrong = _userWrongWords.length;
+    final missing = _userMissingWords.length;
+    final extra = _userExtraWords.length;
+    final tashkeel = _userTashkeelWrongWords.length;
+    final total = _currentWords.length;
+
+    Color accColor;
+    String accEmoji;
+    if (accuracy >= 95) {
+      accColor = Colors.green;
+      accEmoji = '🌟';
+    } else if (accuracy >= 85) {
+      accColor = Colors.lightGreen;
+      accEmoji = '✅';
+    } else if (accuracy >= 70) {
+      accColor = Colors.orange;
+      accEmoji = '👍';
+    } else if (accuracy >= 50) {
+      accColor = Colors.deepOrange;
+      accEmoji = '⚠️';
+    } else {
+      accColor = Colors.red;
+      accEmoji = '❌';
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _paperColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: accColor, width: 2),
+        ),
+        title: Row(
+          children: [
+            Text(accEmoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'الدقة: ${accuracy.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: accColor,
+                  fontFamily: 'Amiri',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // إحصائيات
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: accColor.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _statBadge('✅', 'صحيح', correct, Colors.green),
+                        _statBadge('❌', 'خطأ', wrong, Colors.red),
+                        _statBadge('🔤', 'تشكيل', tashkeel, Colors.purple),
+                      ],
+                    ),
+                    if (missing > 0 || extra > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          if (missing > 0)
+                            _statBadge('⭕', 'ناقص', missing, Colors.grey),
+                          if (extra > 0)
+                            _statBadge('➕', 'زائد', extra, Colors.orange),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'إجمالي كلمات الآية: $total',
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ملاحظة التشكيل
+              if (tashkeel > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.purple.shade300),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.text_fields,
+                          color: Colors.purple.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '🔤 $tashkeel كلمة صحيحة لكن تشكيلها مختلف. راجع الحركات.',
+                          style: TextStyle(
+                            color: Colors.purple.shade900,
+                            fontSize: 12,
+                            height: 1.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // التقييم
+              if (feedback.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lightbulb_outline,
+                          color: _goldColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          feedback,
+                          style: const TextStyle(
+                            color: _inkColor,
+                            fontSize: 13,
+                            height: 1.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // ما قرأته
+              if (_lastTranscription.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '📝 ما قرأته:',
+                  style: TextStyle(
+                    color: _goldColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Text(
+                    _lastTranscription,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      fontFamily: 'Amiri',
+                      height: 1.8,
+                    ),
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ],
+
+              // النص الصحيح
+              const SizedBox(height: 12),
+              const Text(
+                '📖 النص الصحيح:',
+                style: TextStyle(
+                  color: _goldColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Text(
+                  _ayahs[_currentAyahIndex].text,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontFamily: 'Amiri',
+                    height: 1.8,
+                  ),
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(_clearResults);
+            },
+            child: const Text(
+              '🔄 إعادة',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (_autoAdvance && _currentAyahIndex < _ayahs.length - 1) {
+                _nextAyah();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _goldColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('متابعة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statBadge(String icon, String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(
+          '$value',
+          style: TextStyle(
+            color: color,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          '$icon $label',
+          style: const TextStyle(
+            color: Colors.black54,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔒 شاشة القفل
   // ═══════════════════════════════════════════════════════════
   Widget _buildLockScreen() {
     return Scaffold(
@@ -777,8 +1152,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         elevation: 0,
         title: const Text(
           '🎙️ اقرأ معي',
-          style:
-              TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontFamily: 'Amiri', fontWeight: FontWeight.bold),
         ),
       ),
       body: Center(
@@ -813,7 +1188,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'لقد استخدمت 3 تجارب مجانية\nمن ميزة "اقرأ معي"',
+                'لقد استخدمت 3 تجارب مجانية',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.black54,
@@ -853,17 +1228,11 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      'أو \$22.99 / سنة (وفّر 36%)',
-                      style:
-                          TextStyle(color: Colors.black54, fontSize: 13),
-                    ),
                     SizedBox(height: 12),
                     Text(
                       '✨ تصحيح تلاوة غير محدود\n'
                       '✨ اقرأ معي غير محدود\n'
-                      '✨ أسئلة غير محدودة للمرشد\n'
-                      '✨ جميع القراء والميزات',
+                      '✨ أسئلة غير محدودة للمرشد',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.black87,
@@ -901,11 +1270,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '⏰ أو عاود غداً لتجربة جديدة',
-                style: TextStyle(color: Colors.black54, fontSize: 13),
               ),
             ],
           ),
@@ -1084,7 +1448,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isActive ? _goldColor : Colors.grey.shade300,
+                        color: isActive
+                            ? _goldColor
+                            : Colors.grey.shade300,
                         width: 1.5,
                       ),
                     ),
@@ -1168,7 +1534,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isActive ? _goldColor : Colors.grey.shade300,
+                        color: isActive
+                            ? _goldColor
+                            : Colors.grey.shade300,
                         width: 1.5,
                       ),
                     ),
@@ -1200,7 +1568,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                           ),
                         ),
                         if (isActive)
-                          const Icon(Icons.check_circle, color: _goldColor),
+                          const Icon(Icons.check_circle,
+                              color: _goldColor),
                       ],
                     ),
                   ),
@@ -1235,11 +1604,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Amiri',
               ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'اختر لغة الترجمة',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -1288,140 +1652,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📊 نافذة التقدم
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _showProgressDialog() async {
-    final progress = await ProgressService.getProgress();
-    final streak = await ProgressService.getStreak();
-    final unlocked = await ProgressService.getUnlockedAchievements();
-
-    if (!mounted) return;
-
-    final totalAyahs = progress.length;
-    final streakDays = (streak['days'] as int?) ?? 0;
-
-    double avgAcc = 0;
-    if (progress.isNotEmpty) {
-      final total = progress.values
-          .map((p) => (p['accuracy'] as num?)?.toDouble() ?? 0)
-          .reduce((a, b) => a + b);
-      avgAcc = total / progress.length;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _paperColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _goldColor, width: 1.5),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.bar_chart, color: _goldColor),
-            SizedBox(width: 8),
-            Text(
-              '📊 تقدمي',
-              style: TextStyle(
-                color: _goldColor,
-                fontFamily: 'Amiri',
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _statRow('📖', 'الآيات المقروءة', '$totalAyahs'),
-              _statRow('🎯', 'متوسط الدقة', '${avgAcc.round()}%'),
-              _statRow('🔥', 'سلسلة الأيام', '$streakDays يوم'),
-              _statRow(
-                '🏆',
-                'الإنجازات',
-                '${unlocked.length}/${ProgressService.allAchievements.length}',
-              ),
-              const SizedBox(height: 12),
-              const Divider(),
-              const Text(
-                '🏆 الإنجازات:',
-                style: TextStyle(
-                  color: _goldColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...ProgressService.allAchievements.map((a) {
-                final isUnlocked = unlocked.contains(a['id']);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isUnlocked
-                            ? Icons.check_circle
-                            : Icons.lock_outline,
-                        color: isUnlocked ? Colors.green : Colors.grey,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${a['name']} — ${a['desc']}',
-                          style: TextStyle(
-                            color:
-                                isUnlocked ? _inkColor : Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child:
-                const Text('إغلاق', style: TextStyle(color: _goldColor)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statRow(String icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: _inkColor, fontSize: 14),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: _goldColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════
   // 🎨 بناء الكلمة
   // ═══════════════════════════════════════════════════════════
   Widget _buildWord(int index) {
@@ -1434,11 +1664,28 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     Color color = _inkColor;
     Color? bgColor;
     TextDecoration decoration = TextDecoration.none;
+    double thickness = 2.5;
     String displayWord = word;
 
-    if (_userWrongWords.contains(index)) {
-      color = Colors.red;
+    if (isSelected) {
+      bgColor = Colors.blue.shade100;
+      color = Colors.blue.shade900;
+    } else if (_userTashkeelWrongWords.contains(index)) {
+      // ✅ لون بنفسجي لخطأ التشكيل
+      color = Colors.purple.shade700;
+      bgColor = Colors.purple.shade50;
+    } else if (_userWrongWords.contains(index)) {
+      color = Colors.red.shade700;
       decoration = TextDecoration.underline;
+      thickness = 3;
+    } else if (_userMissingWords.contains(index)) {
+      color = Colors.grey.shade500;
+      decoration = TextDecoration.lineThrough;
+      thickness = 2;
+    } else if (_userExtraWords.contains(index)) {
+      color = Colors.orange.shade700;
+      decoration = TextDecoration.lineThrough;
+      thickness = 2;
     } else if (_userCorrectWords.contains(index)) {
       color = Colors.green.shade700;
     } else if (index == _highlightedWordIndex && !isHidden) {
@@ -1449,41 +1696,39 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       displayWord = HifzMode.getMaskedWord(word);
     }
 
-    if (isSelected) {
-      bgColor = Colors.blue.shade100;
-      color = Colors.blue.shade900;
-    }
-
     return GestureDetector(
       onTap: () => _onWordTap(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
-        decoration: bgColor != null
-            ? BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: bgColor.withValues(alpha: 0.4),
-                    blurRadius: 6,
-                    spreadRadius: 1,
-                  ),
-                ],
-              )
-            : null,
-        child: Text(
-          displayWord,
-          style: TextStyle(
-            color: color,
-            fontSize: 28,
-            fontFamily: 'Amiri',
-            fontWeight: FontWeight.bold,
-            height: 1.6,
-            decoration: decoration,
-            decorationColor: color,
-            decorationThickness: 2.5,
+      child: Tooltip(
+        message: _wordDetails[index] ?? '',
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
+          decoration: bgColor != null
+              ? BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: bgColor.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                )
+              : null,
+          child: Text(
+            displayWord,
+            style: TextStyle(
+              color: color,
+              fontSize: 28,
+              fontFamily: 'Amiri',
+              fontWeight: FontWeight.bold,
+              height: 1.6,
+              decoration: decoration,
+              decorationColor: color,
+              decorationThickness: thickness,
+            ),
           ),
         ),
       ),
@@ -1495,29 +1740,39 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
     setState(() => _selectedWordIndex = index);
 
+    final detail = _wordDetails[index] ?? '';
     final wordTranslation = TranslationService.getWordTranslation(
         _currentWords[index], _currentLang);
 
     if (mounted) {
+      Color bgColor = _goldColor;
+      if (_userTashkeelWrongWords.contains(index)) {
+        bgColor = Colors.purple.shade700;
+      } else if (_userWrongWords.contains(index)) {
+        bgColor = Colors.red.shade700;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            wordTranslation != null
-                ? '👆 "${_currentWords[index]}" — $wordTranslation'
-                : '👆 "${_currentWords[index]}"',
+            detail.isNotEmpty
+                ? '👆 "${_currentWords[index]}"\n\n$detail'
+                : wordTranslation != null
+                    ? '👆 "${_currentWords[index]}" — $wordTranslation'
+                    : '👆 "${_currentWords[index]}"',
             style: const TextStyle(
               fontFamily: 'Amiri',
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: _goldColor,
+          duration: const Duration(seconds: 4),
+          backgroundColor: bgColor,
         ),
       );
     }
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _selectedWordIndex = null);
     });
   }
@@ -1527,7 +1782,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // 🔒 إذا كانت الميزة مقفلة → شاشة القفل
     if (_isLocked) {
       return _buildLockScreen();
     }
@@ -1562,16 +1816,10 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
           ],
         ),
         actions: [
-          // 🔄 زر تغيير السورة
           IconButton(
             icon: const Icon(Icons.menu_book),
             onPressed: _showSurahPicker,
             tooltip: '📚 تغيير السورة',
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            onPressed: _showProgressDialog,
-            tooltip: '📊 تقدمي',
           ),
           IconButton(
             icon: Icon(_autoAdvance ? Icons.sync : Icons.sync_disabled),
@@ -1645,19 +1893,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               icon: Icons.translate,
               label: '📚 ترجمة',
               onTap: _showLanguageDialog,
-            ),
-            const SizedBox(width: 4),
-            _settingChip(
-              icon: Icons.quiz,
-              label: _testMode ? '🎯 اختبار' : '📖 قراءة',
-              onTap: () {
-                setState(() {
-                  _testMode = !_testMode;
-                  _hifzLevel = _testMode ? 5 : 1;
-                  _prepareCurrentAyah();
-                });
-                _savePreferences();
-              },
             ),
           ],
         ),
@@ -1775,7 +2010,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               ),
             ],
           ),
-          // 🎁 شريط التجربة المجانية
           if (!_isPremium) ...[
             const SizedBox(height: 6),
             Container(
@@ -1808,8 +2042,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _remainingReadWithMe > 0
-                        ? '🎁 متبقي: $_remainingReadWithMe تجارب مجانية'
-                        : '🔒 انتهت التجربة المجانية',
+                        ? '🎁 متبقي: $_remainingReadWithMe تجارب'
+                        : '🔒 انتهت التجربة',
                     style: TextStyle(
                       color: _remainingReadWithMe > 0
                           ? Colors.blue
@@ -1844,58 +2078,30 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (_showTajweed && !_testMode && _hifzLevel <= 1)
-                _buildTajweedText()
-              else
-                Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      for (int i = 0; i < _currentWords.length; i++)
-                        _buildWord(i),
-                    ],
-                  ),
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (int i = 0; i < _currentWords.length; i++)
+                      _buildWord(i),
+                  ],
                 ),
+              ),
               if (_showTranslation && _ayahTranslation != null) ...[
                 const SizedBox(height: 20),
                 _buildTranslationBox(),
               ],
               const SizedBox(height: 20),
-              if (_showTajweed && !_testMode) _buildTajweedLegend(),
+              if (_userTashkeelWrongWords.isNotEmpty) _buildTashkeelLegend(),
               if (_userCorrectWords.isNotEmpty ||
-                  _userWrongWords.isNotEmpty)
+                  _userWrongWords.isNotEmpty ||
+                  _userMissingWords.isNotEmpty ||
+                  _userExtraWords.isNotEmpty)
                 _buildStatusBadge(),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTajweedText() {
-    final ayah = _ayahs[_currentAyahIndex];
-    final spans = TajweedColorer.colorizeText(ayah.text);
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          children: spans.map((s) {
-            final color = TajweedColorer.colors[s.type] ?? _inkColor;
-            return TextSpan(
-              text: s.text,
-              style: TextStyle(
-                color: color,
-                fontSize: 28,
-                fontFamily: 'Amiri',
-                fontWeight: FontWeight.bold,
-                height: 2.3,
-              ),
-            );
-          }).toList(),
         ),
       ),
     );
@@ -1948,39 +2154,31 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  Widget _buildTajweedLegend() {
+  Widget _buildTashkeelLegend() {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: _paperColor,
-        border: Border.all(color: _frameColor.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade300),
       ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 6,
-        children: TajweedColorer.colors.entries
-            .where((e) => e.key != TajweedType.normal)
-            .map((e) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration:
-                    BoxDecoration(color: e.value, shape: BoxShape.circle),
+      child: Row(
+        children: [
+          Icon(Icons.text_fields,
+              color: Colors.purple.shade700, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '🔤 الكلمات باللون البنفسجي صحيحة لكن تشكيلها مختلف. اضغط عليها لرؤية التفاصيل.',
+              style: TextStyle(
+                color: Colors.purple.shade900,
+                fontSize: 12,
+                height: 1.5,
               ),
-              const SizedBox(width: 4),
-              Text(
-                TajweedColorer.names[e.key] ?? '',
-                style: const TextStyle(
-                    color: Colors.black54, fontSize: 10),
-              ),
-            ],
-          );
-        }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1988,10 +2186,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   Widget _buildStatusBadge() {
     final correct = _userCorrectWords.length;
     final wrong = _userWrongWords.length;
-    final total = correct + wrong;
-    if (total == 0) return const SizedBox();
-
-    final accuracy = (correct / total * 100).round();
+    final missing = _userMissingWords.length;
+    final extra = _userExtraWords.length;
+    final tashkeel = _userTashkeelWrongWords.length;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -2005,7 +2202,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         children: [
           _statItem('✅', 'صحيح', correct, Colors.green.shade700),
           _statItem('❌', 'خطأ', wrong, Colors.red.shade700),
-          _statItem('🎯', 'الدقة', accuracy, _goldColor),
+          if (missing > 0)
+            _statItem('⭕', 'ناقص', missing, Colors.grey.shade700),
+          if (extra > 0)
+            _statItem('➕', 'زائد', extra, Colors.orange.shade700),
+          if (tashkeel > 0)
+            _statItem('🔤', 'تشكيل', tashkeel, Colors.purple.shade700),
         ],
       ),
     );
@@ -2014,19 +2216,19 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   Widget _statItem(String icon, String label, int value, Color color) {
     return Column(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 20)),
-        const SizedBox(height: 4),
+        Text(icon, style: const TextStyle(fontSize: 18)),
+        const SizedBox(height: 2),
         Text(
-          '$value${label == "الدقة" ? "%" : ""}',
+          '$value',
           style: TextStyle(
             color: color,
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.black54, fontSize: 11),
+          style: const TextStyle(color: Colors.black54, fontSize: 10),
         ),
       ],
     );
@@ -2045,6 +2247,76 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       ),
       child: Column(
         children: [
+          if (_isProcessing || _processingStatus.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade300),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFB8860B),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _processingStatus,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          if (_processingError.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline,
+                      color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _processingError,
+                      style: TextStyle(
+                        color: Colors.red.shade900,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close,
+                        color: Colors.red.shade700, size: 18),
+                    onPressed: () =>
+                        setState(() => _processingError = ''),
+                  ),
+                ],
+              ),
+            ),
+
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
@@ -2077,7 +2349,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                     : (_isProcessing ? Icons.hourglass_top : Icons.mic),
                 label: _isRecording
                     ? 'إيقاف'
-                    : (_isProcessing ? '...' : 'اقرأ'),
+                    : (_isProcessing ? 'جاري...' : 'اقرأ'),
                 onTap: _isProcessing ? null : _toggleRecording,
                 color: _isRecording ? Colors.red : Colors.blue.shade700,
               ),

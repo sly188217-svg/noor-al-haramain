@@ -6,17 +6,18 @@ import '../../core/services/adhan_download_service.dart';
 import '../../core/services/hijri_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🕌 شاشة الأذان ملء الشاشة الاحترافية
-/// ✅ الأذان + الدعاء بعد الأذان تلقائياً
-/// ✅ عدّاد الإقامة
-/// ✅ أزرار: صليت / أقيمت الصلاة
-/// ✅ التاريخ الهجري + الميلادي + المدينة
+/// 🕌 شاشة الأذان والإقامة
+/// ✅ وضعان: أذان عادي / إقامة مباشرة
+/// ✅ الآية الكريمة في وضع الإقامة
+/// ✅ نص على الجوانب
+/// ✅ مؤقت تلقائي
 /// ═══════════════════════════════════════════════════════════
 class AdhanScreen extends StatefulWidget {
   final String prayerName;
   final String prayerTime;
   final String cityName;
   final String muezzinName;
+  final bool isIqamaOnly;
 
   const AdhanScreen({
     super.key,
@@ -24,6 +25,7 @@ class AdhanScreen extends StatefulWidget {
     required this.prayerTime,
     required this.cityName,
     required this.muezzinName,
+    this.isIqamaOnly = false,
   });
 
   @override
@@ -31,99 +33,214 @@ class AdhanScreen extends StatefulWidget {
 }
 
 class _AdhanScreenState extends State<AdhanScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _iqamaPlayer = AudioPlayer();
 
-  late AnimationController _animationController;
+  late AnimationController _pulseController;
+  late AnimationController _fadeController;
   late Animation<double> _pulseAnimation;
+  late Animation<double> _fadeAnimation;
 
+  // 📊 الحالات
   bool _isPlayingAdhan = false;
   bool _isPlayingDua = false;
+  bool _isPlayingIqama = false;
   bool _isMuted = false;
+
+  // 📅 التواريخ
   String _hijriDate = '';
   String _gregorianDate = '';
 
-  // ⏰ عدّاد الإقامة
+  // ⏰ مؤقت الإقامة
   int _iqamaMinutes = 15;
   Duration _iqamaRemaining = Duration.zero;
   Timer? _iqamaTimer;
   bool _showIqamaCounter = false;
 
+  // 📖 الآية الكريمة
+  static const String _iqamaVerse =
+      'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا';
+
+  // ⏰ الأوقات الافتراضية
+  static const Map<String, int> _defaultIqamaTimes = {
+    'الفجر': 20,
+    'الظهر': 15,
+    'العصر': 15,
+    'المغرب': 7,
+    'العشاء': 15,
+  };
+
+  // 📜 نصوص الأذان
+  static const List<String> _adhanPhrases = [
+    'الله أكبر',
+    'الله أكبر',
+    'أشهد أن لا إله إلا الله',
+    'أشهد أن محمداً رسول الله',
+    'حي على الصلاة',
+    'حي على الفلاح',
+    'الله أكبر',
+    'لا إله إلا الله',
+  ];
+
+  // 📜 نصوص الإقامة
+  static const List<String> _iqamaPhrases = [
+    'قد قامت الصلاة',
+    'قد قامت الصلاة',
+    'الله أكبر',
+    'لا إله إلا الله',
+  ];
+
+  String _activeAdhanText = 'الله أكبر';
+  int _phraseIndex = 0;
+  Timer? _phraseTimer;
+  bool _isIqamaMode = false;
+
   @override
   void initState() {
     super.initState();
 
-    // التاريخ
     try {
       _hijriDate = HijriService.getHijriDate(DateTime.now());
-    } catch (e) {
+    } catch (_) {
       _hijriDate = '';
     }
 
-    // التاريخ الميلادي
     final now = DateTime.now();
-    _gregorianDate = '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
+    _gregorianDate =
+        '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
 
-    // الأنيميشن
-    _animationController = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+    _pulseAnimation = Tween<double>(begin: 0.92, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // تحميل وقت الإقامة
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+    _fadeController.forward();
+
     _loadIqamaMinutes();
 
-    // تشغيل الأذان
-    _playAdhan();
+    // ✅ تحديد الوضع
+    if (widget.isIqamaOnly) {
+      // وضع الإقامة المباشر
+      _isIqamaMode = true;
+      _activeAdhanText = _iqamaPhrases[0];
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _playIqama();
+      });
+    } else {
+      // الوضع العادي
+      _playAdhan();
+    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pulseController.dispose();
+    _fadeController.dispose();
     _iqamaTimer?.cancel();
+    _phraseTimer?.cancel();
     _audioPlayer.dispose();
+    _iqamaPlayer.dispose();
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // ⚙️ تحميل وقت الإقامة
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadIqamaMinutes() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _iqamaMinutes = prefs.getInt('iqama_minutes') ?? 15;
-      });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final prayerKey = 'iqama_${widget.prayerName}';
+
+      int? saved = prefs.getInt(prayerKey);
+      if (saved == null) {
+        saved = _defaultIqamaTimes[widget.prayerName] ?? 15;
+      }
+
+      if (mounted) {
+        setState(() => _iqamaMinutes = saved!);
+      }
+      debugPrint(
+          '⏰ وقت الإقامة لصلاة ${widget.prayerName}: $_iqamaMinutes دقيقة');
+    } catch (e) {
+      debugPrint('⚠️ فشل تحميل وقت الإقامة: $e');
     }
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎵 تشغيل الأذان ثم الدعاء تلقائياً
+  // 📜 تدوير النصوص
+  // ═══════════════════════════════════════════════════════════
+  void _startAdhanPhraseRotation() {
+    _phraseTimer?.cancel();
+    _phraseTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      setState(() {
+        _phraseIndex = (_phraseIndex + 1) % _adhanPhrases.length;
+        _activeAdhanText = _adhanPhrases[_phraseIndex];
+      });
+    });
+  }
+
+  void _startIqamaPhraseRotation() {
+    _phraseTimer?.cancel();
+    _phraseTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      setState(() {
+        _phraseIndex = (_phraseIndex + 1) % _iqamaPhrases.length;
+        _activeAdhanText = _iqamaPhrases[_phraseIndex];
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🎵 تشغيل الأذان
   // ═══════════════════════════════════════════════════════════
   Future<void> _playAdhan() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final muezzinId =
+      String muezzinId =
           prefs.getString('selected_muezzin') ?? 'adhan_sudais';
+
+      if (!AdhanDownloadService.adhanFiles.containsKey(muezzinId)) {
+        debugPrint('⚠️ ID غير معروف: $muezzinId → استخدام الافتراضي');
+        muezzinId = 'adhan_sudais';
+      }
 
       final path =
           await AdhanDownloadService.getAssetSourcePath(muezzinId);
+      debugPrint('🎵 محاولة تشغيل: $muezzinId → $path');
+
       if (path == null) {
-        debugPrint('⚠️ الأذان غير متاح: $muezzinId');
+        debugPrint('⚠️ مسار الأذان غير موجود: $muezzinId');
         _playDuaAfterAdhan();
         return;
       }
 
       await _audioPlayer.play(AssetSource(path));
-      if (mounted) setState(() => _isPlayingAdhan = true);
+      if (mounted) {
+        setState(() {
+          _isPlayingAdhan = true;
+          _isIqamaMode = false;
+        });
+        _startAdhanPhraseRotation();
+      }
 
-      // ✅ بعد انتهاء الأذان: تشغيل الدعاء
       _audioPlayer.onPlayerComplete.first.then((_) async {
         if (mounted) setState(() => _isPlayingAdhan = false);
+        _phraseTimer?.cancel();
         await Future.delayed(const Duration(milliseconds: 500));
         await _playDuaAfterAdhan();
       });
@@ -134,23 +251,30 @@ class _AdhanScreenState extends State<AdhanScreen>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤲 تشغيل الدعاء بعد الأذان
+  // 🤲 الدعاء بعد الأذان
   // ═══════════════════════════════════════════════════════════
   Future<void> _playDuaAfterAdhan() async {
-    if (_isMuted) return;
+    if (_isMuted) {
+      _startIqamaCountdown();
+      return;
+    }
+    _phraseTimer?.cancel();
 
     try {
       final duaPlayer = AudioPlayer();
       await duaPlayer.play(
         AssetSource('adhan/dua/dua_after_adhan.mp3'),
       );
-      if (mounted) setState(() => _isPlayingDua = true);
+      if (mounted) {
+        setState(() {
+          _isPlayingDua = true;
+          _activeAdhanText = 'اللهم رب هذه الدعوة التامة';
+        });
+      }
 
       await duaPlayer.onPlayerComplete.first;
       await duaPlayer.dispose();
       if (mounted) setState(() => _isPlayingDua = false);
-
-      // ✅ بعد الدعاء: إظهار عدّاد الإقامة
       _startIqamaCountdown();
     } catch (e) {
       debugPrint('⚠️ فشل تشغيل الدعاء: $e');
@@ -160,13 +284,15 @@ class _AdhanScreenState extends State<AdhanScreen>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ⏰ عدّاد الإقامة
+  // ⏰ مؤقت الإقامة
   // ═══════════════════════════════════════════════════════════
   void _startIqamaCountdown() {
     if (!mounted) return;
+
     setState(() {
       _showIqamaCounter = true;
       _iqamaRemaining = Duration(minutes: _iqamaMinutes);
+      _activeAdhanText = 'انتظار الإقامة';
     });
 
     _iqamaTimer?.cancel();
@@ -176,43 +302,181 @@ class _AdhanScreenState extends State<AdhanScreen>
         return;
       }
       if (_iqamaRemaining.inSeconds > 0) {
-        setState(() {
-          _iqamaRemaining -= const Duration(seconds: 1);
-        });
+        setState(() => _iqamaRemaining -= const Duration(seconds: 1));
       } else {
         timer.cancel();
         setState(() => _showIqamaCounter = false);
+        _playIqama();
       }
     });
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🔇 إسكات / إلغاء الإسكات
+  // 🕌 تشغيل الإقامة
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _playIqama() async {
+    if (!mounted) return;
+
+    debugPrint('🕌 بدء تشغيل الإقامة...');
+
+    setState(() {
+      _isIqamaMode = true;
+      _activeAdhanText = _iqamaPhrases[0];
+    });
+
+    if (_isMuted) {
+      _startIqamaPhraseRotation();
+      return;
+    }
+
+    try {
+      await _iqamaPlayer.play(AssetSource('adhan/iqama.mp3'));
+      if (mounted) {
+        setState(() => _isPlayingIqama = true);
+        _startIqamaPhraseRotation();
+      }
+
+      _iqamaPlayer.onPlayerComplete.first.then((_) {
+        if (mounted) {
+          setState(() => _isPlayingIqama = false);
+          _phraseTimer?.cancel();
+          _activeAdhanText = 'الصلاة';
+        }
+      });
+    } catch (e) {
+      debugPrint('⚠️ فشل تشغيل صوت الإقامة: $e');
+      _startIqamaPhraseRotation();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔇 الإسكات
   // ═══════════════════════════════════════════════════════════
   Future<void> _toggleMute() async {
     if (_isMuted) {
       setState(() => _isMuted = false);
-      if (_isPlayingAdhan || _isPlayingDua) return;
-      // إعادة التشغيل
-      await _playAdhan();
+      if (_isPlayingAdhan || _isPlayingDua || _isPlayingIqama) return;
+
+      if (_isIqamaMode) {
+        _playIqama();
+      } else {
+        _playAdhan();
+      }
     } else {
       setState(() => _isMuted = true);
       await _audioPlayer.stop();
+      await _iqamaPlayer.stop();
       if (mounted) {
         setState(() {
           _isPlayingAdhan = false;
           _isPlayingDua = false;
+          _isPlayingIqama = false;
         });
       }
     }
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ❌ إغلاق الشاشة
+  // ⚙️ إعدادات الإقامة
+  // ═══════════════════════════════════════════════════════════
+  Future<void> _showIqamaSettings() async {
+    int tempMinutes = _iqamaMinutes;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1C2541),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.timer, color: Color(0xFFD4AF37)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '⏰ إقامة ${widget.prayerName}',
+                    style: const TextStyle(
+                        color: Color(0xFFD4AF37), fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$tempMinutes دقيقة',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'الوقت بين الأذان والإقامة',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                Slider(
+                  value: tempMinutes.toDouble(),
+                  min: 1,
+                  max: 30,
+                  divisions: 29,
+                  activeColor: const Color(0xFFD4AF37),
+                  label: '$tempMinutes',
+                  onChanged: (v) =>
+                      setDialogState(() => tempMinutes = v.round()),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('إلغاء',
+                    style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final prayerKey = 'iqama_${widget.prayerName}';
+                  await prefs.setInt(prayerKey, tempMinutes);
+                  if (mounted) {
+                    setState(() {
+                      _iqamaMinutes = tempMinutes;
+                      if (_showIqamaCounter) {
+                        _iqamaRemaining =
+                            Duration(minutes: tempMinutes);
+                      }
+                    });
+                  }
+                  if (context.mounted) Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('حفظ'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ❌ إغلاق
   // ═══════════════════════════════════════════════════════════
   Future<void> _closeScreen() async {
     _iqamaTimer?.cancel();
+    _phraseTimer?.cancel();
     await _audioPlayer.stop();
+    await _iqamaPlayer.stop();
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -230,28 +494,78 @@ class _AdhanScreenState extends State<AdhanScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
-            colors: [Color(0xFF1C2541), Color(0xFF0B132B)],
-            stops: [0.2, 1.0],
+            colors: _isIqamaMode
+                ? [const Color(0xFF2C1A0B), const Color(0xFF0B132B)]
+                : [const Color(0xFF1C2541), const Color(0xFF0B132B)],
+            stops: const [0.2, 1.0],
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // ─── الجزء العلوي: التاريخ + المدينة ───
-              _buildTopBar(),
-
-              // ─── الجزء الأوسط: الشعار + الصلاة ───
-              Expanded(child: _buildMainContent()),
-
-              // ─── الجزء السفلي: الأزرار ───
-              _buildBottomButtons(),
-            ],
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Stack(
+              children: [
+                _buildSideDecorations(),
+                Column(
+                  children: [
+                    _buildTopBar(),
+                    Expanded(child: _buildMainContent()),
+                    _buildBottomButtons(),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSideDecorations() {
+    return IgnorePointer(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildSideText(),
+          _buildSideText(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSideText() {
+    final color = _isIqamaMode
+        ? const Color(0xFFFFB74D)
+        : const Color(0xFFD4AF37);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(6, (i) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 800),
+              opacity: 0.25 + ((i % 3) * 0.15),
+              child: Text(
+                _activeAdhanText,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Amiri',
+                  letterSpacing: 1.5,
+                ),
+                textDirection: TextDirection.rtl,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -264,7 +578,6 @@ class _AdhanScreenState extends State<AdhanScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // المدينة
               Row(
                 children: [
                   const Icon(Icons.location_on,
@@ -280,10 +593,20 @@ class _AdhanScreenState extends State<AdhanScreen>
                   ),
                 ],
               ),
-              // زر الإغلاق
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: _closeScreen,
+              Row(
+                children: [
+                  if (_showIqamaCounter)
+                    IconButton(
+                      icon: const Icon(Icons.timer,
+                          color: Color(0xFFD4AF37), size: 20),
+                      onPressed: _showIqamaSettings,
+                      tooltip: 'مدة الإقامة',
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: _closeScreen,
+                  ),
+                ],
               ),
             ],
           ),
@@ -294,9 +617,7 @@ class _AdhanScreenState extends State<AdhanScreen>
               Text(
                 _gregorianDate,
                 style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 12,
-                ),
+                    color: Colors.white54, fontSize: 12),
               ),
               if (_hijriDate.isNotEmpty)
                 Text(
@@ -309,6 +630,62 @@ class _AdhanScreenState extends State<AdhanScreen>
                 ),
             ],
           ),
+
+          // 📖 الآية الكريمة (تظهر في وضع الإقامة)
+          if (_isIqamaMode) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFD4AF37),
+                    Color(0xFFB8860B),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.menu_book,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      _iqamaVerse,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Amiri',
+                        height: 1.8,
+                      ),
+                      textDirection: TextDirection.rtl,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '📖 سورة النساء — الآية 103',
+              style: TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -325,31 +702,39 @@ class _AdhanScreenState extends State<AdhanScreen>
           ScaleTransition(
             scale: _pulseAnimation,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 130,
+              height: 130,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [Color(0xFF1C2541), Color(0xFF0B132B)],
+                gradient: RadialGradient(
+                  colors: _isIqamaMode
+                      ? [const Color(0xFF2C1A0B), const Color(0xFF0B132B)]
+                      : [const Color(0xFF1C2541), const Color(0xFF0B132B)],
                 ),
                 border: Border.all(
-                  color: const Color(0xFFD4AF37),
+                  color: _isIqamaMode
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFFD4AF37),
                   width: 3,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37)
+                    color: (_isIqamaMode
+                            ? const Color(0xFFFFB74D)
+                            : const Color(0xFFD4AF37))
                         .withValues(alpha: 0.5),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
-                  Icons.mosque,
-                  color: Color(0xFFD4AF37),
-                  size: 60,
+                  _isIqamaMode ? Icons.access_time_filled : Icons.mosque,
+                  color: _isIqamaMode
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFFD4AF37),
+                  size: 65,
                 ),
               ),
             ),
@@ -357,10 +742,18 @@ class _AdhanScreenState extends State<AdhanScreen>
 
           const SizedBox(height: 30),
 
-          const Text(
-            '🕌 حان وقت صلاة',
+          Text(
+            _isPlayingIqama
+                ? '🕌 الإقامة الآن'
+                : _isIqamaMode
+                    ? '🕌 الإقامة'
+                    : _showIqamaCounter
+                        ? '⏰ انتظار الإقامة'
+                        : '🕌 حان وقت صلاة',
             style: TextStyle(
-              color: Colors.white70,
+              color: _isIqamaMode
+                  ? const Color(0xFFFFB74D)
+                  : Colors.white70,
               fontSize: 18,
               fontWeight: FontWeight.w300,
             ),
@@ -369,9 +762,11 @@ class _AdhanScreenState extends State<AdhanScreen>
 
           Text(
             widget.prayerName,
-            style: const TextStyle(
-              color: Color(0xFFD4AF37),
-              fontSize: 50,
+            style: TextStyle(
+              color: _isIqamaMode
+                  ? const Color(0xFFFFB74D)
+                  : const Color(0xFFD4AF37),
+              fontSize: 54,
               fontWeight: FontWeight.bold,
               fontFamily: 'Amiri',
               height: 1.2,
@@ -381,13 +776,15 @@ class _AdhanScreenState extends State<AdhanScreen>
           const SizedBox(height: 16),
 
           Container(
-            width: 120,
+            width: 140,
             height: 2,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  const Color(0xFFD4AF37),
+                  _isIqamaMode
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFFD4AF37),
                   Colors.transparent,
                 ],
               ),
@@ -400,7 +797,7 @@ class _AdhanScreenState extends State<AdhanScreen>
             widget.prayerTime,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
             ),
@@ -408,15 +805,20 @@ class _AdhanScreenState extends State<AdhanScreen>
 
           const SizedBox(height: 12),
 
-          // اسم المؤذن
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+              color: (_isIqamaMode
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFFD4AF37))
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                color: (_isIqamaMode
+                        ? const Color(0xFFFFB74D)
+                        : const Color(0xFFD4AF37))
+                    .withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -424,14 +826,18 @@ class _AdhanScreenState extends State<AdhanScreen>
               children: [
                 Icon(
                   _isMuted ? Icons.volume_off : Icons.volume_up,
-                  color: const Color(0xFFD4AF37),
+                  color: _isIqamaMode
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFFD4AF37),
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'أذان: ${widget.muezzinName}',
-                  style: const TextStyle(
-                    color: Color(0xFFD4AF37),
+                  style: TextStyle(
+                    color: _isIqamaMode
+                        ? const Color(0xFFFFB74D)
+                        : const Color(0xFFD4AF37),
                     fontSize: 12,
                   ),
                 ),
@@ -439,7 +845,7 @@ class _AdhanScreenState extends State<AdhanScreen>
             ),
           ),
 
-          // ⏰ عدّاد الإقامة
+          // ⏰ مؤقت الإقامة
           if (_showIqamaCounter) ...[
             const SizedBox(height: 24),
             Container(
@@ -449,9 +855,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                 color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: const Color(0xFFD4AF37),
-                  width: 2,
-                ),
+                    color: const Color(0xFFD4AF37), width: 2),
               ),
               child: Column(
                 children: [
@@ -474,6 +878,56 @@ class _AdhanScreenState extends State<AdhanScreen>
                       fontFamily: 'monospace',
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 200,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: _iqamaMinutes > 0
+                            ? 1 -
+                                (_iqamaRemaining.inSeconds /
+                                    (_iqamaMinutes * 60))
+                            : 0,
+                        backgroundColor:
+                            const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                        color: const Color(0xFFD4AF37),
+                        minHeight: 4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // 🕌 حالة الإقامة
+          if (_isPlayingIqama) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: const Color(0xFFFFB74D), width: 2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.campaign,
+                      color: Color(0xFFFFB74D), size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    _activeAdhanText,
+                    style: const TextStyle(
+                      color: Color(0xFFFFB74D),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Amiri',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -486,25 +940,41 @@ class _AdhanScreenState extends State<AdhanScreen>
   }
 
   Widget _buildBottomButtons() {
+    String statusText;
+    Color statusColor;
+
+    if (_isPlayingAdhan) {
+      statusText = '🎧 الأذان يُشغَّل الآن...';
+      statusColor = Colors.white54;
+    } else if (_isPlayingDua) {
+      statusText = '🤲 جاري الدعاء بعد الأذان...';
+      statusColor = Colors.white54;
+    } else if (_isPlayingIqama) {
+      statusText = '🕌 الإقامة تُشغَّل الآن...';
+      statusColor = const Color(0xFFFFB74D);
+    } else if (_isIqamaMode) {
+      statusText = '🕌 انتهت الإقامة — أقيمت الصلاة';
+      statusColor = const Color(0xFFFFB74D);
+    } else if (_showIqamaCounter) {
+      statusText = '⏰ في انتظار الإقامة...';
+      statusColor = const Color(0xFFD4AF37);
+    } else {
+      statusText = '✅ انتهى الأذان';
+      statusColor = Colors.white54;
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // الحالة
           Text(
-            _isPlayingAdhan
-                ? '🎧 الأذان يُشغَّل الآن...'
-                : _isPlayingDua
-                    ? '🤲 جاري الدعاء بعد الأذان...'
-                    : '✅ انتهى الأذان',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            statusText,
+            style: TextStyle(color: statusColor, fontSize: 13),
           ),
           const SizedBox(height: 12),
 
-          // صف الأزرار: إسكات + صليت
           Row(
             children: [
-              // زر إسكات
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _toggleMute,
@@ -516,9 +986,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD4AF37),
                     side: const BorderSide(
-                      color: Color(0xFFD4AF37),
-                      width: 2,
-                    ),
+                        color: Color(0xFFD4AF37), width: 2),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -527,7 +995,6 @@ class _AdhanScreenState extends State<AdhanScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              // زر صليت
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () async {
@@ -557,7 +1024,6 @@ class _AdhanScreenState extends State<AdhanScreen>
 
           const SizedBox(height: 10),
 
-          // زر إغلاق
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

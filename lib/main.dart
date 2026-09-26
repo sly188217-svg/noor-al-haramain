@@ -17,7 +17,7 @@ Future<void> main() async {
 
   // 1. تحميل ملف .env
   try {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: 'assets/.env');
     debugPrint('✅ تم تحميل ملف .env');
   } catch (e) {
     debugPrint('⚠️ تعذر تحميل .env: $e');
@@ -53,15 +53,13 @@ Future<void> main() async {
       appleProvider: AppleProvider.debug,
     );
     debugPrint('✅ تم تفعيل App Check (Debug Mode)');
-    debugPrint('🔑 Debug Token: A0CD6B2F-9F70-4037-B04C-7C1D58CE299D');
   } catch (e) {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // 5. تهيئة الإشعارات + طلب صلاحية ملء الشاشة
+  // 5. تهيئة الإشعارات
   try {
     await NotificationService.initialize();
-    // ✅ طلب صلاحية ملء الشاشة (مطلوب لأندرويد 14+)
     await NotificationService.requestFullScreenIntentPermission();
     debugPrint('✅ تم تهيئة الإشعارات + طلب صلاحية ملء الشاشة');
   } catch (e) {
@@ -94,8 +92,8 @@ Future<void> main() async {
                 const SizedBox(height: 12),
                 Text(
                   details.exceptionAsString(),
-                  style:
-                      const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(
+                      color: Colors.grey, fontSize: 12),
                   textAlign: TextAlign.center,
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
@@ -122,11 +120,19 @@ class MyApp extends StatelessWidget {
         title: 'نور الحرمين',
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
+
         theme: ThemeData(
+          useMaterial3: false,
           primarySwatch: Colors.green,
           scaffoldBackgroundColor: const Color(0xFF0B132B),
-          useMaterial3: true,
+          fontFamily: 'Amiri',
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1C2541),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
         ),
+
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
@@ -146,6 +152,7 @@ class MyApp extends StatelessWidget {
               prayerTime: args?['prayerTime'] ?? '--:--',
               cityName: args?['cityName'] ?? '',
               muezzinName: args?['muezzinName'] ?? '',
+              isIqamaOnly: args?['isIqamaOnly'] == true,
             );
           },
         },

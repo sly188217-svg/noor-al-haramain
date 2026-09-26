@@ -115,3 +115,4 @@ Group
 android/app/*.jks
 android/app/*.keystore
 android/key.properties
+assets/.env

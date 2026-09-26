@@ -1,474 +1,272 @@
-import 'tajweed_rules.dart';
+import 'package:flutter/foundation.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎯 مصحح التلاوة مع تصحيح التشكيل بالذكاء الاصطناعي
+/// 🎯 مقارن التلاوة الذكي — يراعي التشكيل
+/// ✅ مقارنة مزدوجة (بدون تشكيل + مع تشكيل)
+/// ✅ كشف أخطاء التشكيل
+/// ✅ Levenshtein Distance للأخطاء البسيطة
+/// ✅ عرض تفاصيل دقيقة
 /// ═══════════════════════════════════════════════════════════
-
-class LetterFeedback {
-  final String letter;
-  final String status;
-  const LetterFeedback({required this.letter, required this.status});
-}
-
-class WordFeedback {
-  final String userWord;
-  final String correctWord;
-  final String status;
-  final List<LetterFeedback> letters;
-  final List<TajweedRule> tajweedRules;
-  final String? tashkeelNote; // ملاحظة عن خطأ التشكيل
-
-  const WordFeedback({
-    required this.userWord,
-    required this.correctWord,
-    required this.status,
-    this.letters = const [],
-    this.tajweedRules = const [],
-    this.tashkeelNote,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'user': userWord,
-        'correct': correctWord,
-        'status': status,
-        'tashkeelNote': tashkeelNote,
-      };
-}
-
 class RecitationResult {
   final int accuracy;
-  final List<WordFeedback> words;
+  final List<Map<String, dynamic>> words;
   final String feedback;
-  final int totalWords;
-  final int correctWords;
-  final int wrongWords;
-  final int missingWords;
-  final int extraWords;
+  final Map<String, int> stats;
 
-  const RecitationResult({
+  RecitationResult({
     required this.accuracy,
     required this.words,
     required this.feedback,
-    required this.totalWords,
-    required this.correctWords,
-    required this.wrongWords,
-    required this.missingWords,
-    required this.extraWords,
+    required this.stats,
   });
 
   Map<String, dynamic> toJson() => {
         'accuracy': accuracy,
-        'words': words.map((w) => w.toJson()).toList(),
+        'words': words,
         'feedback': feedback,
-        'stats': {
-          'total': totalWords,
-          'correct': correctWords,
-          'wrong': wrongWords,
-          'missing': missingWords,
-          'extra': extraWords,
-        },
+        'stats': stats,
       };
 }
 
 class RecitationCorrector {
-  static const String _tashkeel = 'ًٌٍَُِّْٰٕٓٔ';
-  static const String _punctuation = '،.؛:!?()[]{}«»""\'\'`~@#\$%^&*_-+=|/\\<>';
-
   // ═══════════════════════════════════════════════════════════
-  // 🔧 المعالجة الأساسية
+  // 🔤 إزالة التشكيل
   // ═══════════════════════════════════════════════════════════
-
-  static String removeTashkeel(String text) {
-    final buffer = StringBuffer();
-    for (final r in text.runes) {
-      final ch = String.fromCharCode(r);
-      if (!_tashkeel.contains(ch)) buffer.write(ch);
-    }
-    return buffer.toString();
-  }
-
-  static bool hasTashkeel(String text) {
-    for (final r in text.runes) {
-      if (_tashkeel.contains(String.fromCharCode(r))) return true;
-    }
-    return false;
-  }
-
-  static String normalize(String text) {
-    var result = removeTashkeel(text);
-    result = result
-        .replaceAll('أ', 'ا')
-        .replaceAll('إ', 'ا')
-        .replaceAll('آ', 'ا')
-        .replaceAll('ٱ', 'ا')
-        .replaceAll('ى', 'ي')
-        .replaceAll('ئ', 'ي')
-        .replaceAll('ؤ', 'و')
-        .replaceAll('ة', 'ه')
-        .replaceAll('ـ', '');
-    return result.trim();
-  }
-
-  static String cleanPunctuation(String text) {
-    final buffer = StringBuffer();
-    for (final r in text.runes) {
-      final ch = String.fromCharCode(r);
-      if (!_punctuation.contains(ch)) buffer.write(ch);
-    }
-    return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  static List<String> _splitWords(String text) {
+  static String stripTashkeel(String text) {
     return text
-        .split(RegExp(r'\s+'))
-        .where((w) => w.trim().isNotEmpty)
-        .toList();
+        // حركات قصيرة
+        .replaceAll(RegExp(r'[\u064B-\u0652]'), '')
+        // ألف خنجرية
+        .replaceAll('\u0670', '')
+        // تطويل
+        .replaceAll('\u0640', '')
+        // همزة الوصل
+        .replaceAll('\u0671', 'ا')
+        .trim();
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎯 المقارنة الرئيسية - تفهم التشكيل
+  // 🧹 تنظيف النص
   // ═══════════════════════════════════════════════════════════
+  static String _clean(String text) {
+    return text
+        .replaceAll(RegExp(r'[،.؛؟!:«»""]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
 
-  /// المقارنة مع التشكيل المُعاد بناؤه
-  /// [reconstructedUser] هو نص المستخدم بعد إضافة التشكيل بواسطة AI
+  // ═══════════════════════════════════════════════════════════
+  // 🎯 المقارنة الكاملة مع التشكيل
+  // ═══════════════════════════════════════════════════════════
   static RecitationResult compareWithTashkeel({
     required String originalUser,
     required String reconstructedUser,
     required String correctText,
-    required Map<String, dynamic> tashkeelResult,
+    Map<String, dynamic>? tashkeelResult,
   }) {
-    // محاذاة الكلمات
-    final cleanCorrect = cleanPunctuation(correctText);
-    final cleanReconstructed = cleanPunctuation(reconstructedUser);
+    final userWords = _clean(originalUser).split(' ').where((w) => w.isNotEmpty).toList();
+    final reconstructedWords =
+        _clean(reconstructedUser).split(' ').where((w) => w.isNotEmpty).toList();
+    final correctWords =
+        _clean(correctText).split(' ').where((w) => w.isNotEmpty).toList();
 
-    final correctWords = _splitWords(cleanCorrect);
-    final reconstructedWords = _splitWords(cleanReconstructed);
-
-    // خريطة التشكيل من AI: { "الحمد": "الْحَمْدُ", ... }
-    final tashkeelMap = <String, String>{};
-    if (tashkeelResult['words'] is Map) {
-      (tashkeelResult['words'] as Map).forEach((k, v) {
-        tashkeelMap[k.toString()] = v.toString();
-      });
-    }
-
-    final results = <WordFeedback>[];
+    final wordsResult = <Map<String, dynamic>>[];
     int correctCount = 0;
     int wrongCount = 0;
     int missingCount = 0;
     int extraCount = 0;
+    int tashkeelIssues = 0;
 
-    final minLen = correctWords.length < reconstructedWords.length
-        ? correctWords.length
-        : reconstructedWords.length;
-
-    for (int i = 0; i < minLen; i++) {
-      final userWord = reconstructedWords[i];
+    // ═══════════════════════════════════════════════════════════
+    // 📊 مقارنة كلمة بكلمة
+    // ═══════════════════════════════════════════════════════════
+    for (int i = 0; i < correctWords.length; i++) {
       final correctWord = correctWords[i];
+      final correctStripped = stripTashkeel(correctWord);
 
-      // 1. مقارنة بدون تشكيل أولاً
-      final uNorm = normalize(userWord);
-      final cNorm = normalize(correctWord);
+      final userWord = i < userWords.length ? userWords[i] : '';
+      final userStripped = stripTashkeel(userWord);
 
-      if (uNorm != cNorm) {
-        // كلمة خطأ
-        results.add(WordFeedback(
-          userWord: userWord,
-          correctWord: correctWord,
-          status: 'wrong',
-          tajweedRules: TajweedRules.detect(correctWord),
-        ));
+      final reconstructedWord =
+          i < reconstructedWords.length ? reconstructedWords[i] : '';
+      final reconstructedStripped = stripTashkeel(reconstructedWord);
+
+      String status;
+      String? tashkeelIssue;
+
+      if (userWord.isEmpty) {
+        // ⭕ كلمة ناقصة
+        status = 'missing';
+        missingCount++;
+      } else if (userStripped == correctStripped) {
+        // ✅ الكلمة صحيحة بدون تشكيل — تحقق من التشكيل
+        if (userWord == correctWord) {
+          // ✅ مطابقة كاملة (حرف + تشكيل)
+          status = 'correct';
+          correctCount++;
+        } else {
+          // ⚠️ نفس الكلمة بدون تشكيل — نتحقق من التشكيل
+          // إذا كان AI أضاف تشكيلاً مطابقاً، اعتبرها صحيحة
+          if (reconstructedWord.isNotEmpty &&
+              reconstructedStripped == correctStripped) {
+            // الكلمة نفسها، التشكيل مختلف قليلاً
+            // نقارن الحروف الكاملة
+            if (reconstructedWord == correctWord) {
+              status = 'correct';
+              correctCount++;
+            } else {
+              // تشكيل مختلف — لكن الكلمة صحيحة
+              status = 'tashkeel_wrong';
+              tashkeelIssue =
+                  'الكلمة صحيحة، لكن التشكيل مختلف:\nأنت: $userWord\nالصحيح: $correctWord';
+              tashkeelIssues++;
+              wrongCount++;
+            }
+          } else {
+            // الكلمة صحيحة بدون تشكيل، ولا يوجد بيانات تشكيل
+            status = 'correct';
+            correctCount++;
+          }
+        }
+      } else if (_isSimilar(userStripped, correctStripped)) {
+        // ⚠️ خطأ بسيط في حرف واحد
+        status = 'wrong';
         wrongCount++;
-        continue;
-      }
-
-      // 2. الكلمات متطابقة بدون تشكيل → فحص التشكيل
-      // استخدام النص الأصلي (بدون تشكيل) للبحث في خريطة AI
-      final userOriginalWord = i < _splitWords(cleanPunctuation(originalUser)).length
-          ? _splitWords(cleanPunctuation(originalUser))[i]
-          : '';
-
-      // هل AI أعاد بناء هذه الكلمة؟
-      final aiReconstructed = tashkeelMap[userOriginalWord];
-
-      // 3. مقارنة التشكيل
-      if (aiReconstructed != null &&
-          aiReconstructed.isNotEmpty &&
-          aiReconstructed != correctWord) {
-        // هناك خطأ في التشكيل
-        results.add(WordFeedback(
-          userWord: aiReconstructed,
-          correctWord: correctWord,
-          status: 'wrong',
-          tashkeelNote: 'خطأ في التشكيل',
-          tajweedRules: TajweedRules.detect(correctWord),
-        ));
-        wrongCount++;
-      } else if (userWord == correctWord) {
-        // مطابقة تامة (نادراً ما يحدث من Whisper)
-        results.add(WordFeedback(
-          userWord: userWord,
-          correctWord: correctWord,
-          status: 'correct',
-          tajweedRules: TajweedRules.detect(correctWord),
-        ));
-        correctCount++;
       } else {
-        // بدون تشكيل لكن صحيح
-        results.add(WordFeedback(
-          userWord: userWord,
-          correctWord: correctWord,
-          status: 'correct',
-          tajweedRules: TajweedRules.detect(correctWord),
-        ));
-        correctCount++;
+        // ❌ كلمة مختلفة تماماً
+        status = 'wrong';
+        wrongCount++;
       }
-    }
 
-    // كلمات ناقصة
-    for (int i = minLen; i < correctWords.length; i++) {
-      results.add(WordFeedback(
-        userWord: '',
-        correctWord: correctWords[i],
-        status: 'missing',
-        tajweedRules: TajweedRules.detect(correctWords[i]),
-      ));
-      missingCount++;
+      wordsResult.add({
+        'user': userWord,
+        'correct': correctWord,
+        'status': status,
+        'tashkeel_issue': tashkeelIssue,
+      });
     }
 
     // كلمات زائدة
-    for (int i = minLen; i < reconstructedWords.length; i++) {
-      results.add(WordFeedback(
-        userWord: reconstructedWords[i],
-        correctWord: '',
-        status: 'extra',
-      ));
-      extraCount++;
-    }
-
-    final total = results.length;
-    final accuracy = total > 0 ? ((correctCount / total) * 100).round() : 0;
-
-    return RecitationResult(
-      accuracy: accuracy,
-      words: results,
-      feedback: _buildFeedback(accuracy, correctCount, wrongCount, missingCount, extraCount),
-      totalWords: total,
-      correctWords: correctCount,
-      wrongWords: wrongCount,
-      missingWords: missingCount,
-      extraWords: extraCount,
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 المقارنة بدون تشكيل (احتياطية)
-  // ═══════════════════════════════════════════════════════════
-
-  static RecitationResult compare({
-    required String userText,
-    required String correctText,
-  }) {
-    final cleanUser = cleanPunctuation(userText);
-    final cleanCorrect = cleanPunctuation(correctText);
-    final userHasTashkeel = hasTashkeel(cleanUser);
-
-    final userWords = _splitWords(cleanUser);
-    final correctWords = _splitWords(cleanCorrect);
-
-    final alignment = _smartAlign(userWords, correctWords, userHasTashkeel);
-
-    final results = <WordFeedback>[];
-    int correctCount = 0, wrongCount = 0, missingCount = 0, extraCount = 0;
-
-    for (final pair in alignment) {
-      final u = pair.userWord;
-      final c = pair.correctWord;
-
-      if (u == null || u.isEmpty) {
-        results.add(WordFeedback(
-          userWord: '',
-          correctWord: c ?? '',
-          status: 'missing',
-          tajweedRules: c != null ? TajweedRules.detect(c) : [],
-        ));
-        missingCount++;
-        continue;
-      }
-
-      if (c == null || c.isEmpty) {
-        results.add(WordFeedback(
-          userWord: u,
-          correctWord: '',
-          status: 'extra',
-        ));
+    if (userWords.length > correctWords.length) {
+      for (int i = correctWords.length; i < userWords.length; i++) {
         extraCount++;
-        continue;
-      }
-
-      final comparison = _compareWords(u, c, userHasTashkeel);
-      results.add(WordFeedback(
-        userWord: u,
-        correctWord: c,
-        status: comparison.status,
-        letters: comparison.letters,
-        tajweedRules: TajweedRules.detect(c),
-      ));
-
-      if (comparison.status == 'correct') {
-        correctCount++;
-      } else {
-        wrongCount++;
+        wordsResult.add({
+          'user': userWords[i],
+          'correct': '',
+          'status': 'extra',
+        });
       }
     }
 
-    final total = results.length;
-    final accuracy = total > 0 ? ((correctCount / total) * 100).round() : 0;
+    // ═══════════════════════════════════════════════════════════
+    // 📊 حساب الدقة
+    // ═══════════════════════════════════════════════════════════
+    final total = correctWords.length;
+    final accuracy = total > 0 ? (correctCount / total * 100).round() : 0;
+
+    // ═══════════════════════════════════════════════════════════
+    // 💬 التقييم
+    // ═══════════════════════════════════════════════════════════
+    String feedback;
+    if (accuracy >= 95 && tashkeelIssues == 0) {
+      feedback = '🌟 ما شاء الله! تلاوة ممتازة مع ضبط كامل للتشكيل.';
+    } else if (accuracy >= 95 && tashkeelIssues > 0) {
+      feedback =
+          '⭐ تلاوة ممتازة! لكن راجع التشكيل في $tashkeelIssues كلمة.';
+    } else if (accuracy >= 85) {
+      feedback = '✅ تلاوة جيدة. راجع الكلمات المميزة بالأحمر.';
+    } else if (accuracy >= 70) {
+      feedback =
+          '👍 تلاوة مقبولة. ركّز على التشكيل والكلمات الملونة.';
+    } else if (accuracy >= 50) {
+      feedback =
+          '⚠️ تحتاج مراجعة. اقرأ ببطء وركّز على كل كلمة مع تشكيلها.';
+    } else {
+      feedback =
+          '❌ تلاوة ضعيفة. استمع للقارئ أولاً، ثم أعد القراءة.';
+    }
+
+    // ملاحظة إضافية عن التشكيل
+    if (tashkeelIssues > 0) {
+      feedback +=
+          '\n\n🔤 **ملاحظة التشكيل**: $tashkeelIssues كلمة صحيحة لكن حركاتها مختلفة. '
+          'راجع الفتحة (َ) والضمة (ُ) والكسرة (ِ).';
+    }
 
     return RecitationResult(
       accuracy: accuracy,
-      words: results,
-      feedback: _buildFeedback(accuracy, correctCount, wrongCount, missingCount, extraCount),
-      totalWords: total,
-      correctWords: correctCount,
-      wrongWords: wrongCount,
-      missingWords: missingCount,
-      extraWords: extraCount,
+      words: wordsResult,
+      feedback: feedback,
+      stats: {
+        'correct': correctCount,
+        'wrong': wrongCount,
+        'missing': missingCount,
+        'extra': extraCount,
+        'total': total,
+        'tashkeel_issues': tashkeelIssues,
+      },
     );
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🧠 المحاذاة الذكية
+  // 🔍 التحقق من تشابه كلمتين
   // ═══════════════════════════════════════════════════════════
+  static bool _isSimilar(String a, String b) {
+    if (a.isEmpty || b.isEmpty) return false;
+    if (a == b) return true;
 
-  static List<_WordPair> _smartAlign(
-    List<String> userWords,
-    List<String> correctWords,
-    bool strict,
-  ) {
-    final result = <_WordPair>[];
-    int i = 0, j = 0;
-    String norm(String w) => strict ? w : normalize(w);
+    final distance = _levenshtein(a, b);
+    final maxLen = a.length > b.length ? a.length : b.length;
 
-    while (i < userWords.length || j < correctWords.length) {
-      if (i >= userWords.length) {
-        result.add(_WordPair(userWord: null, correctWord: correctWords[j]));
-        j++;
-        continue;
-      }
-      if (j >= correctWords.length) {
-        result.add(_WordPair(userWord: userWords[i], correctWord: null));
-        i++;
-        continue;
-      }
-
-      final uNorm = norm(userWords[i]);
-      final cNorm = norm(correctWords[j]);
-
-      if (uNorm == cNorm) {
-        result.add(_WordPair(userWord: userWords[i], correctWord: correctWords[j]));
-        i++;
-        j++;
-        continue;
-      }
-
-      final uNext = i + 1 < userWords.length ? norm(userWords[i + 1]) : null;
-      final cNext = j + 1 < correctWords.length ? norm(correctWords[j + 1]) : null;
-
-      if (uNext != null && uNext == cNorm) {
-        result.add(_WordPair(userWord: userWords[i], correctWord: null));
-        i++;
-        continue;
-      }
-      if (cNext != null && cNext == uNorm) {
-        result.add(_WordPair(userWord: null, correctWord: correctWords[j]));
-        j++;
-        continue;
-      }
-
-      result.add(_WordPair(userWord: userWords[i], correctWord: correctWords[j]));
-      i++;
-      j++;
-    }
-
-    return result;
+    // يسمح بخطأ واحد لكل 4 حروف (بما فيها 0)
+    if (maxLen <= 4) return distance <= 1;
+    return distance <= (maxLen / 4).ceil();
   }
 
-  static _WordComparison _compareWords(String userWord, String correctWord, bool strict) {
-    if (userWord == correctWord) {
-      return _WordComparison(
-        status: 'correct',
-        letters: userWord.split('').map((c) => LetterFeedback(letter: c, status: 'correct')).toList(),
-      );
-    }
+  // ═══════════════════════════════════════════════════════════
+  // 📐 Levenshtein Distance
+  // ═══════════════════════════════════════════════════════════
+  static int _levenshtein(String a, String b) {
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
 
-    if (!strict) {
-      if (normalize(userWord) == normalize(correctWord)) {
-        return _WordComparison(
-          status: 'correct',
-          letters: correctWord.split('').map((c) => LetterFeedback(letter: c, status: 'correct')).toList(),
-        );
-      }
-    }
-
-    final letters = _compareLetters(
-      strict ? userWord : removeTashkeel(userWord),
-      strict ? correctWord : removeTashkeel(correctWord),
+    final matrix = List.generate(
+      a.length + 1,
+      (_) => List.filled(b.length + 1, 0),
     );
-    return _WordComparison(status: 'wrong', letters: letters);
-  }
 
-  static List<LetterFeedback> _compareLetters(String user, String correct) {
-    final result = <LetterFeedback>[];
-    final maxLen = correct.length > user.length ? correct.length : user.length;
+    for (int i = 0; i <= a.length; i++) {
+      matrix[i][0] = i;
+    }
+    for (int j = 0; j <= b.length; j++) {
+      matrix[0][j] = j;
+    }
 
-    for (int i = 0; i < maxLen; i++) {
-      final u = i < user.length ? user[i] : null;
-      final c = i < correct.length ? correct[i] : null;
-
-      if (u == null) {
-        result.add(LetterFeedback(letter: c!, status: 'missing'));
-      } else if (c == null) {
-        result.add(LetterFeedback(letter: u, status: 'extra'));
-      } else if (u == c) {
-        result.add(LetterFeedback(letter: c, status: 'correct'));
-      } else {
-        result.add(LetterFeedback(letter: c, status: 'wrong'));
+    for (int i = 1; i <= a.length; i++) {
+      for (int j = 1; j <= b.length; j++) {
+        final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+        matrix[i][j] = [
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost,
+        ].reduce((x, y) => x < y ? x : y);
       }
     }
-    return result;
+
+    return matrix[a.length][b.length];
   }
 
-  static String _buildFeedback(int accuracy, int correct, int wrong, int missing, int extra) {
-    if (accuracy == 100) return '🌟 ممتاز! تلاوة صحيحة تماماً';
-    if (accuracy >= 95) return '✅ تلاوة ممتازة — $wrong خطأ';
-    if (accuracy >= 90) return '✅ تلاوة جيدة جداً — راجع $wrong كلمة';
-    if (accuracy >= 75) {
-      final parts = <String>[];
-      if (wrong > 0) parts.add('$wrong خطأ');
-      if (missing > 0) parts.add('$missing ناقص');
-      if (extra > 0) parts.add('$extra زائد');
-      return '👍 تلاوة جيدة — ${parts.join("، ")}';
-    }
-    if (accuracy >= 50) {
-      final parts = <String>[];
-      if (wrong > 0) parts.add('$wrong خطأ');
-      if (missing > 0) parts.add('$missing ناقص');
-      if (extra > 0) parts.add('$extra زائد');
-      return '⚠️ راجع: ${parts.join("، ")}';
-    }
-    return '❌ راجع الآية جيداً ثم أعد المحاولة';
+  // ═══════════════════════════════════════════════════════════
+  // 🎨 مقارنة مبسطة (للتوافق مع الكود القديم)
+  // ═══════════════════════════════════════════════════════════
+  static RecitationResult compare({
+    required String userRecitation,
+    required String correctAyah,
+  }) {
+    return compareWithTashkeel(
+      originalUser: userRecitation,
+      reconstructedUser: userRecitation,
+      correctText: correctAyah,
+    );
   }
-}
-
-class _WordPair {
-  final String? userWord;
-  final String? correctWord;
-  const _WordPair({this.userWord, this.correctWord});
-}
-
-class _WordComparison {
-  final String status;
-  final List<LetterFeedback> letters;
-  const _WordComparison({required this.status, required this.letters});
 }

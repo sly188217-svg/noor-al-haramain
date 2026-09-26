@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -7,11 +8,9 @@ import 'usage_service.dart';
 import 'recitation_corrector.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🤖 خدمة الذكاء الاصطناعي — Groq API
-/// ✅ Whisper لتحويل الصوت إلى نص (مع prompt لتحسين الدقة)
-/// ✅ Groq AI للمساعد الذكي
-/// ✅ إعادة بناء التشكيل للتلاوة
-/// ✅ مقارنة محلية للتلاوة (RecitationCorrector)
+/// 🤖 خدمة الذكاء الاصطناعي — Groq API (مباشر)
+/// ✅ Whisper v3 Turbo لتحويل الصوت
+/// ✅ مقارنة ذكية مع التشكيل
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -24,8 +23,6 @@ class FirebaseAiService {
   static const List<String> _models = [
     'openai/gpt-oss-120b',
     'openai/gpt-oss-20b',
-    'qwen/qwen3.8-27b',
-    'allam-2-7b',
     'groq/compound',
     'groq/compound-mini',
   ];
@@ -34,7 +31,7 @@ class FirebaseAiService {
   static const String _activeModelKey = 'groq_active_model';
 
   // ═══════════════════════════════════════════════════════════
-  // 🎤 Whisper: تحويل الصوت إلى نص (مع prompt اختياري)
+  // 🎤 Whisper: تحويل الصوت إلى نص
   // ═══════════════════════════════════════════════════════════
   static Future<String?> transcribeAudio(
     String audioFilePath, {
@@ -47,22 +44,15 @@ class FirebaseAiService {
 
     try {
       debugPrint('🎤 جاري تحويل الصوت إلى نص...');
-      if (correctText != null && correctText.isNotEmpty) {
-        final preview = correctText.length > 50
-            ? correctText.substring(0, 50)
-            : correctText;
-        debugPrint('📝 مع prompt: $preview...');
-      }
 
       final uri = Uri.parse(_whisperUrl);
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $_apiKey'
-        ..fields['model'] = 'whisper-large-v3'
+        ..fields['model'] = 'whisper-large-v3-turbo'
         ..fields['language'] = 'ar'
         ..fields['response_format'] = 'json'
         ..fields['temperature'] = '0';
 
-      // 🔑 تمرير النص الصحيح كـ prompt لتحسين استقبال الكلمات
       if (correctText != null && correctText.isNotEmpty) {
         request.fields['prompt'] = correctText;
       }
@@ -104,11 +94,9 @@ class FirebaseAiService {
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingChats();
       if (remaining <= 0) {
-        return '🔒 **انتهت تجربتك المجانية لليوم**\n\n'
+        return '🔒 انتهت تجربتك المجانية لليوم.\n'
             '⏰ يتجدد تلقائياً غداً\n\n'
-            '💎 **للاشتراك الفوري:**\n'
-            '• شهرياً: \$2.99\n'
-            '• سنوياً: \$19.99';
+            '💎 للاشتراك: \$2.99/شهر أو \$19.99/سنة';
       }
     }
 
@@ -121,19 +109,15 @@ class FirebaseAiService {
 أنت "المرشد" — مساعد إسلامي ذكي متخصص في:
 - القرآن الكريم والتفسير
 - الحديث النبوي وعلومه
-- الفقه الإسلامي والمذاهب
+- الفقه الإسلامي
 - العقيدة والتوحيد
 - السيرة النبوية
-- الأخلاق والتزكية
-- التاريخ الإسلامي
 
-قواعد صارمة:
-1. أجب فقط عن الأسئلة الدينية الإسلامية.
-2. إذا سُئلت عن شيء خارج الدين، اعتذر بلطف.
-3. استشهد بالأدلة من القرآن والسنة.
-4. اذكر المصادر (اسم السورة ورقم الآية).
-5. اتبع منهج أهل السنة والجماعة.
-6. اكتب بالعربية الفصحى الواضحة.
+قواعد:
+1. أجب فقط عن الأسئلة الدينية.
+2. استشهد بالأدلة.
+3. اتبع منهج أهل السنة والجماعة.
+4. اكتب بالعربية الفصحى.
 '''
           },
           {'role': 'user', 'content': question}
@@ -164,7 +148,7 @@ class FirebaseAiService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎯 إعادة بناء التشكيل بالذكاء الاصطناعي
+  // 🔤 إعادة بناء التشكيل
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> reconstructTashkeel({
     required String userText,
@@ -177,42 +161,42 @@ class FirebaseAiService {
     try {
       final prompt = '''
 لديك آية قرآنية بالتشكيل الكامل، ونص مقروء بدون تشكيل.
-مهمتك: أعد بناء النص المقروء بإضافة التشكيل المناسب لكل كلمة، بناءً على ما قرأه المستخدم فعلاً (وليس بناءً على الآية الصحيحة).
 
-📖 الآية الصحيحة (بالتشكيل):
+📖 الآية الصحيحة:
 $correctText
 
-🎤 ما قرأه المستخدم (بدون تشكيل):
+🎤 ما قرأه المستخدم:
 $userText
 
-⚠️ قواعد مهمة:
-1. حافظ على كلمات المستخدم كما هي - لا تستبدلها بكلمات الآية الصحيحة.
-2. أضف التشكيل لكل كلمة حسب ما نطق بها المستخدم فعلاً.
-3. إذا لم تستطع تحديد التشكيل بدقة، استخدم التشكيل الأقرب من الآية الصحيحة.
-4. الكلمات الناقصة أو الزائدة تبقى كما هي بدون تغيير.
+📋 مهمتك:
+أعد بناء نص المستخدم بإضافة التشكيل المناسب لكل كلمة **بناءً على ما قرأه هو فعلاً**.
+
+⚠️ قواعد:
+1. حافظ على كلمات المستخدم كما هي.
+2. أضف التشكيل حسب ما نطق به.
+3. إذا لم تستطع، استخدم التشكيل من الآية الصحيحة.
 
 📤 أعد JSON فقط:
 {
-  "reconstructed": "النص المُعاد بناؤه بالتشكيل كاملاً",
+  "reconstructed": "النص المُعاد بالتشكيل",
   "words": {
     "الحمد": "الْحَمْدُ",
-    "لله": "لِلَّهِ",
-    "رب": "رَبِّ",
-    "الناس": "النَّاسِ"
+    "لله": "لِلَّهِ"
   }
 }
-
-⚠️ JSON فقط بدون شرح.
 ''';
 
-      final response = await _sendRequest({
-        'messages': [
-          {'role': 'user', 'content': prompt}
-        ],
-        'max_tokens': 1500,
-        'temperature': 0.1,
-        'response_format': {'type': 'json_object'},
-      });
+      final response = await _sendRequest(
+        {
+          'messages': [
+            {'role': 'user', 'content': prompt}
+          ],
+          'max_tokens': 1500,
+          'temperature': 0.1,
+          'response_format': {'type': 'json_object'},
+        },
+        timeout: const Duration(seconds: 45),
+      );
 
       if (response == null || response.statusCode != 200) {
         return {'reconstructed': userText, 'words': {}};
@@ -240,7 +224,7 @@ $userText
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 تصحيح التلاوة الكامل (Whisper + Tashkeel AI + Local)
+  // 📖 تحليل التلاوة الكامل
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
@@ -252,13 +236,13 @@ $userText
         return {
           'accuracy': 0,
           'words': [],
-          'feedback': '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً',
+          'stats': {},
+          'feedback': '🔒 انتهت تجربتك المجانية.\n⏰ يتجدد غداً',
         };
       }
     }
 
     try {
-      // 1️⃣ إعادة بناء التشكيل بالذكاء الاصطناعي
       debugPrint('🎯 جاري إعادة بناء التشكيل...');
       final tashkeelResult = await reconstructTashkeel(
         userText: userRecitation,
@@ -271,7 +255,6 @@ $userText
       debugPrint('📝 النص الأصلي: $userRecitation');
       debugPrint('📝 النص المُعاد: $reconstructedText');
 
-      // 2️⃣ المقارنة مع التشكيل
       final result = RecitationCorrector.compareWithTashkeel(
         originalUser: userRecitation,
         reconstructedUser: reconstructedText,
@@ -286,6 +269,7 @@ $userText
       return {
         'accuracy': 0,
         'words': [],
+        'stats': {},
         'feedback': '⚠️ تعذر التحليل: $e',
       };
     }
@@ -299,15 +283,10 @@ $userText
 
     try {
       final prompt = '''
-قرأ المستخدم آية قرآنية، وهذا ما تعرّف عليه النظام من صوته (Whisper):
+قرأ المستخدم آية قرآنية، وهذا ما تعرّف عليه النظام:
 "$spokenText"
 
-حدد السورة ورقم الآية من القرآن الكريم (114 سورة، 6236 آية).
-
-⚠️ ملاحظات:
-- قد يكون النص المُحوَّل بدون تشكيل.
-- ابحث عن الآية الأقرب في المعنى والكلمات.
-- استخدم معرفتك الكاملة بالقرآن.
+حدد السورة ورقم الآية.
 
 أعد JSON فقط:
 {
@@ -315,12 +294,10 @@ $userText
   "surahNumber": 1,
   "ayahNumber": 1,
   "confidence": 95,
-  "matchedText": "النص القرآني الصحيح مع التشكيل"
+  "matchedText": "النص الصحيح مع التشكيل"
 }
 
 إذا لم تتعرف: {"surah": null, "confidence": 0}
-
-⚠️ JSON فقط.
 ''';
 
       final response = await _sendRequest(
@@ -359,7 +336,7 @@ $userText
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎯 الموديل النشط (مع fallback تلقائي)
+  // 🎯 الموديل النشط
   // ═══════════════════════════════════════════════════════════
   static Future<String> _getActiveModel() async {
     if (_activeModel != null) return _activeModel!;

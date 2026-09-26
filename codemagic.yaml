@@ -1,9 +1,9 @@
 workflows:
   # ═══════════════════════════════════════════════════════════
-  # 🤖 Android Build — AAB فقط (Google Play)
+  # 🤖 Android Build (APK + AAB)
   # ═══════════════════════════════════════════════════════════
   android-workflow:
-    name: Build AAB (Google Play)
+    name: Build Android (APK + AAB)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -31,30 +31,106 @@ workflows:
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
           file $CM_BUILD_DIR/android/app/noor-release.jks
 
-      - name: Create key.properties
+      - name: Get Flutter packages
         script: |
-          cat > $CM_BUILD_DIR/android/key.properties << EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=noor-release.jks
-          EOF
-          echo "✅ key.properties created"
+          cd $CM_BUILD_DIR
+          flutter pub get
+
+      - name: Build APK
+        script: |
+          cd $CM_BUILD_DIR
+          flutter build apk --release
+          echo "✅ APK created"
+          ls -lh $CM_BUILD_DIR/build/app/outputs/flutter-apk/
+
+      - name: Build AAB (for Google Play)
+        script: |
+          cd $CM_BUILD_DIR
+          flutter build appbundle --release
+          echo "✅ AAB created"
+          ls -lh $CM_BUILD_DIR/build/app/outputs/bundle/release/
+
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        recipients:
+          - sly188218@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # ═══════════════════════════════════════════════════════════
+  # 🍎 iOS Build (IPA)
+  # ═══════════════════════════════════════════════════════════
+  ios-workflow:
+    name: Build iOS IPA
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic_apple_key
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - Noor Al-Haramain
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.apexsec.noorAlHaramainGlobal
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/Library/Caches/CocoaPods
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Create .env file
+        script: |
+          echo "$ENV_FILE" > $CM_BUILD_DIR/.env
+
+      - name: Setup Firebase config (iOS)
+        script: |
+          echo "$GOOGLE_SERVICES_PLIST_IOS" | base64 -d > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+          echo "✅ GoogleService-Info.plist created"
+          ls -lh $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
 
       - name: Get Flutter packages
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Build AAB (for Google Play)
+      - name: Install pods
+        script: |
+          cd $CM_BUILD_DIR/ios
+          if [ -f Podfile ]; then
+            pod install
+          else
+            echo "⚠️ No Podfile — using Swift Package Manager"
+          fi
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build iOS IPA
         script: |
           cd $CM_BUILD_DIR
-          flutter build appbundle --release
-          echo "✅ AAB created successfully"
-          ls -lh $CM_BUILD_DIR/build/app/outputs/bundle/release/
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Verify IPA
+        script: |
+          ls -lh $CM_BUILD_DIR/build/ios/ipa/ || true
 
     artifacts:
-      - build/app/outputs/bundle/release/*.aab
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
         recipients:
