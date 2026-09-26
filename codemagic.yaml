@@ -1,4 +1,7 @@
 workflows:
+  # ═══════════════════════════════════════════════════════════
+  # 🤖 Android Build
+  # ═══════════════════════════════════════════════════════════
   android-workflow:
     name: Build APK
     max_build_duration: 60
@@ -23,26 +26,10 @@ workflows:
         script: |
           mkdir -p $CM_BUILD_DIR/android/app
           echo "$KEYSTORE_BASE64" > /tmp/ks.b64
-          echo "=== حجم Base64 ==="
-          wc -c /tmp/ks.b64
-          echo "=== فك Base64 ==="
           base64 -di /tmp/ks.b64 > $CM_BUILD_DIR/android/app/noor-release.jks 2>/tmp/b64err.log || true
           cat /tmp/b64err.log
-          echo "=== حجم Keystore ==="
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
-          echo "=== نوع الملف ==="
           file $CM_BUILD_DIR/android/app/noor-release.jks
-
-          echo ""
-          echo "════════════════════════════════════════════════════"
-          echo "🔑 SHA-1 الفعلي لـ Keystore المستخدم في البناء:"
-          echo "════════════════════════════════════════════════════"
-          keytool -list -v -keystore $CM_BUILD_DIR/android/app/noor-release.jks \
-            -storepass "Noor2026Pass" \
-            -alias "noor-key" 2>&1 | grep -E "SHA1:|SHA256:"
-          echo "════════════════════════════════════════════════════"
-          echo "⚠️  انسخ SHA1 أعلاه وأضفه في Firebase Console"
-          echo "════════════════════════════════════════════════════"
 
       - name: Get Flutter packages
         script: |
@@ -61,6 +48,84 @@ workflows:
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - sly188218@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # ═══════════════════════════════════════════════════════════
+  # 🍎 iOS Build
+  # ═══════════════════════════════════════════════════════════
+  ios-workflow:
+    name: Build iOS IPA
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic_apple_key
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - Noor Al-Haramain
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.apexsec.noorAlHaramainGlobal
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/Library/Caches/CocoaPods
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Create .env file
+        script: |
+          echo "$ENV_FILE" > $CM_BUILD_DIR/.env
+
+      - name: Setup Firebase config (iOS)
+        script: |
+          echo "$GOOGLE_SERVICES_PLIST_IOS" | base64 -d > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+          echo "✅ GoogleService-Info.plist created"
+          ls -lh $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
+
+      - name: Get Flutter packages
+        script: |
+          cd $CM_BUILD_DIR
+          flutter pub get
+
+      - name: Install pods
+        script: |
+          cd $CM_BUILD_DIR/ios
+          if [ -f Podfile ]; then
+            pod install
+          else
+            echo "⚠️ No Podfile — using Swift Package Manager"
+          fi
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build iOS IPA
+        script: |
+          cd $CM_BUILD_DIR
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Verify IPA
+        script: |
+          ls -lh $CM_BUILD_DIR/build/ios/ipa/ || true
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
         recipients:
