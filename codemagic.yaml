@@ -16,11 +16,15 @@ workflows:
         - ~/.pub-cache
         - ~/.gradle/caches
     scripts:
-      - name: Create .env file
+      # ✅ FIX: إنشاء assets/.env في المسار الصحيح
+      - name: Create assets/.env file
         script: |
-          echo "$ENV_FILE" > $CM_BUILD_DIR/.env
-          echo "✅ .env created"
-          wc -c $CM_BUILD_DIR/.env
+          mkdir -p $CM_BUILD_DIR/assets
+          echo "$ENV_FILE" > $CM_BUILD_DIR/assets/.env
+          echo "✅ assets/.env created"
+          ls -lh $CM_BUILD_DIR/assets/.env
+          echo "📋 محتوى الملف (مخفي):"
+          sed 's/gsk_.*/gsk_***HIDDEN***/' $CM_BUILD_DIR/assets/.env
 
       - name: Decode keystore
         script: |
@@ -90,9 +94,13 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Create .env file
+      # ✅ FIX: إنشاء assets/.env في المسار الصحيح لـ iOS أيضاً
+      - name: Create assets/.env file
         script: |
-          echo "$ENV_FILE" > $CM_BUILD_DIR/.env
+          mkdir -p $CM_BUILD_DIR/assets
+          echo "$ENV_FILE" > $CM_BUILD_DIR/assets/.env
+          echo "✅ assets/.env created"
+          ls -lh $CM_BUILD_DIR/assets/.env
 
       - name: Setup Firebase config (iOS)
         script: |
