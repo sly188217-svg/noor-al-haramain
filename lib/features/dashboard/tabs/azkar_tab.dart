@@ -300,7 +300,7 @@ class _AzkarTabState extends State<AzkarTab>
       'nameEn': 'Makkah Live',
       'icon': '🕋',
       'url': 'https://win.holol.com/live/quran/playlist.m3u8',
-      'fallback': 'https://www.youtube.com/@SaudiQuranTv/live',
+      'fallback': 'https://www.youtube.com,
     },
     {
       'name': 'المسجد النبوي',
