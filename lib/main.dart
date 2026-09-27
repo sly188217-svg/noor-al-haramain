@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/providers/language_provider.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/periodic_azkar_service.dart';
 import 'features/adhan/adhan_screen.dart';
 import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
@@ -15,7 +16,7 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. تحميل ملف .env
+  // 1. تحميل .env
   try {
     await dotenv.load(fileName: 'assets/.env');
     debugPrint('✅ تم تحميل ملف .env');
@@ -23,7 +24,7 @@ Future<void> main() async {
     debugPrint('⚠️ تعذر تحميل .env: $e');
   }
 
-  // 2. تهيئة Firebase
+  // 2. Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -39,34 +40,41 @@ Future<void> main() async {
       await FirebaseAuth.instance.signInAnonymously();
       debugPrint('✅ تسجيل دخول مجهول ناجح');
     } else {
-      debugPrint(
-          '✅ المستخدم مسجّل: ${FirebaseAuth.instance.currentUser?.uid}');
+      debugPrint('✅ المستخدم مسجّل: ${FirebaseAuth.instance.currentUser?.uid}');
     }
   } catch (e) {
     debugPrint('❌ فشل تسجيل الدخول المجهول: $e');
   }
 
-  // 4. تفعيل Firebase App Check
+  // 4. App Check
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
-    debugPrint('✅ تم تفعيل App Check (Debug Mode)');
+    debugPrint('✅ تم تفعيل App Check');
   } catch (e) {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // 5. تهيئة الإشعارات
+  // 5. الإشعارات
   try {
     await NotificationService.initialize();
     await NotificationService.requestFullScreenIntentPermission();
-    debugPrint('✅ تم تهيئة الإشعارات + طلب صلاحية ملء الشاشة');
+    debugPrint('✅ تم تهيئة الإشعارات');
   } catch (e) {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
 
-  // 6. ErrorWidget
+  // 6. ✅ الأذكار الدورية
+  try {
+    await PeriodicAzkarService.start();
+    debugPrint('✅ تم تفعيل الأذكار الدورية');
+  } catch (e) {
+    debugPrint('⚠️ فشل تفعيل الأذكار الدورية: $e');
+  }
+
+  // 7. ErrorWidget
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -78,22 +86,17 @@ Future<void> main() async {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: Colors.red, size: 60),
+                const Icon(Icons.error_outline, color: Colors.red, size: 60),
                 const SizedBox(height: 16),
-                const Text(
-                  'حدث خطأ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                const Text('حدث خطأ',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Text(
                   details.exceptionAsString(),
-                  style: const TextStyle(
-                      color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                   textAlign: TextAlign.center,
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
@@ -120,7 +123,6 @@ class MyApp extends StatelessWidget {
         title: 'نور الحرمين',
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
-
         theme: ThemeData(
           useMaterial3: false,
           primarySwatch: Colors.green,
@@ -132,7 +134,6 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
