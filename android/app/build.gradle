@@ -23,9 +23,6 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-// ═══════════════════════════════════════════════════════════
-// 🔑 تحميل بيانات التوقيع
-// ═══════════════════════════════════════════════════════════
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -72,28 +69,16 @@ android {
         manifestPlaceholders["firebaseAppCheckDebugToken"] = "A0CD6B2F-9F70-4037-B04C-7C1D58CE299D"
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // ✅ R8 + ShrinkResources + ABI Filters (توفير 30-50 MB)
-    // ═══════════════════════════════════════════════════════════
     buildTypes {
         release {
             signingConfig signingConfigs.release
-
-            // ✅ تفعيل التصغير
             minifyEnabled true
             shrinkResources true
-
-            // ✅ قواعد ProGuard
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
-            // ✅ إزالة مكتبات x86 (للمحاكيات فقط)
-            ndk {
-                abiFilters 'arm64-v8a', 'armeabi-v7a'
-            }
         }
     }
 
-    // ✅ تقسيم حسب المعالج (للـ APK فقط)
+    // ✅ ABI Splits (بدون ndk abiFilters)
     splits {
         abi {
             enable true
@@ -103,7 +88,6 @@ android {
         }
     }
 
-    // ✅ تنظيف الموارد غير المستخدمة
     packagingOptions {
         resources {
             excludes += [
