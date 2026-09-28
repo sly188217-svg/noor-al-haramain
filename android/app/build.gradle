@@ -23,6 +23,9 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🔑 تحميل بيانات التوقيع
+// ═══════════════════════════════════════════════════════════
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -48,6 +51,9 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // 🔐 إعدادات التوقيع
+    // ═══════════════════════════════════════════════════════════
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias'] ?: 'noor-key'
@@ -69,16 +75,25 @@ android {
         manifestPlaceholders["firebaseAppCheckDebugToken"] = "A0CD6B2F-9F70-4037-B04C-7C1D58CE299D"
     }
 
-    // ✅ R8 فقط، بدون splits
+    // ═══════════════════════════════════════════════════════════
+    // ✅ R8 + ShrinkResources (توفير 30-50 MB)
+    // ═══════════════════════════════════════════════════════════
     buildTypes {
         release {
             signingConfig signingConfigs.release
+
+            // ✅ تفعيل التصغير
             minifyEnabled true
             shrinkResources true
+
+            // ✅ قواعد ProGuard
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // 📦 تنظيف الموارد
+    // ═══════════════════════════════════════════════════════════
     packagingOptions {
         resources {
             excludes += [
