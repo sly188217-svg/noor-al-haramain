@@ -108,7 +108,6 @@ flutter:
     - assets/data/azkar.json
     - assets/data/fatwa_library.json
     - assets/data/quran_data.json
-    - assets/data/quran_full.json
 
     # الصور
     - assets/images/

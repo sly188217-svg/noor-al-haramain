@@ -1,6 +1,6 @@
 workflows:
   # ═══════════════════════════════════════════════════════════
-  # 🤖 Android Build (APK + AAB)
+  # 🤖 Android Build (APK Split + AAB)
   # ═══════════════════════════════════════════════════════════
   android-workflow:
     name: Build Android (APK + AAB)
@@ -16,7 +16,9 @@ workflows:
         - ~/.pub-cache
         - ~/.gradle/caches
     scripts:
-      # ✅ FIX: إنشاء assets/.env في المسار الصحيح
+      # ═══════════════════════════════════════════════════════
+      # 1) إنشاء assets/.env
+      # ═══════════════════════════════════════════════════════
       - name: Create assets/.env file
         script: |
           mkdir -p $CM_BUILD_DIR/assets
@@ -26,6 +28,9 @@ workflows:
           echo "📋 محتوى الملف (مخفي):"
           sed 's/gsk_.*/gsk_***HIDDEN***/' $CM_BUILD_DIR/assets/.env
 
+      # ═══════════════════════════════════════════════════════
+      # 2) فك تشفير Keystore
+      # ═══════════════════════════════════════════════════════
       - name: Decode keystore
         script: |
           mkdir -p $CM_BUILD_DIR/android/app
@@ -35,18 +40,27 @@ workflows:
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
           file $CM_BUILD_DIR/android/app/noor-release.jks
 
+      # ═══════════════════════════════════════════════════════
+      # 3) تحميل الحزم
+      # ═══════════════════════════════════════════════════════
       - name: Get Flutter packages
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Build APK
+      # ═══════════════════════════════════════════════════════
+      # 4) بناء APK مقسم حسب المعالج (توفير 30 MB/APK)
+      # ═══════════════════════════════════════════════════════
+      - name: Build APK (Split per ABI)
         script: |
           cd $CM_BUILD_DIR
-          flutter build apk --release
-          echo "✅ APK created"
+          flutter build apk --release --split-per-abi
+          echo "✅ APKs created"
           ls -lh $CM_BUILD_DIR/build/app/outputs/flutter-apk/
 
+      # ═══════════════════════════════════════════════════════
+      # 5) بناء AAB (Google Play يقسمه تلقائياً)
+      # ═══════════════════════════════════════════════════════
       - name: Build AAB (for Google Play)
         script: |
           cd $CM_BUILD_DIR
@@ -94,7 +108,9 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      # ✅ FIX: إنشاء assets/.env في المسار الصحيح لـ iOS أيضاً
+      # ═══════════════════════════════════════════════════════
+      # 1) إنشاء assets/.env
+      # ═══════════════════════════════════════════════════════
       - name: Create assets/.env file
         script: |
           mkdir -p $CM_BUILD_DIR/assets
@@ -102,17 +118,26 @@ workflows:
           echo "✅ assets/.env created"
           ls -lh $CM_BUILD_DIR/assets/.env
 
+      # ═══════════════════════════════════════════════════════
+      # 2) إعداد Firebase (iOS)
+      # ═══════════════════════════════════════════════════════
       - name: Setup Firebase config (iOS)
         script: |
           echo "$GOOGLE_SERVICES_PLIST_IOS" | base64 -d > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
           echo "✅ GoogleService-Info.plist created"
           ls -lh $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
 
+      # ═══════════════════════════════════════════════════════
+      # 3) تحميل الحزم
+      # ═══════════════════════════════════════════════════════
       - name: Get Flutter packages
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
+      # ═══════════════════════════════════════════════════════
+      # 4) تثبيت Pods (إن وُجد Podfile)
+      # ═══════════════════════════════════════════════════════
       - name: Install pods
         script: |
           cd $CM_BUILD_DIR/ios
@@ -122,16 +147,25 @@ workflows:
             echo "⚠️ No Podfile — using Swift Package Manager"
           fi
 
+      # ═══════════════════════════════════════════════════════
+      # 5) إعداد التوقيع
+      # ═══════════════════════════════════════════════════════
       - name: Set up code signing
         script: |
           xcode-project use-profiles
 
+      # ═══════════════════════════════════════════════════════
+      # 6) بناء iOS IPA
+      # ═══════════════════════════════════════════════════════
       - name: Build iOS IPA
         script: |
           cd $CM_BUILD_DIR
           flutter build ipa --release \
             --export-options-plist=/Users/builder/export_options.plist
 
+      # ═══════════════════════════════════════════════════════
+      # 7) التحقق من IPA
+      # ═══════════════════════════════════════════════════════
       - name: Verify IPA
         script: |
           ls -lh $CM_BUILD_DIR/build/ios/ipa/ || true
