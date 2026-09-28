@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/periodic_azkar_service.dart';
 import '../../../core/data/muezzins.dart';
+import '../../../widgets/saudi_flag.dart';
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -17,6 +19,13 @@ class SettingsTab extends StatefulWidget {
 class _SettingsTabState extends State<SettingsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  static const Color _primary = Color(0xFF4A90E2);
+  static const Color _primaryDark = Color(0xFF2E5C8A);
+  static const Color _primaryLight = Color(0xFF64B5F6);
+  static const Color _bg = Color(0xFF0A1929);
+  static const Color _surface = Color(0xFF132F4C);
+  static const Color _surfaceDark = Color(0xFF0F2236);
 
   String _userName = 'مستخدم';
   String _userCity = 'مكة المكرمة';
@@ -30,6 +39,11 @@ class _SettingsTabState extends State<SettingsTab>
   bool _soundEnabled = true;
   double _soundVolume = 0.8;
   String _appVersion = '1.0.0';
+
+  bool _periodicAzkarEnabled = false;
+  int _periodicAzkarInterval = 15;
+  int _periodicAzkarStartHour = 6;
+  int _periodicAzkarEndHour = 22;
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
@@ -51,21 +65,15 @@ class _SettingsTabState extends State<SettingsTab>
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ تحميل الإعدادات
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadAllSettings() async {
     final prefs = await SharedPreferences.getInstance();
-
     String muezzin = prefs.getString('selected_muezzin') ?? 'adhan_sudais';
     final valid =
         NotificationService.muezzins.any((m) => m['file'] == muezzin);
     if (!valid) {
-      debugPrint('⚠️ قيمة مؤذن غير صالحة: $muezzin — استخدام الافتراضي');
       muezzin = 'adhan_sudais';
       await prefs.setString('selected_muezzin', muezzin);
     }
-
     if (!mounted) return;
     setState(() {
       _userName = prefs.getString('user_name') ?? 'مستخدم';
@@ -79,6 +87,12 @@ class _SettingsTabState extends State<SettingsTab>
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _soundEnabled = prefs.getBool('sound_enabled') ?? true;
       _soundVolume = prefs.getDouble('sound_volume') ?? 0.8;
+      _periodicAzkarEnabled =
+          prefs.getBool('periodic_azkar_enabled') ?? false;
+      _periodicAzkarInterval = prefs.getInt('periodic_azkar_interval') ?? 15;
+      _periodicAzkarStartHour =
+          prefs.getInt('periodic_azkar_start_hour') ?? 6;
+      _periodicAzkarEndHour = prefs.getInt('periodic_azkar_end_hour') ?? 22;
     });
   }
 
@@ -95,6 +109,10 @@ class _SettingsTabState extends State<SettingsTab>
     await prefs.setBool('notifications_enabled', _notificationsEnabled);
     await prefs.setBool('sound_enabled', _soundEnabled);
     await prefs.setDouble('sound_volume', _soundVolume);
+    await prefs.setBool('periodic_azkar_enabled', _periodicAzkarEnabled);
+    await prefs.setInt('periodic_azkar_interval', _periodicAzkarInterval);
+    await prefs.setInt('periodic_azkar_start_hour', _periodicAzkarStartHour);
+    await prefs.setInt('periodic_azkar_end_hour', _periodicAzkarEndHour);
   }
 
   Future<void> _loadAppVersion() async {
@@ -113,9 +131,6 @@ class _SettingsTabState extends State<SettingsTab>
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔍 البحث عن الموقع
-  // ═══════════════════════════════════════════════════════════
   Future<void> _searchLocation(String query) async {
     if (query.isEmpty || query.length < 2) {
       setState(() {
@@ -193,7 +208,7 @@ class _SettingsTabState extends State<SettingsTab>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: _bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -210,14 +225,15 @@ class _SettingsTabState extends State<SettingsTab>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF1C2541),
+                      gradient: LinearGradient(
+                        colors: [_primaryDark, _surface],
+                      ),
                       borderRadius:
                           BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on,
-                            color: Color(0xFFD4AF37)),
+                        const Icon(Icons.location_on, color: Colors.white),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
@@ -249,10 +265,10 @@ class _SettingsTabState extends State<SettingsTab>
                       decoration: InputDecoration(
                         hintText: '🔍 ابحث عن مدينة، قرية، دولة...',
                         hintStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.search,
-                            color: Color(0xFFD4AF37)),
+                        prefixIcon:
+                            const Icon(Icons.search, color: _primary),
                         filled: true,
-                        fillColor: const Color(0xFF0B132B),
+                        fillColor: _surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -263,8 +279,8 @@ class _SettingsTabState extends State<SettingsTab>
                   Expanded(
                     child: _isSearching
                         ? const Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xFFD4AF37)))
+                            child:
+                                CircularProgressIndicator(color: _primary))
                         : ListView.builder(
                             controller: scrollController,
                             itemCount: _searchResults.length,
@@ -274,13 +290,12 @@ class _SettingsTabState extends State<SettingsTab>
                                 margin: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1C2541)
-                                      .withValues(alpha: 0.6),
+                                  color: _surface.withValues(alpha: 0.8),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ListTile(
                                   leading: const Icon(Icons.location_city,
-                                      color: Color(0xFFD4AF37)),
+                                      color: _primary),
                                   title: Text(location['name'] ?? '',
                                       style: const TextStyle(
                                           color: Colors.white, fontSize: 14),
@@ -306,25 +321,32 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 اختيار الخلفية
+  // 🎨 اختيار الخلفية (مع معاينة الصور)
   // ═══════════════════════════════════════════════════════════
   void _showBackgroundPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: _bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        height: 400,
+        height: 500,
         child: Column(
           children: [
-            const Text('اختر خلفية التطبيق',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.image, color: _primary, size: 24),
+                SizedBox(width: 8),
+                Text('اختر خلفية التطبيق',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
             const SizedBox(height: 16),
             Expanded(
               child: GridView.builder(
@@ -339,7 +361,7 @@ class _SettingsTabState extends State<SettingsTab>
                 itemBuilder: (context, index) {
                   final bg = BackgroundService.backgrounds[index];
                   final isSelected = _selectedBackground == index;
-                  final colors = bg['colors'] as List<Color>;
+                  final type = bg['type'] as String? ?? 'gradient';
 
                   return GestureDetector(
                     onTap: () async {
@@ -355,60 +377,117 @@ class _SettingsTabState extends State<SettingsTab>
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: colors,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFFD4AF37)
-                              : Colors.transparent,
+                          color: isSelected ? _primary : Colors.transparent,
                           width: 3,
                         ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Icon(
-                              bg['icon'] as IconData,
-                              color: const Color(0xFFD4AF37)
-                                  .withValues(alpha: 0.4),
-                              size: 50,
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 6,
-                            left: 6,
-                            right: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 4),
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors.black.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                bg['name'] as String,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: _primary.withValues(alpha: 0.6),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
                                 ),
-                                textAlign: TextAlign.center,
+                              ]
+                            : null,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // الخلفية (صورة أو تدرج)
+                            if (type == 'image')
+                              Image.asset(
+                                bg['imagePath'] as String,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF0A1929),
+                                        Color(0xFF132F4C),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.image_not_supported,
+                                        color: Colors.white24, size: 40),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: bg['colors'] as List<Color>,
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                              ),
+
+                            // طبقة داكنة لتحسين القراءة
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.35),
+                            ),
+
+                            // الأيقونة الصغيرة
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Icon(
+                                bg['icon'] as IconData,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                size: 24,
                               ),
                             ),
-                          ),
-                          if (isSelected)
-                            const Positioned(
-                              top: 6,
+
+                            // الاسم
+                            Positioned(
+                              bottom: 6,
+                              left: 6,
                               right: 6,
-                              child: Icon(Icons.check_circle,
-                                  color: Color(0xFFD4AF37), size: 24),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.black.withValues(alpha: 0.75),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  bg['name'] as String,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
                             ),
-                        ],
+
+                            // علامة الاختيار
+                            if (isSelected)
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: _primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.check,
+                                      color: Colors.white, size: 14),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -425,7 +504,11 @@ class _SettingsTabState extends State<SettingsTab>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.red, width: 1.5),
+        ),
         title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.red)),
         content: const Text('هل أنت متأكد من إعادة تعيين جميع الإعدادات؟',
             style: TextStyle(color: Colors.white70)),
@@ -453,13 +536,17 @@ class _SettingsTabState extends State<SettingsTab>
                   _notificationsEnabled = true;
                   _soundEnabled = true;
                   _soundVolume = 0.8;
+                  _periodicAzkarEnabled = false;
                 });
               }
+              await PeriodicAzkarService.stop();
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('✅ تم إعادة التعيين')));
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 4),
             child: const Text('تأكيد'),
           ),
         ],
@@ -468,13 +555,31 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   Widget _buildSettingsCard(Widget child) {
-    return Card(
-      color: const Color(0xFF1C2541),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_surface, _surfaceDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: _primary.withValues(alpha: 0.1),
+            blurRadius: 20,
+            spreadRadius: -5,
+          ),
+        ],
       ),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
@@ -485,11 +590,12 @@ class _SettingsTabState extends State<SettingsTab>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1C2541),
-        elevation: 0,
+        backgroundColor: _surface,
+        elevation: 4,
+        shadowColor: Colors.black45,
         title: const Row(
           children: [
-            Icon(Icons.settings, color: Color(0xFFD4AF37)),
+            Icon(Icons.settings, color: _primary),
             SizedBox(width: 8),
             Text('⚙️ الإعدادات',
                 style: TextStyle(
@@ -500,9 +606,10 @@ class _SettingsTabState extends State<SettingsTab>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFFD4AF37),
-          labelColor: const Color(0xFFD4AF37),
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: _primary,
+          indicatorWeight: 3,
+          labelColor: _primary,
+          unselectedLabelColor: Colors.white54,
           tabs: const [
             Tab(text: '🕌 دينية'),
             Tab(text: '🌐 عامة'),
@@ -523,22 +630,17 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 1. الدينية
-  // ═══════════════════════════════════════════════════════════
   Widget _buildReligiousSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ─── الموقع ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 children: [
-                  Icon(Icons.location_on,
-                      color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.location_on, color: _primary, size: 24),
                   SizedBox(width: 8),
                   Text('📍 الموقع الحالي',
                       style: TextStyle(
@@ -551,8 +653,9 @@ class _SettingsTabState extends State<SettingsTab>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B132B).withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
+                  color: _bg.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _primary.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,25 +669,20 @@ class _SettingsTabState extends State<SettingsTab>
                     Text(
                         '📍 ${_userLat.toStringAsFixed(4)}, ${_userLng.toStringAsFixed(4)}',
                         style: const TextStyle(
-                            color: Color(0xFFD4AF37), fontSize: 12)),
+                            color: _primaryLight, fontSize: 12)),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Icon(
-                      _isLocationReady
-                          ? Icons.gps_fixed
-                          : Icons.gps_off,
-                      color:
-                          _isLocationReady ? Colors.green : Colors.red,
-                      size: 14),
+                      _isLocationReady ? Icons.gps_fixed : Icons.gps_off,
+                      color: _isLocationReady ? Colors.green : Colors.red,
+                      size: 16),
                   const SizedBox(width: 4),
                   Text(
-                      _isLocationReady
-                          ? '✅ الموقع مفعل'
-                          : '❌ الموقع غير مفعل',
+                      _isLocationReady ? '✅ الموقع مفعل' : '❌ الموقع غير مفعل',
                       style: TextStyle(
                           color: _isLocationReady
                               ? Colors.green
@@ -596,25 +694,24 @@ class _SettingsTabState extends State<SettingsTab>
                     icon: const Icon(Icons.edit, size: 16),
                     label: const Text('تغيير'),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4AF37),
-                        foregroundColor: Colors.black),
+                        backgroundColor: _primary,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: _primary.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
 
-        // ─── المؤذن ───
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 children: [
-                  Icon(Icons.volume_up,
-                      color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.volume_up, color: _primary, size: 24),
                   SizedBox(width: 8),
                   Text('🎙️ المؤذن',
                       style: TextStyle(
@@ -626,15 +723,16 @@ class _SettingsTabState extends State<SettingsTab>
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedMuezzin,
-                dropdownColor: const Color(0xFF1C2541),
+                dropdownColor: _surface,
                 style: const TextStyle(color: Colors.white),
                 isExpanded: true,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF0B132B),
+                  fillColor: _bg.withValues(alpha: 0.5),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: _primary.withValues(alpha: 0.3))),
                 ),
                 items: NotificationService.muezzins
                     .map((m) => DropdownMenuItem<String>(
@@ -654,10 +752,10 @@ class _SettingsTabState extends State<SettingsTab>
                   }
                 },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: ElevatedButton.icon(
                   onPressed: () async {
                     await NotificationService.showTestNotification();
                     if (!mounted) return;
@@ -666,22 +764,25 @@ class _SettingsTabState extends State<SettingsTab>
                           content: Text('🔔 تم إرسال اختبار الأذان')),
                     );
                   },
-                  icon: const Icon(Icons.play_circle,
-                      color: Color(0xFFD4AF37)),
-                  label: const Text('🔔 اختبار الأذان',
-                      style: TextStyle(color: Color(0xFFD4AF37))),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFD4AF37)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  icon: const Icon(Icons.play_circle),
+                  label: const Text('🔔 اختبار الأذان'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 4,
+                    shadowColor: _primary.withValues(alpha: 0.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
 
-        // ─── الإشعارات ───
+        _buildPeriodicAzkarCard(),
+
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,10 +800,10 @@ class _SettingsTabState extends State<SettingsTab>
                   setState(() => _notificationsEnabled = value);
                   _saveSettings();
                 },
-                activeThumbColor: const Color(0xFFD4AF37),
-                tileColor: const Color(0xFF0B132B),
+                activeThumbColor: _primary,
+                tileColor: _bg.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(10)),
               ),
             ],
           ),
@@ -711,9 +812,242 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 2. العامة
-  // ═══════════════════════════════════════════════════════════
+  Widget _buildPeriodicAzkarCard() {
+    return _buildSettingsCard(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.notifications_active, color: _primary, size: 24),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('📿 الأذكار الدورية',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('تذكير تلقائي بالأذكار كل فترة',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            title: const Text('تفعيل الأذكار الدورية',
+                style: TextStyle(color: Colors.white)),
+            subtitle: Text(
+              _periodicAzkarEnabled ? '✅ تعمل حالياً' : 'معطّلة',
+              style: TextStyle(
+                  color:
+                      _periodicAzkarEnabled ? Colors.green : Colors.white54,
+                  fontSize: 12),
+            ),
+            value: _periodicAzkarEnabled,
+            activeThumbColor: _primary,
+            onChanged: (value) async {
+              setState(() => _periodicAzkarEnabled = value);
+              await _saveSettings();
+              if (value) {
+                await PeriodicAzkarService.start();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('✅ تم تفعيل الأذكار الدورية')),
+                );
+              } else {
+                await PeriodicAzkarService.stop();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('🛑 تم إيقاف الأذكار الدورية')),
+                );
+              }
+            },
+          ),
+          if (_periodicAzkarEnabled) ...[
+            const Divider(color: Colors.white12),
+            ListTile(
+              title: const Text('⏱️ كل كم دقيقة؟',
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text('$_periodicAzkarInterval دقيقة',
+                  style: const TextStyle(
+                      color: _primaryLight, fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.arrow_forward_ios,
+                  color: Colors.white54, size: 16),
+              onTap: _showIntervalPicker,
+            ),
+            ListTile(
+              title: const Text('🌅 وقت البدء',
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text(
+                  '${_periodicAzkarStartHour.toString().padLeft(2, '0')}:00',
+                  style: const TextStyle(
+                      color: _primaryLight, fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.arrow_forward_ios,
+                  color: Colors.white54, size: 16),
+              onTap: () => _showHourPicker('periodic_azkar_start_hour', 0, 12),
+            ),
+            ListTile(
+              title: const Text('🌙 وقت الانتهاء',
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text(
+                  '${_periodicAzkarEndHour.toString().padLeft(2, '0')}:00',
+                  style: const TextStyle(
+                      color: _primaryLight, fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.arrow_forward_ios,
+                  color: Colors.white54, size: 16),
+              onTap: () => _showHourPicker('periodic_azkar_end_hour', 12, 24),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await PeriodicAzkarService.showTestZikr();
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('🧪 تم إرسال إشعار ذكر تجريبي')),
+                  );
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('🧪 اختبار إشعار ذكر'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 4,
+                  shadowColor: _primary.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showIntervalPicker() {
+    const options = [5, 10, 15, 30, 60];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [_primaryDark, _surface]),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.timer, color: Colors.white),
+                SizedBox(width: 8),
+                Text('⏱️ كل كم دقيقة؟',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          ...options.map((m) {
+            return ListTile(
+              title: Text('$m دقيقة',
+                  style: const TextStyle(color: Colors.white)),
+              trailing: _periodicAzkarInterval == m
+                  ? const Icon(Icons.check, color: _primary)
+                  : null,
+              onTap: () async {
+                setState(() => _periodicAzkarInterval = m);
+                await _saveSettings();
+                await PeriodicAzkarService.restart();
+                if (mounted) Navigator.pop(context);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showHourPicker(String key, int min, int max) {
+    final current = key == 'periodic_azkar_start_hour'
+        ? _periodicAzkarStartHour
+        : _periodicAzkarEndHour;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SizedBox(
+        height: 400,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [_primaryDark, _surface]),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                      key == 'periodic_azkar_start_hour'
+                          ? '🌅 وقت البدء'
+                          : '🌙 وقت الانتهاء',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: max - min,
+                itemBuilder: (context, index) {
+                  final hour = min + index;
+                  return ListTile(
+                    title: Text('${hour.toString().padLeft(2, '0')}:00',
+                        style: const TextStyle(color: Colors.white)),
+                    trailing: current == hour
+                        ? const Icon(Icons.check, color: _primary)
+                        : null,
+                    onTap: () async {
+                      setState(() {
+                        if (key == 'periodic_azkar_start_hour') {
+                          _periodicAzkarStartHour = hour;
+                        } else {
+                          _periodicAzkarEndHour = hour;
+                        }
+                      });
+                      await _saveSettings();
+                      await PeriodicAzkarService.restart();
+                      if (mounted) Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGeneralSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -724,7 +1058,7 @@ class _SettingsTabState extends State<SettingsTab>
             children: [
               const Row(
                 children: [
-                  Icon(Icons.image, color: Color(0xFFD4AF37), size: 24),
+                  Icon(Icons.image, color: _primary, size: 24),
                   SizedBox(width: 8),
                   Text('🖼️ خلفية التطبيق',
                       style: TextStyle(
@@ -738,27 +1072,66 @@ class _SettingsTabState extends State<SettingsTab>
                 children: [
                   Expanded(
                     child: Container(
-                      height: 60,
+                      height: 80,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: (BackgroundService.backgrounds[
-                                      _selectedBackground]['colors']
-                                  as List<Color>),
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: const Color(0xFFD4AF37)
-                                .withValues(alpha: 0.3)),
+                            color: _primary.withValues(alpha: 0.4)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      child: Center(
-                        child: Text(
-                          BackgroundService.backgrounds[
-                                  _selectedBackground]['name'] as String,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if ((BackgroundService.backgrounds[
+                                        _selectedBackground]['type']
+                                    as String?) ==
+                                'image')
+                              Image.asset(
+                                BackgroundService.backgrounds[
+                                    _selectedBackground]['imagePath'] as String,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: _surface,
+                                  child: const Icon(Icons.image,
+                                      color: Colors.white24, size: 40),
+                                ),
+                              )
+                            else
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: (BackgroundService.backgrounds[
+                                                _selectedBackground]
+                                            ['colors']
+                                        as List<Color>),
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                              ),
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.4),
+                            ),
+                            Center(
+                              child: Text(
+                                BackgroundService.backgrounds[
+                                        _selectedBackground]['name']
+                                    as String,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -769,15 +1142,15 @@ class _SettingsTabState extends State<SettingsTab>
                     icon: const Icon(Icons.image, size: 16),
                     label: const Text('تغيير'),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4AF37),
-                        foregroundColor: Colors.black),
+                        backgroundColor: _primary,
+                        foregroundColor: Colors.white,
+                        elevation: 4),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
 
         _buildSettingsCard(
           Column(
@@ -793,9 +1166,7 @@ class _SettingsTabState extends State<SettingsTab>
                 children: [
                   Expanded(
                       child: Text(
-                          _selectedTimeFormat == '24h'
-                              ? '24 ساعة'
-                              : '12 ساعة',
+                          _selectedTimeFormat == '24h' ? '24 ساعة' : '12 ساعة',
                           style: const TextStyle(color: Colors.white70))),
                   SegmentedButton<String>(
                     segments: const [
@@ -808,15 +1179,14 @@ class _SettingsTabState extends State<SettingsTab>
                       _saveSettings();
                     },
                     style: SegmentedButton.styleFrom(
-                        selectedForegroundColor: Colors.black,
-                        selectedBackgroundColor: const Color(0xFFD4AF37)),
+                        selectedForegroundColor: Colors.white,
+                        selectedBackgroundColor: _primary),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
 
         _buildSettingsCard(
           Column(
@@ -840,7 +1210,8 @@ class _SettingsTabState extends State<SettingsTab>
                 label: const Text('إعادة التعيين'),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    foregroundColor: Colors.white),
+                    foregroundColor: Colors.white,
+                    elevation: 4),
               ),
             ],
           ),
@@ -849,9 +1220,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 3. الصوت
-  // ═══════════════════════════════════════════════════════════
   Widget _buildSoundSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -873,16 +1241,15 @@ class _SettingsTabState extends State<SettingsTab>
                   setState(() => _soundEnabled = v);
                   _saveSettings();
                 },
-                activeThumbColor: const Color(0xFFD4AF37),
+                activeThumbColor: _primary,
               ),
               Row(
                 children: [
-                  const Icon(Icons.volume_down,
-                      color: Color(0xFFD4AF37), size: 20),
+                  const Icon(Icons.volume_down, color: _primary, size: 20),
                   Expanded(
                     child: Slider(
                       value: _soundVolume,
-                      activeColor: const Color(0xFFD4AF37),
+                      activeColor: _primary,
                       onChanged: (v) {
                         setState(() => _soundVolume = v);
                         _saveSettings();
@@ -900,109 +1267,159 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 4. المعلومات
-  // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // 🏷️ قسم الحساب المبسّط
         _buildSettingsCard(_buildAccountSection()),
-        const SizedBox(height: 12),
         _buildSettingsCard(
           Column(
             children: [
-              const Icon(Icons.mosque, color: Color(0xFFD4AF37), size: 80),
-              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_primaryLight, _primary, _primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _primary.withValues(alpha: 0.5),
+                      blurRadius: 25,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child:
+                    const Icon(Icons.mosque, color: Colors.white, size: 90),
+              ),
+              const SizedBox(height: 20),
               const Text('نور الحرمين',
                   style: TextStyle(
-                      color: Color(0xFFD4AF37),
-                      fontSize: 24,
+                      color: Colors.white,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               const Text('تطبيق إسلامي عالمي',
-                  style: TextStyle(color: Colors.grey, fontSize: 14)),
-              const Divider(color: Colors.grey, height: 32),
+                  style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 24),
+              const SaudiFlag(
+                height: 80,
+                width: 120,
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white12, height: 32),
               _buildInfoRow('الإصدار', _appVersion),
-              _buildInfoRow(
-                  'الحزمة', 'com.apexsec.noor_al_haramain_global'),
+              _buildInfoRow('الحزمة', 'com.apexsec.noor_al_haramain_global'),
               _buildInfoRow('المنصة', 'Android'),
               _buildInfoRow('اللغة', 'العربية'),
             ],
           ),
         ),
+        _buildDeveloperSection(),
       ],
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔐 قسم الحساب — مبسّط (بدون Google Sign-In)
-  // ═══════════════════════════════════════════════════════════
+  Widget _buildDeveloperSection() {
+    return _buildSettingsCard(
+      Column(
+        children: [
+          Container(
+            width: 180,
+            height: 120,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1A2E),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: _primary.withValues(alpha: 0.5), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: _primary.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  spreadRadius: 3,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(19),
+              child: Image.asset(
+                'assets/icon/apexsec_logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.shield, color: _primaryLight, size: 50),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('ApexSec',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3)),
+          const SizedBox(height: 6),
+          const Text('Developed by ApexSec Technologies',
+              style: TextStyle(
+                  color: Colors.white54, fontSize: 12, letterSpacing: 1)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAccountSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Row(
           children: [
-            Icon(Icons.person, color: Color(0xFFD4AF37), size: 24),
+            Icon(Icons.person, color: _primary, size: 24),
             SizedBox(width: 8),
-            Text(
-              '🔐 الحساب',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text('🔐 الحساب',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B132B).withValues(alpha: 0.5),
+            color: _bg.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: _primary.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 children: [
-                  Icon(Icons.check_circle,
-                      color: Colors.green, size: 20),
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
                   SizedBox(width: 8),
-                  Text(
-                    'مستخدم نشط',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('مستخدم نشط',
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                'مرحباً $_userName',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('مرحباً $_userName',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text(
                 'الحساب يعمل تلقائياً عبر Google Play.\n'
                 'الاشتراك والمزامنة يتمّان بواسطة Google عند الحاجة.',
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  height: 1.6,
-                ),
+                    color: Colors.white70, fontSize: 12, height: 1.6),
               ),
             ],
           ),
@@ -1018,7 +1435,7 @@ class _SettingsTabState extends State<SettingsTab>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(color: Colors.grey, fontSize: 14)),
+              style: const TextStyle(color: Colors.white54, fontSize: 14)),
           Text(value,
               style: const TextStyle(color: Colors.white, fontSize: 14)),
         ],

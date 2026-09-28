@@ -258,7 +258,6 @@ class _SplashScreenState extends State<SplashScreen>
                   const SizedBox(height: 30),
 
                   // ===== 🇸🇦 علم السعودية + نص =====
-                  // ✅ تم الإصلاح: SaudiFlag مباشرة بدون Text(...)
                   SlideTransition(
                     position: _slideUp,
                     child: FadeTransition(
@@ -316,17 +315,25 @@ class _SplashScreenState extends State<SplashScreen>
               ),
             ),
 
-            // ===== البسملة (أعلى اليسار) =====
+            // ===== البسملة (أعلى اليسار) — مصغّرة =====
             Positioned(
               top: 60,
-              left: 30,
+              left: 20,
               child: FadeTransition(
                 opacity: _fadeIn,
-                child: const Text(
-                  '﷽',
-                  style: TextStyle(
-                    color: Color(0xFFD4AF37),
-                    fontSize: 32,
+                child: SizedBox(
+                  width: size.width * 0.35,   // ✅ تقييد العرض
+                  child: FittedBox(            // ✅ يتناسب تلقائياً
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: const Text(
+                      '﷽',
+                      style: TextStyle(
+                        color: Color(0xFFD4AF37),
+                        fontSize: 22,        // ✅ حجم أصغر بكثير
+                        fontFamily: 'Amiri',
+                      ),
+                    ),
                   ),
                 ),
               ),

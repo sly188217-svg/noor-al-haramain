@@ -2,40 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// خدمة الخلفيات — 6 خلفيات Gradient إسلامية
+/// 🎨 خدمة الخلفيات — 4 صور + 2 تدرجات (6 خلفيات)
 /// ═══════════════════════════════════════════════════════════
-/// 
-/// ✅ لا تحتاج صور خارجية
-/// ✅ تعمل 100% بدون إنترنت
-/// ✅ خفيفة جداً (0 KB)
-/// 
 class BackgroundService {
   static const String _key = 'background_index';
 
   static const List<Map<String, dynamic>> backgrounds = [
-    // 1. أخضر إسلامي (الحرم المكي)
+    // 1. الكعبة المشرفة 🕋
     {
-      'name': 'الحرم المكي',
-      'colors': [
-        Color(0xFF0B132B),
-        Color(0xFF165D31),
-        Color(0xFF0B132B),
-      ],
+      'name': 'الكعبة المشرفة',
+      'type': 'image',
+      'imagePath': 'assets/images/backgrounds/makkah.jpg',
       'icon': Icons.mosque,
     },
-    // 2. أخضر زمردي (المدينة المنورة)
+    // 2. المسجد النبوي 🕌
+    {
+      'name': 'المسجد النبوي',
+      'type': 'image',
+      'imagePath': 'assets/images/backgrounds/madinah.jpg',
+      'icon': Icons.mosque,
+    },
+    // 3. المدينة المنورة 🕌
     {
       'name': 'المدينة المنورة',
-      'colors': [
-        Color(0xFF0F1A2E),
-        Color(0xFF1B5E20),
-        Color(0xFF0F1A2E),
-      ],
+      'type': 'image',
+      'imagePath': 'assets/images/backgrounds/madinah2.jpg',
       'icon': Icons.mosque,
     },
-    // 3. ذهبي فاخر (قبة الصخرة)
+    // 4. الحرم المكي 🕋 (الصورة الجديدة)
     {
-      'name': 'قبة الصخرة',
+      'name': 'الحرم المكي',
+      'type': 'image',
+      'imagePath': 'assets/images/backgrounds/makkah2.jpg',
+      'icon': Icons.mosque,
+    },
+    // 5. ذهبي فاخر ⭐
+    {
+      'name': 'ذهبي فاخر',
+      'type': 'gradient',
       'colors': [
         Color(0xFF1A1A00),
         Color(0xFFD4AF37),
@@ -43,29 +47,10 @@ class BackgroundService {
       ],
       'icon': Icons.temple_buddhist,
     },
-    // 4. أزرق ليلي (المسجد الأقصى)
-    {
-      'name': 'المسجد الأقصى',
-      'colors': [
-        Color(0xFF0B132B),
-        Color(0xFF1A237E),
-        Color(0xFF0B132B),
-      ],
-      'icon': Icons.mosque,
-    },
-    // 5. بنفسجي إسلامي (زخرفة)
-    {
-      'name': 'زخرفة إسلامية',
-      'colors': [
-        Color(0xFF1C2541),
-        Color(0xFF4A148C),
-        Color(0xFF1C2541),
-      ],
-      'icon': Icons.auto_awesome,
-    },
-    // 6. أسود هادئ (ليل)
+    // 6. ليل هادئ 🌙
     {
       'name': 'ليل هادئ',
+      'type': 'gradient',
       'colors': [
         Color(0xFF000000),
         Color(0xFF0B132B),
@@ -95,7 +80,6 @@ class BackgroundService {
     await prefs.setInt(_key, index);
   }
 
-  /// بناء الخلفية كـ Gradient + زخرفة إسلامية
   static Widget buildBackground({
     required int index,
     required Widget child,
@@ -104,54 +88,75 @@ class BackgroundService {
       index = 0;
     }
     final bg = backgrounds[index];
-    final colors = bg['colors'] as List<Color>;
+    final type = bg['type'] as String;
 
     return Stack(
       children: [
-        // 1. الخلفية المتدرجة
+        Positioned.fill(
+          child: type == 'image'
+              ? _buildImageBackground(bg['imagePath'] as String)
+              : _buildGradientBackground(bg['colors'] as List<Color>),
+        ),
         Positioned.fill(
           child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: colors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
+            color: Colors.black.withValues(alpha: 0.55),
           ),
         ),
-
-        // 2. زخرفة إسلامية شفافة
         Positioned.fill(
           child: CustomPaint(
             painter: _IslamicPatternPainter(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+              color: const Color(0xFF4A90E2).withValues(alpha: 0.08),
             ),
           ),
         ),
-
-        // 3. الأيقونة الكبيرة الشفافة
-        Positioned(
-          top: 80,
-          right: 20,
-          child: Icon(
-            bg['icon'] as IconData,
-            size: 120,
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.06),
-          ),
-        ),
-
-        // 4. المحتوى
         Positioned.fill(child: child),
       ],
     );
   }
+
+  static Widget _buildImageBackground(String path) {
+    return Image.asset(
+      path,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF0A1929),
+                Color(0xFF132F4C),
+                Color(0xFF0A1929),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.mosque,
+              color: Colors.white12,
+              size: 200,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildGradientBackground(List<Color> colors) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+    );
+  }
 }
 
-/// ═══════════════════════════════════════════════════════════
-/// رسم زخرفة إسلامية (نجمة 8 رؤوس + دوائر)
-/// ═══════════════════════════════════════════════════════════
 class _IslamicPatternPainter extends CustomPainter {
   final Color color;
 
@@ -167,7 +172,6 @@ class _IslamicPatternPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.4;
 
-    // نجمة 8 رؤوس
     for (int i = 0; i < 8; i++) {
       final angle = i * (3.14159 / 4);
       final dx = radius * _cos(angle);
@@ -177,20 +181,13 @@ class _IslamicPatternPainter extends CustomPainter {
       canvas.drawCircle(point, 4, paint);
     }
 
-    // دوائر متحدة المركز
     for (int i = 1; i <= 3; i++) {
       canvas.drawCircle(center, radius * i / 3, paint);
     }
   }
 
-  double _cos(double x) {
-    // Taylor approximation
-    return (1 - x * x / 2 + x * x * x * x / 24);
-  }
-
-  double _sin(double x) {
-    return (x - x * x * x / 6 + x * x * x * x * x / 120);
-  }
+  double _cos(double x) => 1 - x * x / 2 + x * x * x * x / 24;
+  double _sin(double x) => x - x * x * x / 6 + x * x * x * x * x / 120;
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;

@@ -112,6 +112,7 @@ flutter:
 
     # الصور
     - assets/images/
+    - assets/images/backgrounds/
     - assets/images/flags/
     - assets/icon/
 

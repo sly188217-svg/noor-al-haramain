@@ -1,13 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// ═══════════════════════════════════════════════════════════
-/// 🕌 خدمة الأذكار الدورية
-/// كل X دقيقة → إشعار بذكر
-/// يوم الجمعة → الصلاة على النبي ﷺ
-/// ═══════════════════════════════════════════════════════════
 class PeriodicAzkarService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -16,7 +13,6 @@ class PeriodicAzkarService {
   static int _currentIndex = 0;
   static int _fridayIndex = 0;
 
-  // 📋 الأذكار اليومية
   static const List<String> _azkar = [
     'سبحان الله',
     'الحمد لله',
@@ -40,7 +36,6 @@ class PeriodicAzkarService {
     'سبحان الله وبحمده سبحان الله العظيم',
   ];
 
-  // 📋 أذكار الجمعة
   static const List<String> _fridayAzkar = [
     'اللهم صل وسلم على نبينا محمد ﷺ',
     'اللهم صل على محمد وعلى آل محمد',
@@ -49,9 +44,6 @@ class PeriodicAzkarService {
     'أكثر من الصلاة على النبي اليوم (يوم الجمعة)',
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 🚀 بدء الأذكار
-  // ═══════════════════════════════════════════════════════════
   static Future<void> start() async {
     await stop();
 
@@ -66,8 +58,9 @@ class PeriodicAzkarService {
     final startHour = prefs.getInt('periodic_azkar_start_hour') ?? 6;
     final endHour = prefs.getInt('periodic_azkar_end_hour') ?? 22;
 
-    debugPrint(
-        '🕌 بدء الأذكار الدورية كل $intervalMinutes دقيقة ($startHour-$endHour)');
+    debugPrint('🕌 بدء الأذكار كل $intervalMinutes دقيقة ($startHour-$endHour)');
+
+    _showZikrIfInTimeRange(startHour, endHour);
 
     _timer = Timer.periodic(
       Duration(minutes: intervalMinutes),
@@ -104,23 +97,40 @@ class PeriodicAzkarService {
     }
 
     try {
+      // ✅ بدون const لأننا نستخدم قيم متغيرة
+      final androidDetails = AndroidNotificationDetails(
+        'periodic_azkar_channel',
+        'الأذكار الدورية',
+        channelDescription: 'تذكير بالأذكار كل فترة',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('adhan_sudais'),
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 500, 300, 500]),
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        color: const Color(0xFF4A90E2),
+        colorized: true,
+        ongoing: false,
+        autoCancel: true,
+        visibility: NotificationVisibility.public,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        presentBadge: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
+
       await _notifications.show(
         DateTime.now().millisecondsSinceEpoch % 100000,
         title,
         zikr,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'periodic_azkar_channel',
-            'الأذكار الدورية',
-            channelDescription: 'تذكير بالأذكار كل فترة',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-            color: Color(0xFFD4AF37),
-            colorized: true,
-            category: AndroidNotificationCategory.reminder,
-          ),
+        NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
         ),
       );
       debugPrint('📿 $title: $zikr');
@@ -132,5 +142,4 @@ class PeriodicAzkarService {
   static Future<void> showTestZikr() async {
     await _showZikrIfInTimeRange(0, 24);
   }
-}o
-
+}

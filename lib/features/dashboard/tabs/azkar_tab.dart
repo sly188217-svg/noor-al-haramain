@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/language_provider.dart';
 
 class AzkarTab extends StatefulWidget {
@@ -19,246 +20,80 @@ class _AzkarTabState extends State<AzkarTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // 🎨 لوحة الألوان الجديدة (أزرق)
+  static const Color _primary = Color(0xFF4A90E2);
+  static const Color _primaryDark = Color(0xFF2E5C8A);
+  static const Color _primaryLight = Color(0xFF64B5F6);
+  static const Color _bg = Color(0xFF0A1929);
+  static const Color _surface = Color(0xFF132F4C);
+
   // ═══════════════════════════════════════════════════════════
-  // 🌅 أذكار الصباح (15)
+  // 🌅 أذكار الصباح
   // ═══════════════════════════════════════════════════════════
   final List<Map<String, dynamic>> _morningAzkar = [
-    {
-      'text': 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذَا الْيَوْمِ فَتْحَهُ وَنَصْرَهُ وَنُورَهُ وَبَرَكَتَهُ وَهُدَاهُ.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ.',
-      'count': 1
-    },
-    {
-      'text': 'أَصْبَحْنَا عَلَى فِطْرَةِ الْإِسْلَامِ، وَعَلَى كَلِمَةِ الْإِخْلَاصِ، وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ ﷺ.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.',
-      'count': 4
-    },
-    {
-      'text': 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ.',
-      'count': 3
-    },
-    {
-      'text': 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.',
-      'count': 7
-    },
-    {
-      'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ.',
-      'count': 3
-    },
-    {
-      'text': 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.',
-      'count': 3
-    },
-    {
-      'text': 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي.',
-      'count': 1
-    },
-    {
-      'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.',
-      'count': 3
-    },
-    {
-      'text': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ.',
-      'count': 1
-    },
-    {
-      'text': 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.',
-      'count': 100
-    },
-    {
-      'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-      'count': 10
-    },
-    {
-      'text': 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.',
-      'count': 100
-    },
-    {
-      'text': 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.',
-      'count': 10
-    },
+    {'text': 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذَا الْيَوْمِ فَتْحَهُ وَنَصْرَهُ وَنُورَهُ وَبَرَكَتَهُ وَهُدَاهُ.', 'count': 1},
+    {'text': 'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ.', 'count': 1},
+    {'text': 'أَصْبَحْنَا عَلَى فِطْرَةِ الْإِسْلَامِ، وَعَلَى كَلِمَةِ الْإِخْلَاصِ، وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ ﷺ.', 'count': 1},
+    {'text': 'اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 4},
+    {'text': 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 3},
+    {'text': 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.', 'count': 7},
+    {'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ.', 'count': 3},
+    {'text': 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.', 'count': 3},
+    {'text': 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي.', 'count': 1},
+    {'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.', 'count': 3},
+    {'text': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ.', 'count': 1},
+    {'text': 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.', 'count': 100},
+    {'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', 'count': 10},
+    {'text': 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.', 'count': 100},
+    {'text': 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.', 'count': 10},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 🌙 أذكار المساء (12)
-  // ═══════════════════════════════════════════════════════════
+  // 🌙 أذكار المساء
   final List<Map<String, dynamic>> _eveningAzkar = [
-    {
-      'text': 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذِهِ اللَّيْلَةِ فَتْحَهَا وَنَصْرَهَا وَنُورَهَا وَبَرَكَتَهَا وَهُدَاهَا.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.',
-      'count': 4
-    },
-    {
-      'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.',
-      'count': 3
-    },
-    {
-      'text': 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ.',
-      'count': 3
-    },
-    {
-      'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ.',
-      'count': 3
-    },
-    {
-      'text': 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.',
-      'count': 7
-    },
-    {
-      'text': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ.',
-      'count': 1
-    },
-    {
-      'text': 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.',
-      'count': 100
-    },
-    {
-      'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-      'count': 10
-    },
-    {
-      'text': 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.',
-      'count': 100
-    },
-    {
-      'text': 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.',
-      'count': 10
-    },
+    {'text': 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذِهِ اللَّيْلَةِ فَتْحَهَا وَنَصْرَهَا وَنُورَهَا وَبَرَكَتَهَا وَهُدَاهَا.', 'count': 1},
+    {'text': 'اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ.', 'count': 1},
+    {'text': 'اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 4},
+    {'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.', 'count': 3},
+    {'text': 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ.', 'count': 3},
+    {'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ.', 'count': 3},
+    {'text': 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.', 'count': 7},
+    {'text': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ.', 'count': 1},
+    {'text': 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.', 'count': 100},
+    {'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', 'count': 10},
+    {'text': 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.', 'count': 100},
+    {'text': 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.', 'count': 10},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 😴 أذكار النوم (10)
-  // ═══════════════════════════════════════════════════════════
+  // 😴 أذكار النوم
   final List<Map<String, dynamic>> _sleepAzkar = [
-    {
-      'text': 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.',
-      'count': 3
-    },
-    {
-      'text': 'بِاسْمِكَ رَبِّ وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا.',
-      'count': 1
-    },
-    {
-      'text': 'سُبْحَانَ اللَّهِ.',
-      'count': 33
-    },
-    {
-      'text': 'الْحَمْدُ لِلَّهِ.',
-      'count': 33
-    },
-    {
-      'text': 'اللَّهُ أَكْبَرُ.',
-      'count': 34
-    },
-    {
-      'text': 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ.',
-      'count': 1
-    },
-    {
-      'text': 'آيَةُ الْكُرْسِيِّ: اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...',
-      'count': 1
-    },
-    {
-      'text': 'قُلْ هُوَ اللَّهُ أَحَدٌ... (سورة الإخلاص)',
-      'count': 3
-    },
-    {
-      'text': 'قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ... (سورة الفلق)',
-      'count': 3
-    },
-    {
-      'text': 'قُلْ أَعُوذُ بِرَبِّ النَّاسِ... (سورة الناس)',
-      'count': 3
-    },
+    {'text': 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا.', 'count': 1},
+    {'text': 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.', 'count': 3},
+    {'text': 'بِاسْمِكَ رَبِّ وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا.', 'count': 1},
+    {'text': 'سُبْحَانَ اللَّهِ.', 'count': 33},
+    {'text': 'الْحَمْدُ لِلَّهِ.', 'count': 33},
+    {'text': 'اللَّهُ أَكْبَرُ.', 'count': 34},
+    {'text': 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ.', 'count': 1},
+    {'text': 'آيَةُ الْكُرْسِيِّ: اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...', 'count': 1},
+    {'text': 'قُلْ هُوَ اللَّهُ أَحَدٌ... (سورة الإخلاص)', 'count': 3},
+    {'text': 'قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ... (سورة الفلق)', 'count': 3},
+    {'text': 'قُلْ أَعُوذُ بِرَبِّ النَّاسِ... (سورة الناس)', 'count': 3},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 🕌 أذكار بعد الصلاة (10)
-  // ═══════════════════════════════════════════════════════════
+  // 🕌 أذكار بعد الصلاة
   final List<Map<String, dynamic>> _prayerAzkar = [
-    {
-      'text': 'أَسْتَغْفِرُ اللَّهَ (ثلاثاً)، اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ.',
-      'count': 1
-    },
-    {
-      'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ.',
-      'count': 1
-    },
-    {
-      'text': 'سُبْحَانَ اللَّهِ.',
-      'count': 33
-    },
-    {
-      'text': 'الْحَمْدُ لِلَّهِ.',
-      'count': 33
-    },
-    {
-      'text': 'اللَّهُ أَكْبَرُ.',
-      'count': 33
-    },
-    {
-      'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-      'count': 1
-    },
-    {
-      'text': 'آيَةُ الْكُرْسِيِّ.',
-      'count': 1
-    },
-    {
-      'text': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا.',
-      'count': 1
-    },
-    {
-      'text': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ.',
-      'count': 1
-    },
+    {'text': 'أَسْتَغْفِرُ اللَّهَ (ثلاثاً)، اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ.', 'count': 1},
+    {'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', 'count': 1},
+    {'text': 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ.', 'count': 1},
+    {'text': 'سُبْحَانَ اللَّهِ.', 'count': 33},
+    {'text': 'الْحَمْدُ لِلَّهِ.', 'count': 33},
+    {'text': 'اللَّهُ أَكْبَرُ.', 'count': 33},
+    {'text': 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', 'count': 1},
+    {'text': 'آيَةُ الْكُرْسِيِّ.', 'count': 1},
+    {'text': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا.', 'count': 1},
+    {'text': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ.', 'count': 1},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 📿 أذكار عامة (15)
-  // ═══════════════════════════════════════════════════════════
-  final List<Map<String, dynamic>> _generalAzkar = [
-    {'text': 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ.', 'count': 1},
-    {'text': 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ.', 'count': 1},
-    {'text': 'لَا إِلَهَ إِلَّا اللَّهُ.', 'count': 1},
-    {'text': 'أَسْتَغْفِرُ اللَّهَ.', 'count': 1},
-    {'text': 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ.', 'count': 1},
-    {'text': 'سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ.', 'count': 1},
-    {'text': 'اللَّهُمَّ اغْفِرْ لِي وَلِوَالِدَيَّ.', 'count': 1},
-    {'text': 'اللَّهُمَّ ارْحَمْنِي وَارْحَمْ وَالِدَيَّ.', 'count': 1},
-    {'text': 'حَسْبِيَ اللَّهُ وَنِعْمَ الْوَكِيلُ.', 'count': 1},
-    {'text': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْجَنَّةَ وَأَعُوذُ بِكَ مِنَ النَّارِ.', 'count': 1},
-    {'text': 'اللَّهُمَّ أَصْلِحْ لِي دِينِي الَّذِي هُوَ عِصْمَةُ أَمْرِي.', 'count': 1},
-    {'text': 'اللَّهُمَّ أَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي.', 'count': 1},
-    {'text': 'اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ.', 'count': 1},
-    {'text': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى.', 'count': 1},
-    {'text': 'لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ.', 'count': 1},
-  ];
-
-  // ═══════════════════════════════════════════════════════════
-  // 🤲 أدعية قرآنية (15)
-  // ═══════════════════════════════════════════════════════════
+  // 🤲 أدعية قرآنية
   final List<Map<String, String>> _duas = [
     {'text': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ', 'reference': 'البقرة 201'},
     {'text': 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً إِنَّكَ أَنْتَ الْوَهَّابُ', 'reference': 'آل عمران 8'},
@@ -268,51 +103,36 @@ class _AzkarTabState extends State<AzkarTab>
     {'text': 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا', 'reference': 'الفرقان 74'},
     {'text': 'رَبِّ زِدْنِي عِلْمًا', 'reference': 'طه 114'},
     {'text': 'رَبَّنَا لَا تُؤَاخِذْنَا إِنْ نَسِينَا أَوْ أَخْطَأْنَا', 'reference': 'البقرة 286'},
-    {'text': 'رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَا إِصْرًا كَمَا حَمَلْتَهُ عَلَى الَّذِينَ مِنْ قَبْلِنَا', 'reference': 'البقرة 286'},
-    {'text': 'رَبَّنَا وَآتِنَا مَا وَعَدْتَنَا عَلَى رُسُلِكَ وَلَا تُخْزِنَا يَوْمَ الْقِيَامَةِ', 'reference': 'آل عمران 194'},
-    {'text': 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِنْ ذُرِّيَّتِي', 'reference': 'إبراهيم 40'},
     {'text': 'رَبَّنَا اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ يَوْمَ يَقُومُ الْحِسَابُ', 'reference': 'إبراهيم 41'},
     {'text': 'رَبِّ هَبْ لِي حُكْمًا وَأَلْحِقْنِي بِالصَّالِحِينَ', 'reference': 'الشعراء 83'},
-    {'text': 'رَبَّنَا وَسِعْتَ كُلَّ شَيْءٍ رَحْمَةً وَعِلْمًا فَاغْفِرْ لِلَّذِينَ تَابُوا', 'reference': 'غافر 7'},
-    {'text': 'رَبَّنَا اصْرِفْ عَنَّا عَذَابَ جَهَنَّمَ إِنَّ عَذَابَهَا كَانَ غَرَامًا', 'reference': 'الفرقان 65'},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 🕋 الرقية الشرعية (8)
-  // ═══════════════════════════════════════════════════════════
+  // 🕋 الرقية الشرعية
   final List<Map<String, String>> _ruqyah = [
     {'text': 'بِسْمِ اللَّهِ أَرْقِيكَ مِنْ كُلِّ شَيْءٍ يُؤْذِيكَ، مِنْ شَرِّ كُلِّ نَفْسٍ أَوْ عَيْنٍ حَاسِدٍ، اللَّهُ يَشْفِيكَ.', 'count': '3'},
-    {'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ غَضَبِهِ وَعِقَابِهِ، وَشَرِّ عِبَادِهِ، وَمِنْ هَمَزَاتِ الشَّيَاطِينِ وَأَنْ يَحْضُرُونِ.', 'count': '3'},
+    {'text': 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ غَضَبِهِ وَعِقَابِهِ، وَشَرِّ عِبَادِهِ.', 'count': '3'},
     {'text': 'أَعُوذُ بِاللَّهِ وَقُدْرَتِهِ مِنْ شَرِّ مَا أَجِدُ وَأُحَاذِرُ.', 'count': '7'},
-    {'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ.', 'count': '3'},
+    {'text': 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ.', 'count': '3'},
     {'text': 'اللَّهُمَّ رَبَّ النَّاسِ، أَذْهِبِ الْبَاسَ، اشْفِ أَنْتَ الشَّافِي، لَا شِفَاءَ إِلَّا شِفَاؤُكَ.', 'count': '3'},
     {'text': 'أَسْأَلُ اللَّهَ الْعَظِيمَ رَبَّ الْعَرْشِ الْعَظِيمِ أَنْ يَشْفِيَكَ.', 'count': '7'},
-    {'text': 'الفَاتِحَةُ (قراءة سورة الفاتحة).', 'count': '7'},
-    {'text': 'المُعَوِّذَتَانِ (الإخلاص + الفلق + الناس).', 'count': '3'},
   ];
 
-  // ═══════════════════════════════════════════════════════════
-  // 📺 البث المباشر — HLS (بدون يوتيوب)
-  // ═══════════════════════════════════════════════════════════
+  // 📺 البث المباشر
   final List<Map<String, String>> _liveStreams = [
     {
       'name': 'الحرم المكي',
       'nameEn': 'Makkah Live',
       'icon': '🕋',
-      'url': 'https://win.holol.com/live/quran/playlist.m3u8',
-      'fallback': 'https://www.youtube.com,
+      'url': 'https://www.youtube.com/@SaudiQuranTv/live',
     },
     {
       'name': 'المسجد النبوي',
       'nameEn': 'Madinah Live',
       'icon': '🕌',
-      'url': 'https://win.holol.com/live/sunnah/playlist.m3u8',
-      'fallback': 'https://www.youtube.com/@SaudiSunnahTv/live',
+      'url': 'https://www.youtube.com/@SaudiSunnahTv/live',
     },
-
-  // ═══════════════════════════════════════════════════════════
+  ];
   // 📿 السبحة
-  // ═══════════════════════════════════════════════════════════
   int _tasbihCount = 0;
   String _selectedDhikr = 'سبحان الله';
   Map<String, int> _tasbihCounts = {};
@@ -332,7 +152,7 @@ class _AzkarTabState extends State<AzkarTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _loadTasbihPreference();
   }
 
@@ -342,9 +162,6 @@ class _AzkarTabState extends State<AzkarTab>
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📿 السبحة
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadTasbihPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final savedDhikr = prefs.getString('tasbih_dhikr');
@@ -390,20 +207,26 @@ class _AzkarTabState extends State<AzkarTab>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: _primary, width: 1.5),
+        ),
         title: const Text('🔄 إعادة تعيين',
-            style: TextStyle(color: Color(0xFFD4AF37))),
+            style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
         content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟',
             style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                foregroundColor: Colors.black),
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                elevation: 4),
             child: const Text('إعادة'),
           ),
         ],
@@ -421,18 +244,27 @@ class _AzkarTabState extends State<AzkarTab>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
-        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!',
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.orange, width: 1.5),
+        ),
+        title:
+            const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
+        content: const Text(
+            'هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 4),
             child: const Text('حذف الكل'),
           ),
         ],
@@ -457,24 +289,28 @@ class _AzkarTabState extends State<AzkarTab>
     _saveTasbihPreference();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 📺 فتح البث المباشر
-  // ═══════════════════════════════════════════════════════════
-  void _openLiveStream(Map<String, String> stream, String title) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HlsPlayerScreen(
-          url: stream['url']!,
-          fallbackUrl: stream['fallback'],
-          title: title,
-        ),
-      ),
-    );
+  // ✅ فتح البث في يوتيوب مباشرة (أضمن طريقة)
+  Future<void> _openLiveStream(String url, String title) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ تعذّر فتح $title')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ خطأ: $e')),
+      );
+    }
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 بناء الأذكار
+  // 🎨 بناء الواجهات
   // ═══════════════════════════════════════════════════════════
   Widget _buildAzkarList(
       List<Map<String, dynamic>> items, bool isArabic, String title) {
@@ -484,26 +320,38 @@ class _AzkarTabState extends State<AzkarTab>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C2541),
-            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              colors: [_primaryDark, _surface],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: _primary.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Text(title,
                   style: const TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold)),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                  gradient: const LinearGradient(
+                    colors: [_primary, _primaryDark],
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('${items.length}',
                     style: const TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.bold)),
               ),
@@ -522,9 +370,24 @@ class _AzkarTabState extends State<AzkarTab>
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  gradient: LinearGradient(
+                    colors: [
+                      _surface.withValues(alpha: 0.9),
+                      _bg.withValues(alpha: 0.9),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _primary.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -537,18 +400,27 @@ class _AzkarTabState extends State<AzkarTab>
                             height: 1.8),
                         textAlign: TextAlign.right,
                         textDirection: TextDirection.rtl),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        gradient: const LinearGradient(
+                          colors: [_primary, _primaryDark],
+                        ),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _primary.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                           '🔄 $count ${isArabic ? 'مرات' : 'times'}',
                           style: const TextStyle(
-                              color: Color(0xFFD4AF37),
+                              color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold)),
                     ),
@@ -572,9 +444,11 @@ class _AzkarTabState extends State<AzkarTab>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            gradient: LinearGradient(
+              colors: [_surface.withValues(alpha: 0.9), _bg.withValues(alpha: 0.9)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _primary.withValues(alpha: 0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -589,8 +463,7 @@ class _AzkarTabState extends State<AzkarTab>
                   textDirection: TextDirection.rtl),
               const SizedBox(height: 8),
               Text('📖 ${dua['reference']}',
-                  style: const TextStyle(
-                      color: Color(0xFFD4AF37), fontSize: 12)),
+                  style: const TextStyle(color: _primaryLight, fontSize: 12)),
             ],
           ),
         );
@@ -608,9 +481,11 @@ class _AzkarTabState extends State<AzkarTab>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            gradient: LinearGradient(
+              colors: [_surface.withValues(alpha: 0.9), _bg.withValues(alpha: 0.9)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -625,13 +500,15 @@ class _AzkarTabState extends State<AzkarTab>
                   textDirection: TextDirection.rtl),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.green, width: 0.5),
                 ),
-                child: Text('🔄 ${item['count']} ${isArabic ? 'مرات' : 'times'}',
+                child: Text(
+                    '🔄 ${item['count']} ${isArabic ? 'مرات' : 'times'}',
                     style: const TextStyle(
                         color: Colors.green,
                         fontSize: 12,
@@ -651,40 +528,125 @@ class _AzkarTabState extends State<AzkarTab>
       itemBuilder: (context, index) {
         final stream = _liveStreams[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Text(stream['icon']!,
-                style: const TextStyle(fontSize: 36)),
-            title: Text(isArabic ? stream['name']! : stream['nameEn']!,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-            subtitle: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              margin: const EdgeInsets.only(top: 6),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.red, width: 0.5),
-              ),
-              child: const Text('🔴 LIVE',
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
+            gradient: LinearGradient(
+              colors: [_surface, _bg],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            trailing: const Icon(Icons.play_circle_fill,
-                color: Color(0xFFD4AF37), size: 40),
-            onTap: () => _openLiveStream(
-                stream, isArabic ? stream['name']! : stream['nameEn']!),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: _primary.withValues(alpha: 0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: _primary.withValues(alpha: 0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _openLiveStream(
+                  stream['url']!,
+                  isArabic ? stream['name']! : stream['nameEn']!),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_primary, _primaryDark],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _primary.withValues(alpha: 0.5),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(stream['icon']!,
+                            style: const TextStyle(fontSize: 30)),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              isArabic ? stream['name']! : stream['nameEn']!,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: Colors.red, width: 0.8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.circle,
+                                        color: Colors.red, size: 8),
+                                    SizedBox(width: 4),
+                                    Text('LIVE',
+                                        style: TextStyle(
+                                            color: Colors.red,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('اضغط للمشاهدة',
+                                  style: TextStyle(
+                                      color: Colors.white54, fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_primary, _primaryDark],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _primary.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.play_arrow,
+                          color: Colors.white, size: 26),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -699,14 +661,22 @@ class _AzkarTabState extends State<AzkarTab>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C2541),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+              gradient: LinearGradient(
+                colors: [_surface, _bg],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _primary.withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: DropdownButton<String>(
               value: _selectedDhikr,
-              dropdownColor: const Color(0xFF1C2541),
+              dropdownColor: _surface,
               style: const TextStyle(color: Colors.white, fontSize: 18),
               underline: const SizedBox(),
               isExpanded: true,
@@ -727,13 +697,14 @@ class _AzkarTabState extends State<AzkarTab>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37)
-                                .withValues(alpha: 0.2),
+                            gradient: const LinearGradient(
+                              colors: [_primary, _primaryDark],
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text('$count',
                               style: const TextStyle(
-                                  color: Color(0xFFD4AF37),
+                                  color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -746,80 +717,104 @@ class _AzkarTabState extends State<AzkarTab>
               },
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
+          // 🎯 الزر الدائري الكبير (3D)
           GestureDetector(
             onTap: _incrementTasbih,
             child: Container(
-              width: 180,
-              height: 180,
+              width: 200,
+              height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFD4AF37), Color(0xFFB8860B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                gradient: const RadialGradient(
+                  colors: [_primaryLight, _primary, _primaryDark],
+                  stops: [0.1, 0.6, 1.0],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    spreadRadius: 5,
+                    color: _primary.withValues(alpha: 0.6),
+                    blurRadius: 30,
+                    spreadRadius: 8,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('$_tasbihCount',
-                        style: const TextStyle(
-                            color: Color(0xFF0B132B),
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(isArabic ? 'اضغط للعد' : 'Tap to count',
-                        style: const TextStyle(
-                            color: Color(0xFF0B132B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold)),
-                  ],
+              child: Container(
+                margin: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [_primaryLight, _primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$_tasbihCount',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 56,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ])),
+                      const SizedBox(height: 6),
+                      Text(isArabic ? 'اضغط للعد' : 'Tap to count',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildCircleButton(
+              _buildElevatedCircleButton(
                 icon: Icons.remove,
                 color: Colors.orange,
-                tooltip: 'تقليل',
                 onTap: _decrementTasbih,
               ),
-              const SizedBox(width: 16),
-              _buildCircleButton(
+              const SizedBox(width: 20),
+              _buildElevatedCircleButton(
                 icon: Icons.refresh,
-                color: const Color(0xFFD4AF37),
-                tooltip: 'إعادة تعيين',
+                color: _primary,
                 onTap: _resetCurrentTasbih,
               ),
-              const SizedBox(width: 16),
-              _buildCircleButton(
+              const SizedBox(width: 20),
+              _buildElevatedCircleButton(
                 icon: Icons.add,
                 color: Colors.green,
-                tooltip: 'زيادة',
                 onTap: _incrementTasbih,
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           if (_tasbihCounts.values.any((v) => v > 0)) ...[
             const Align(
               alignment: Alignment.centerRight,
               child: Text('📊 سجل العدادات',
                   style: TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.bold)),
             ),
@@ -827,21 +822,23 @@ class _AzkarTabState extends State<AzkarTab>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C2541).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                gradient: LinearGradient(
+                  colors: [_surface, _bg],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: _dhikrList.map((dhikr) {
                   final count = _tasbihCounts[dhikr] ?? 0;
                   if (count == 0) return const SizedBox.shrink();
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Row(
                       children: [
                         const Icon(Icons.circle,
-                            color: Color(0xFFD4AF37), size: 6),
-                        const SizedBox(width: 8),
+                            color: _primary, size: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(dhikr,
                               style: const TextStyle(
@@ -849,11 +846,21 @@ class _AzkarTabState extends State<AzkarTab>
                                   fontSize: 14,
                                   fontFamily: 'Amiri')),
                         ),
-                        Text('$count',
-                            style: const TextStyle(
-                                color: Color(0xFFD4AF37),
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [_primary, _primaryDark],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text('$count',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold)),
+                        ),
                       ],
                     ),
                   );
@@ -868,12 +875,13 @@ class _AzkarTabState extends State<AzkarTab>
                 icon: const Icon(Icons.delete_forever, size: 18),
                 label: const Text('🗑️ حذف جميع العدادات'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.withValues(alpha: 0.15),
-                  foregroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 6,
+                  shadowColor: Colors.red.withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
                   ),
                 ),
               ),
@@ -884,29 +892,35 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  Widget _buildCircleButton({
+  Widget _buildElevatedCircleButton({
     required IconData icon,
     required Color color,
-    required String tooltip,
     required VoidCallback onTap,
   }) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.15),
-              border: Border.all(color: color, width: 2),
+    return Material(
+      color: Colors.transparent,
+      elevation: 6,
+      shadowColor: color.withValues(alpha: 0.5),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [color, color.withValues(alpha: 0.7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Icon(icon, color: color, size: 28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 2,
+            ),
           ),
+          child: Icon(icon, color: Colors.white, size: 30),
         ),
       ),
     );
@@ -918,16 +932,28 @@ class _AzkarTabState extends State<AzkarTab>
     final isArabic = lang == 'ar';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: _bg,
       body: Column(
         children: [
           Container(
-            color: const Color(0xFF1C2541),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [_primaryDark, _surface],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: const Color(0xFFD4AF37),
-              labelColor: const Color(0xFFD4AF37),
-              unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white54,
               isScrollable: true,
               tabs: [
                 Tab(text: isArabic ? '🌅 صباح' : '🌅 Morning'),
@@ -936,6 +962,8 @@ class _AzkarTabState extends State<AzkarTab>
                 Tab(text: isArabic ? '🕌 صلاة' : '🕌 Prayer'),
                 Tab(text: isArabic ? '🤲 أدعية' : '🤲 Duas'),
                 Tab(text: isArabic ? '🕋 رقية' : '🕋 Ruqyah'),
+                Tab(text: isArabic ? '📺 بث' : '📺 Live'),
+                Tab(text: isArabic ? '📿 تسبيح' : '📿 Tasbih'),
               ],
             ),
           ),
@@ -943,199 +971,23 @@ class _AzkarTabState extends State<AzkarTab>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildAzkarList(_morningAzkar, isArabic, isArabic ? '🌅 أذكار الصباح' : 'Morning'),
-                _buildAzkarList(_eveningAzkar, isArabic, isArabic ? '🌙 أذكار المساء' : 'Evening'),
-                _buildAzkarList(_sleepAzkar, isArabic, isArabic ? '😴 أذكار النوم' : 'Sleep'),
-                _buildAzkarList(_prayerAzkar, isArabic, isArabic ? '🕌 بعد الصلاة' : 'After Prayer'),
+                _buildAzkarList(_morningAzkar, isArabic,
+                    isArabic ? '🌅 أذكار الصباح' : 'Morning Azkar'),
+                _buildAzkarList(_eveningAzkar, isArabic,
+                    isArabic ? '🌙 أذكار المساء' : 'Evening Azkar'),
+                _buildAzkarList(_sleepAzkar, isArabic,
+                    isArabic ? '😴 أذكار النوم' : 'Sleep Azkar'),
+                _buildAzkarList(_prayerAzkar, isArabic,
+                    isArabic ? '🕌 بعد الصلاة' : 'After Prayer'),
                 _buildDuasList(isArabic),
                 _buildRuqyahList(isArabic),
+                _buildLiveStreams(isArabic),
+                _buildSmartTasbih(isArabic),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// 📺 HLS Player Screen
-// ═══════════════════════════════════════════════════════════
-class HlsPlayerScreen extends StatefulWidget {
-  final String url;
-  final String? fallbackUrl;
-  final String title;
-
-  const HlsPlayerScreen({
-    super.key,
-    required this.url,
-    required this.title,
-    this.fallbackUrl,
-  });
-
-  @override
-  State<HlsPlayerScreen> createState() => _HlsPlayerScreenState();
-}
-
-class _HlsPlayerScreenState extends State<HlsPlayerScreen> {
-  VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-  bool _isLoading = true;
-  bool _hasError = false;
-  String _errorMessage = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _initializePlayer();
-  }
-
-  Future<void> _initializePlayer() async {
-    try {
-      _videoController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.url),
-        httpHeaders: const {
-          'User-Agent':
-              'Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36',
-        },
-      );
-
-      await _videoController!.initialize();
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoController!,
-        autoPlay: true,
-        looping: false,
-        aspectRatio: _videoController!.value.aspectRatio,
-        errorBuilder: (context, errorMessage) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline,
-                      color: Colors.orange, size: 60),
-                  const SizedBox(height: 16),
-                  Text(
-                    '⚠️ تعذّر التشغيل\n$errorMessage',
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      if (mounted) setState(() => _isLoading = false);
-    } catch (e) {
-      debugPrint('❌ HLS error: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-          _errorMessage = e.toString();
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _chewieController?.dispose();
-    _videoController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1C2541),
-        foregroundColor: const Color(0xFFD4AF37),
-        title: Row(
-          children: [
-            const Icon(Icons.live_tv, color: Color(0xFFD4AF37), size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                widget.title,
-                style: const TextStyle(
-                    fontFamily: 'Amiri', fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Text('🔴 LIVE',
-                style: TextStyle(
-                    color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFD4AF37)),
-                  SizedBox(height: 16),
-                  Text('جاري تحميل البث...',
-                      style: TextStyle(color: Colors.white70)),
-                ],
-              ),
-            )
-          : _hasError
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.wifi_off,
-                            color: Colors.orange, size: 80),
-                        const SizedBox(height: 16),
-                        const Text(
-                          '⚠️ تعذّر تشغيل البث المباشر',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _errorMessage,
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 12),
-                          textAlign: TextAlign.center,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _isLoading = true;
-                              _hasError = false;
-                            });
-                            _initializePlayer();
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('🔄 إعادة المحاولة'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD4AF37),
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : Chewie(controller: _chewieController!),
     );
   }
 }
