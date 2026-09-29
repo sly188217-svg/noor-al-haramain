@@ -104,11 +104,11 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1C2541),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                  border: Border.all(color: const Color(0xFF4A90E2), width: 2),
                 ),
                 child: const Icon(
                   Icons.gps_fixed,
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   size: 60,
                 ),
               ),
@@ -116,7 +116,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
               const Text(
                 '📍 تحديد الموقع الجغرافي',
                 style: TextStyle(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -140,7 +140,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF1C2541),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD4AF37)),
+                    border: Border.all(color: const Color(0xFF4A90E2)),
                   ),
                   child: Column(
                     children: [
@@ -192,20 +192,20 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                   onPressed: _openSettings,
                   child: const Text(
                     '⚙️ فتح إعدادات الموقع',
-                    style: TextStyle(color: Color(0xFFD4AF37)),
+                    style: TextStyle(color: Color(0xFF4A90E2)),
                   ),
                 ),
                 const SizedBox(height: 12),
               ],
 
               _isLoading
-                  ? const CircularProgressIndicator(color: Color(0xFFD4AF37))
+                  ? const CircularProgressIndicator(color: Color(0xFF4A90E2))
                   : SizedBox(
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37),
+                          backgroundColor: const Color(0xFF4A90E2),
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

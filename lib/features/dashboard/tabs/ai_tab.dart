@@ -48,7 +48,7 @@ class _AiTabState extends State<AiTab>
         elevation: 0,
         title: Row(
           children: [
-            const Icon(Icons.bolt, color: Color(0xFFD4AF37)),
+            const Icon(Icons.bolt, color: Color(0xFF4A90E2)),
             const SizedBox(width: 8),
             Text(
               isArabic ? 'المساعد الذكي "المرشد"' : 'Al-Murshid Assistant',
@@ -58,8 +58,8 @@ class _AiTabState extends State<AiTab>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFFD4AF37),
-          labelColor: const Color(0xFFD4AF37),
+          indicatorColor: const Color(0xFF4A90E2),
+          labelColor: const Color(0xFF4A90E2),
           unselectedLabelColor: Colors.grey,
           isScrollable: true,
           tabs: [
@@ -164,15 +164,15 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+          side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
         ),
         title: const Row(
           children: [
-            Icon(Icons.star, color: Color(0xFFD4AF37)),
+            Icon(Icons.star, color: Color(0xFF4A90E2)),
             SizedBox(width: 8),
             Text(
               'اشترك في Premium',
-              style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18),
+              style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18),
             ),
           ],
         ),
@@ -203,7 +203,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               _activatePremiumForTesting();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
+              backgroundColor: const Color(0xFF4A90E2),
               foregroundColor: Colors.black,
             ),
             child: const Text('💎 اشترك الآن'),
@@ -244,7 +244,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+        child: CircularProgressIndicator(color: Color(0xFF4A90E2)),
       );
     }
 
@@ -269,12 +269,12 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
+                border: Border.all(color: const Color(0xFF4A90E2), width: 2),
               ),
               child: const Icon(
                 Icons.mic,
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF4A90E2),
                 size: 60,
               ),
             ),
@@ -282,7 +282,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             const Text(
               '🎙️ اقرأ معي',
               style: TextStyle(
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF4A90E2),
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Amiri',
@@ -308,12 +308,12 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                    const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                    const Color(0xFF4A90E2).withValues(alpha: 0.3),
+                    const Color(0xFF4A90E2).withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFD4AF37)),
+                border: Border.all(color: const Color(0xFF4A90E2)),
               ),
               child: Column(
                 children: [
@@ -322,7 +322,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                         ? '🎁 تجربة مجانية: $_remainingReadWithMe مرات'
                         : '🔒 انتهت التجربة المجانية',
                     style: const TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: Color(0xFF4A90E2),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -353,7 +353,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
+                  backgroundColor: const Color(0xFF4A90E2),
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 32, vertical: 16),
@@ -372,8 +372,8 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFD4AF37),
-                side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+                foregroundColor: const Color(0xFF4A90E2),
+                side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -400,32 +400,32 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                const Color(0xFFD4AF37).withValues(alpha: 0.05),
+                const Color(0xFF4A90E2).withValues(alpha: 0.2),
+                const Color(0xFF4A90E2).withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFD4AF37)),
+            border: Border.all(color: const Color(0xFF4A90E2)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.star, color: Color(0xFFD4AF37), size: 20),
+              Icon(Icons.star, color: Color(0xFF4A90E2), size: 20),
               SizedBox(width: 8),
               Text(
                 'Premium مُفعّل',
                 style: TextStyle(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Spacer(),
-              Icon(Icons.menu_book, color: Color(0xFFD4AF37), size: 18),
+              Icon(Icons.menu_book, color: Color(0xFF4A90E2), size: 18),
               SizedBox(width: 4),
               Text(
                 '114 سورة',
                 style: TextStyle(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -445,11 +445,11 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               hintText: '🔍 ابحث عن سورة...',
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                  const Icon(Icons.search, color: Color(0xFF4A90E2)),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear,
-                          color: Color(0xFFD4AF37)),
+                          color: Color(0xFF4A90E2)),
                       onPressed: () {
                         _searchController.clear();
                         _filterSurahs('');
@@ -461,18 +461,18 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                borderSide: const BorderSide(color: Color(0xFF4A90E2)),
               ),
             ),
           ),
@@ -485,7 +485,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           child: _isLoadingSurahs
               ? const Center(
                   child: CircularProgressIndicator(
-                      color: Color(0xFFD4AF37)))
+                      color: Color(0xFF4A90E2)))
               : _filteredSurahs.isEmpty
                   ? const Center(
                       child: Text(
@@ -524,7 +524,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               color: const Color(0xFF1C2541).withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -535,13 +535,13 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                        const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                        const Color(0xFF4A90E2).withValues(alpha: 0.3),
+                        const Color(0xFF4A90E2).withValues(alpha: 0.1),
                       ],
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFD4AF37),
+                      color: const Color(0xFF4A90E2),
                       width: 1.5,
                     ),
                   ),
@@ -549,7 +549,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                     child: Text(
                       '${surah.number}',
                       style: const TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Amiri',
@@ -610,7 +610,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                 ),
                 const Icon(
                   Icons.arrow_forward_ios,
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   size: 16,
                 ),
               ],
@@ -772,13 +772,13 @@ class _ChatTabState extends State<_ChatTab> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.history, color: Color(0xFFD4AF37)),
+                  const Icon(Icons.history, color: Color(0xFF4A90E2)),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
                       '📚 سجل المحادثات',
                       style: TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -815,7 +815,7 @@ class _ChatTabState extends State<_ChatTab> {
                           ),
                           child: ListTile(
                             leading: const Icon(Icons.chat,
-                                color: Color(0xFFD4AF37)),
+                                color: Color(0xFF4A90E2)),
                             title: Text(
                               c['title'] ?? '',
                               style: const TextStyle(
@@ -889,14 +889,14 @@ class _ChatTabState extends State<_ChatTab> {
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+          side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
         ),
         title: const Row(
           children: [
-            Icon(Icons.hourglass_empty, color: Color(0xFFD4AF37)),
+            Icon(Icons.hourglass_empty, color: Color(0xFF4A90E2)),
             SizedBox(width: 8),
             Text('انتهى الحد اليومي',
-                style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18)),
+                style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18)),
           ],
         ),
         content: const Text(
@@ -908,7 +908,7 @@ class _ChatTabState extends State<_ChatTab> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
+              backgroundColor: const Color(0xFF4A90E2),
               foregroundColor: Colors.black,
             ),
             child: const Text('حسناً'),
@@ -941,7 +941,7 @@ class _ChatTabState extends State<_ChatTab> {
             children: [
               Icon(
                 _isPremium ? Icons.star : Icons.chat_bubble_outline,
-                color: const Color(0xFFD4AF37),
+                color: const Color(0xFF4A90E2),
                 size: 14,
               ),
               const SizedBox(width: 6),
@@ -950,12 +950,12 @@ class _ChatTabState extends State<_ChatTab> {
                     ? 'Premium — غير محدود'
                     : 'متبقي: $_remainingChats سؤال',
                 style: const TextStyle(
-                    color: Color(0xFFD4AF37), fontSize: 11),
+                    color: Color(0xFF4A90E2), fontSize: 11),
               ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.history,
-                    color: Color(0xFFD4AF37), size: 20),
+                    color: Color(0xFF4A90E2), size: 20),
                 onPressed: _showHistory,
                 tooltip: 'السجل',
                 padding: EdgeInsets.zero,
@@ -964,7 +964,7 @@ class _ChatTabState extends State<_ChatTab> {
               const SizedBox(width: 12),
               IconButton(
                 icon: const Icon(Icons.add_comment,
-                    color: Color(0xFFD4AF37), size: 20),
+                    color: Color(0xFF4A90E2), size: 20),
                 onPressed: _newChat,
                 tooltip: 'محادثة جديدة',
                 padding: EdgeInsets.zero,
@@ -980,7 +980,7 @@ class _ChatTabState extends State<_ChatTab> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.chat_bubble_outline,
-                          color: Color(0xFFD4AF37), size: 60),
+                          color: Color(0xFF4A90E2), size: 60),
                       const SizedBox(height: 16),
                       Text(
                         widget.isArabic
@@ -1018,8 +1018,8 @@ class _ChatTabState extends State<_ChatTab> {
                                   Color(0xFF0B132B)
                                 ])
                               : const LinearGradient(colors: [
-                                  Color(0xFFD4AF37),
-                                  Color(0xFFB8860B)
+                                  Color(0xFF4A90E2),
+                                  Color(0xFF2E5C8A)
                                 ]),
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
@@ -1058,7 +1058,7 @@ class _ChatTabState extends State<_ChatTab> {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      color: Color(0xFFD4AF37), strokeWidth: 2),
+                      color: Color(0xFF4A90E2), strokeWidth: 2),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -1076,7 +1076,7 @@ class _ChatTabState extends State<_ChatTab> {
             color: const Color(0xFF1C2541),
             border: Border(
               top: BorderSide(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3)),
             ),
           ),
           child: Row(
@@ -1109,7 +1109,7 @@ class _ChatTabState extends State<_ChatTab> {
                   width: 48,
                   height: 48,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFD4AF37),
+                    color: Color(0xFF4A90E2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.send,

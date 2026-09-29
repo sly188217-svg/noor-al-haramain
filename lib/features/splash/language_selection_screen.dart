@@ -47,14 +47,14 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
               children: [
                 const Icon(
                   Icons.mosque,
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   size: 100,
                 ),
                 const SizedBox(height: 30),
                 const Text(
                   'نور الحرمين',
                   style: TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: Color(0xFF4A90E2),
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
@@ -72,7 +72,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
+                      backgroundColor: const Color(0xFF4A90E2),
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

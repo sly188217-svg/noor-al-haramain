@@ -91,10 +91,10 @@ class _SplashScreenState extends State<SplashScreen>
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD4AF37).withOpacity(0.05),
+                color: const Color(0xFF4A90E2).withOpacity(0.05),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withOpacity(0.2),
+                    color: const Color(0xFF4A90E2).withOpacity(0.2),
                     blurRadius: 80,
                     spreadRadius: 40,
                   ),
@@ -110,10 +110,10 @@ class _SplashScreenState extends State<SplashScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD4AF37).withOpacity(0.04),
+                color: const Color(0xFF4A90E2).withOpacity(0.04),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withOpacity(0.15),
+                    color: const Color(0xFF4A90E2).withOpacity(0.15),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -136,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen>
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFD4AF37).withOpacity(0.5),
+                            color: const Color(0xFF4A90E2).withOpacity(0.5),
                             blurRadius: 30,
                             spreadRadius: 5,
                           ),
@@ -161,10 +161,10 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           borderRadius: BorderRadius.circular(40),
                           border: Border.all(
-                              color: const Color(0xFFD4AF37), width: 2.5),
+                              color: const Color(0xFF4A90E2), width: 2.5),
                           boxShadow: [
                             BoxShadow(
-                                color: const Color(0xFFD4AF37).withOpacity(0.4),
+                                color: const Color(0xFF4A90E2).withOpacity(0.4),
                                 blurRadius: 20,
                                 spreadRadius: 2)
                           ],
@@ -173,17 +173,17 @@ class _SplashScreenState extends State<SplashScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.shield,
-                                color: Color(0xFFD4AF37), size: 28),
+                                color: Color(0xFF4A90E2), size: 28),
                             const SizedBox(width: 12),
                             const Text('ApexSec',
                                 style: TextStyle(
-                                    color: Color(0xFFD4AF37),
+                                    color: Color(0xFF4A90E2),
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 3,
                                     shadows: [
                                       Shadow(
-                                          color: Color(0xFFD4AF37),
+                                          color: Color(0xFF4A90E2),
                                           blurRadius: 15)
                                     ])),
                             const SizedBox(width: 12),
@@ -191,7 +191,7 @@ class _SplashScreenState extends State<SplashScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                  color: const Color(0xFFD4AF37),
+                                  color: const Color(0xFF4A90E2),
                                   borderRadius: BorderRadius.circular(4)),
                               child: const Text('GLOBAL',
                                   style: TextStyle(
@@ -206,13 +206,13 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 40),
                     const Text('نــور الـحــرمــيــن',
                         style: TextStyle(
-                            color: Color(0xFFD4AF37),
+                            color: Color(0xFF4A90E2),
                             fontSize: 38,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
                             shadows: [
                               Shadow(
-                                  color: Color(0xFFD4AF37),
+                                  color: Color(0xFF4A90E2),
                                   blurRadius: 25,
                                   offset: Offset(0, 2))
                             ])),
@@ -231,7 +231,7 @@ class _SplashScreenState extends State<SplashScreen>
                         gradient: const LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Color(0xFFD4AF37),
+                            Color(0xFF4A90E2),
                             Colors.transparent
                           ],
                         ),
@@ -240,7 +240,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 30),
                     const CircularProgressIndicator(
-                        color: Color(0xFFD4AF37), strokeWidth: 2.5),
+                        color: Color(0xFF4A90E2), strokeWidth: 2.5),
                     const SizedBox(height: 20),
                     Text(
                       TranslationService.getText(lang, 'preparing'),
@@ -261,7 +261,7 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             'For Muslims Everywhere 🌍',
                             style: TextStyle(
-                                color: const Color(0xFFD4AF37).withOpacity(0.3),
+                                color: const Color(0xFF4A90E2).withOpacity(0.3),
                                 fontSize: 9,
                                 letterSpacing: 2),
                           ),

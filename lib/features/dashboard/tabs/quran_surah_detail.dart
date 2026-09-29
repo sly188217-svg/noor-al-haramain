@@ -89,9 +89,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       backgroundColor: const Color(0xFF0B132B),
       appBar: AppBar(
         title: Text(widget.surah.name,
-            style: const TextStyle(color: Color(0xFFD4AF37))),
+            style: const TextStyle(color: Color(0xFF4A90E2))),
         backgroundColor: const Color(0xFF1C2541),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
+        iconTheme: const IconThemeData(color: Color(0xFF4A90E2)),
         actions: [
           IconButton(
             icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
@@ -101,7 +101,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
+              child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
           : _errorMessage.isNotEmpty
               ? Center(
                   child: Padding(
@@ -122,7 +122,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         ElevatedButton(
                           onPressed: _loadAyahs,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD4AF37),
+                            backgroundColor: const Color(0xFF4A90E2),
                             foregroundColor: Colors.black,
                           ),
                           child: const Text('إعادة المحاولة'),
@@ -151,7 +151,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           Text(
                             '${ayah.number}',
                             style: const TextStyle(
-                              color: Color(0xFFD4AF37),
+                              color: Color(0xFF4A90E2),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),

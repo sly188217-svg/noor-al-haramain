@@ -162,12 +162,12 @@ class _SplashScreenState extends State<SplashScreen>
                                 ],
                               ),
                               border: Border.all(
-                                color: const Color(0xFFD4AF37),
+                                color: const Color(0xFF4A90E2),
                                 width: 3,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFD4AF37)
+                                  color: const Color(0xFF4A90E2)
                                       .withOpacity(_goldGlow.value * 0.5),
                                   blurRadius: 60,
                                   spreadRadius: 15,
@@ -184,7 +184,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: const Color(0xFFD4AF37)
+                                        color: const Color(0xFF4A90E2)
                                             .withOpacity(0.4),
                                         width: 1,
                                       ),
@@ -193,7 +193,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   const Icon(
                                     Icons.mosque,
                                     size: 95,
-                                    color: Color(0xFFD4AF37),
+                                    color: Color(0xFF4A90E2),
                                   ),
                                 ],
                               ),
@@ -213,14 +213,14 @@ class _SplashScreenState extends State<SplashScreen>
                       child: const Text(
                         'نور الحرمين',
                         style: TextStyle(
-                          color: Color(0xFFD4AF37),
+                          color: Color(0xFF4A90E2),
                           fontSize: 42,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Amiri',
                           letterSpacing: 2,
                           shadows: [
                             Shadow(
-                              color: Color(0xFFD4AF37),
+                              color: Color(0xFF4A90E2),
                               blurRadius: 30,
                             ),
                           ],
@@ -268,10 +268,10 @@ class _SplashScreenState extends State<SplashScreen>
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withOpacity(0.08),
+                          color: const Color(0xFF4A90E2).withOpacity(0.08),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: const Color(0xFFD4AF37).withOpacity(0.4),
+                            color: const Color(0xFF4A90E2).withOpacity(0.4),
                             width: 0.8,
                           ),
                         ),
@@ -307,7 +307,7 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 60,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                       ),
                     ),
                   ),
@@ -329,7 +329,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: const Text(
                       '﷽',
                       style: TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 22,        // ✅ حجم أصغر بكثير
                         fontFamily: 'Amiri',
                       ),
@@ -350,7 +350,7 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (context, child) {
                     return Icon(
                       Icons.nightlight_round,
-                      color: const Color(0xFFD4AF37)
+                      color: const Color(0xFF4A90E2)
                           .withOpacity(0.7 + _goldGlow.value * 0.3),
                       size: 45,
                     );
@@ -371,7 +371,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Container(
                       width: 60,
                       height: 1,
-                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                      color: const Color(0xFF4A90E2).withOpacity(0.3),
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -386,7 +386,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const Text(
                       'ApexSec',
                       style: TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 4,
@@ -406,7 +406,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Container(
       width: 40,
       height: 1,
-      color: const Color(0xFFD4AF37).withOpacity(0.5),
+      color: const Color(0xFF4A90E2).withOpacity(0.5),
     );
   }
 }
@@ -418,7 +418,7 @@ class _IslamicPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFD4AF37).withOpacity(0.05)
+      ..color = const Color(0xFF4A90E2).withOpacity(0.05)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

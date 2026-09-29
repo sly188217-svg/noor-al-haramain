@@ -88,7 +88,7 @@ class _LibraryTabState extends State<LibraryTab> {
                     hintText: '🔍 ابحث عن كتاب، مؤلف، أو موضوع...',
                     hintStyle: const TextStyle(color: Colors.grey),
                     prefixIcon: const Icon(Icons.search,
-                        color: Color(0xFFD4AF37)),
+                        color: Color(0xFF4A90E2)),
                     filled: true,
                     fillColor: const Color(0xFF0B132B),
                     border: OutlineInputBorder(
@@ -138,7 +138,7 @@ class _LibraryTabState extends State<LibraryTab> {
                       ? '📂 كل الفئات'
                       : '📂 $_selectedCategory',
                   style: const TextStyle(
-                      color: Color(0xFFD4AF37), fontSize: 12),
+                      color: Color(0xFF4A90E2), fontSize: 12),
                 ),
               ],
             ),
@@ -174,7 +174,7 @@ class _LibraryTabState extends State<LibraryTab> {
     switch (book.category) {
       case 'الحديث':
         icon = Icons.menu_book;
-        iconColor = const Color(0xFFD4AF37);
+        iconColor = const Color(0xFF4A90E2);
         break;
       case 'التفسير':
         icon = Icons.auto_stories;
@@ -190,7 +190,7 @@ class _LibraryTabState extends State<LibraryTab> {
         break;
       default:
         icon = Icons.book;
-        iconColor = const Color(0xFFD4AF37);
+        iconColor = const Color(0xFF4A90E2);
     }
 
     return Material(
@@ -342,7 +342,7 @@ class _LibraryTabState extends State<LibraryTab> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? const Color(0xFF0B132B).withValues(alpha: 0.2)
-                      : const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                      : const Color(0xFF4A90E2).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -350,7 +350,7 @@ class _LibraryTabState extends State<LibraryTab> {
                   style: TextStyle(
                     color: isSelected
                         ? const Color(0xFF0B132B)
-                        : const Color(0xFFD4AF37),
+                        : const Color(0xFF4A90E2),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -360,11 +360,11 @@ class _LibraryTabState extends State<LibraryTab> {
           ],
         ),
         selected: isSelected,
-        selectedColor: const Color(0xFFD4AF37),
+        selectedColor: const Color(0xFF4A90E2),
         backgroundColor: const Color(0xFF0B132B),
         side: BorderSide(
           color: isSelected
-              ? const Color(0xFFD4AF37)
+              ? const Color(0xFF4A90E2)
               : Colors.white12,
         ),
         onSelected: (selected) {
@@ -408,7 +408,7 @@ class _LibraryTabState extends State<LibraryTab> {
                 icon: const Icon(Icons.clear, size: 16),
                 label: const Text('مسح الفلاتر'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
+                  backgroundColor: const Color(0xFF4A90E2),
                   foregroundColor: Colors.black,
                 ),
               ),

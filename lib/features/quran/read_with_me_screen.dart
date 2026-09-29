@@ -106,8 +106,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
 
   static const Color _paperColor = Color(0xFFFBF6E9);
   static const Color _inkColor = Color(0xFF1A1A1A);
-  static const Color _goldColor = Color(0xFFB8860B);
-  static const Color _frameColor = Color(0xFF9C7A3C);
+  static const Color _goldColor = Color(0xFF2E5C8A);
+  static const Color _frameColor = Color(0xFF64B5F6);
 
   @override
   void initState() {
@@ -1009,12 +1009,12 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   border: Border.all(color: _goldColor, width: 2),
                 ),
                 child: const Icon(Icons.lock,
-                    color: Color(0xFFB8860B), size: 60),
+                    color: Color(0xFF2E5C8A), size: 60),
               ),
               const SizedBox(height: 24),
               const Text('🔒 انتهت التجربة المجانية',
                   style: TextStyle(
-                      color: Color(0xFFB8860B),
+                      color: Color(0xFF2E5C8A),
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Amiri')),
@@ -1033,7 +1033,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   children: [
                     Text('💎 اشترك في Premium',
                         style: TextStyle(
-                            color: Color(0xFFB8860B),
+                            color: Color(0xFF2E5C8A),
                             fontSize: 20,
                             fontWeight: FontWeight.bold)),
                     SizedBox(height: 12),
@@ -2257,7 +2257,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFFB8860B)),
+                        strokeWidth: 2, color: Color(0xFF2E5C8A)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

@@ -66,13 +66,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       backgroundColor: const Color(0xFF0B132B),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C2541),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
+        iconTheme: const IconThemeData(color: Color(0xFF4A90E2)),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               widget.book.title,
-              style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 15),
+              style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 15),
             ),
             if (!_isLoading && _items.isNotEmpty)
               Text(
@@ -99,7 +99,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.menu_book, color: Color(0xFFD4AF37), size: 80),
+            const Icon(Icons.menu_book, color: Color(0xFF4A90E2), size: 80),
             const SizedBox(height: 24),
             Text(
               '📥 جاري تحميل ${widget.book.title}',
@@ -123,7 +123,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               child: LinearProgressIndicator(
                 value: _progress > 0 ? _progress : null,
                 backgroundColor: Colors.white12,
-                color: const Color(0xFFD4AF37),
+                color: const Color(0xFF4A90E2),
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -132,7 +132,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             Text(
               '${(_progress * 100).toStringAsFixed(0)}%',
               style: const TextStyle(
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF4A90E2),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -178,13 +178,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   '#$index',
                   style: const TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: Color(0xFF4A90E2),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -251,7 +251,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
+                backgroundColor: const Color(0xFF4A90E2),
                 foregroundColor: Colors.black,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

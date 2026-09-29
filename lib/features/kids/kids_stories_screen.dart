@@ -192,7 +192,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             const SizedBox(width: 8),
             Text(
               _activeStory == null ? 'مكتبة القصص' : 'القصة',
-              style: const TextStyle(color: Color(0xFFD4AF37)),
+              style: const TextStyle(color: Color(0xFF4A90E2)),
             ),
             if (_activeStory == null && _allStories.isNotEmpty) ...[
               const SizedBox(width: 8),
@@ -203,7 +203,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             ],
           ],
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
+        iconTheme: const IconThemeData(color: Color(0xFF4A90E2)),
         leading: _activeStory != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -238,7 +238,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFFD4AF37)),
+          CircularProgressIndicator(color: Color(0xFF4A90E2)),
           SizedBox(height: 16),
           Text(
             '📚 جاري تحميل القصص...',
@@ -272,7 +272,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
+                backgroundColor: const Color(0xFF4A90E2),
                 foregroundColor: Colors.black,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -301,7 +301,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               hintText: '🔍 ابحث عن قصة...',
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                  const Icon(Icons.search, color: Color(0xFF4A90E2)),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, color: Colors.grey),
@@ -386,10 +386,10 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color:
-              isActive ? const Color(0xFFD4AF37) : const Color(0xFF1C2541),
+              isActive ? const Color(0xFF4A90E2) : const Color(0xFF1C2541),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? const Color(0xFFD4AF37) : Colors.white24,
+            color: isActive ? const Color(0xFF4A90E2) : Colors.white24,
           ),
         ),
         child: Center(
@@ -425,7 +425,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+            color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -466,7 +466,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       Text(
                         '${cat['icon'] ?? '📖'} ${cat['name'] ?? ''}',
                         style: const TextStyle(
-                            color: Color(0xFFD4AF37), fontSize: 10),
+                            color: Color(0xFF4A90E2), fontSize: 10),
                       ),
                       if (duration != null) ...[
                         const SizedBox(width: 8),
@@ -485,7 +485,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               ),
             ),
             const Icon(Icons.arrow_forward_ios,
-                color: Color(0xFFD4AF37), size: 14),
+                color: Color(0xFF4A90E2), size: 14),
           ],
         ),
       ),
@@ -515,7 +515,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.5),
                   width: 2,
                 ),
               ),
@@ -533,7 +533,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                     Text(
                       story['title']?.toString() ?? '',
                       style: const TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Amiri',
@@ -547,14 +547,14 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37)
+                            color: const Color(0xFF4A90E2)
                                 .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '⏱️ $duration دقائق',
                             style: const TextStyle(
-                                color: Color(0xFFD4AF37), fontSize: 11),
+                                color: Color(0xFF4A90E2), fontSize: 11),
                           ),
                         ),
                       ),
@@ -611,7 +611,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    _isSpeaking ? Colors.red : const Color(0xFFD4AF37),
+                    _isSpeaking ? Colors.red : const Color(0xFF4A90E2),
                 foregroundColor:
                     _isSpeaking ? Colors.white : Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -630,7 +630,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   min: 0.2,
                   max: 0.8,
                   divisions: 6,
-                  activeColor: const Color(0xFFD4AF37),
+                  activeColor: const Color(0xFF4A90E2),
                   label: _speechRate.toStringAsFixed(1),
                   onChanged: _ttsAvailable
                       ? (v) async {

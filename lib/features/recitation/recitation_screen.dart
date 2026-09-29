@@ -366,14 +366,14 @@ class _RecitationScreenState extends State<RecitationScreen> {
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+          side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
         ),
         title: const Row(
           children: [
-            Icon(Icons.hourglass_empty, color: Color(0xFFD4AF37)),
+            Icon(Icons.hourglass_empty, color: Color(0xFF4A90E2)),
             SizedBox(width: 8),
             Text('انتهى الحد اليومي',
-                style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18)),
+                style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18)),
           ],
         ),
         content: const Text(
@@ -384,7 +384,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
+              backgroundColor: const Color(0xFF4A90E2),
               foregroundColor: Colors.black,
             ),
             child: const Text('حسناً'),
@@ -409,8 +409,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
         backgroundColor: const Color(0xFF0B132B),
         elevation: 0,
         title: const Text('تصحيح التلاوة',
-            style: TextStyle(color: Color(0xFFD4AF37))),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
+            style: TextStyle(color: Color(0xFF4A90E2))),
+        iconTheme: const IconThemeData(color: Color(0xFF4A90E2)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -421,7 +421,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
+              child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -475,7 +475,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: _autoDetectMode
-                      ? const Color(0xFFD4AF37)
+                      ? const Color(0xFF4A90E2)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -486,7 +486,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       Icons.auto_awesome,
                       color: _autoDetectMode
                           ? Colors.black
-                          : const Color(0xFFD4AF37),
+                          : const Color(0xFF4A90E2),
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -495,7 +495,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       style: TextStyle(
                         color: _autoDetectMode
                             ? Colors.black
-                            : const Color(0xFFD4AF37),
+                            : const Color(0xFF4A90E2),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -515,7 +515,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: !_autoDetectMode
-                      ? const Color(0xFFD4AF37)
+                      ? const Color(0xFF4A90E2)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -526,7 +526,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       Icons.list,
                       color: !_autoDetectMode
                           ? Colors.black
-                          : const Color(0xFFD4AF37),
+                          : const Color(0xFF4A90E2),
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -535,7 +535,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       style: TextStyle(
                         color: !_autoDetectMode
                             ? Colors.black
-                            : const Color(0xFFD4AF37),
+                            : const Color(0xFF4A90E2),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -555,17 +555,17 @@ class _RecitationScreenState extends State<RecitationScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+          color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFD4AF37)),
+          border: Border.all(color: const Color(0xFF4A90E2)),
         ),
         child: const Row(
           children: [
-            Icon(Icons.star, color: Color(0xFFD4AF37), size: 18),
+            Icon(Icons.star, color: Color(0xFF4A90E2), size: 18),
             SizedBox(width: 8),
             Text('Premium — تصحيح غير محدود',
                 style: TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: Color(0xFF4A90E2),
                     fontSize: 13,
                     fontWeight: FontWeight.bold)),
           ],
@@ -614,7 +614,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'السورة (1-114)',
-                  labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                  labelStyle: const TextStyle(color: Color(0xFF4A90E2)),
                   filled: true,
                   fillColor: const Color(0xFF0B132B),
                   border: OutlineInputBorder(
@@ -647,7 +647,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'الآية (${_ayahs.length})',
-                  labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                  labelStyle: const TextStyle(color: Color(0xFF4A90E2)),
                   filled: true,
                   fillColor: const Color(0xFF0B132B),
                   border: OutlineInputBorder(
@@ -729,25 +729,25 @@ class _RecitationScreenState extends State<RecitationScreen> {
           color: const Color(0xFF1C2541).withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+              color: const Color(0xFF4A90E2).withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             const Row(
               children: [
-                Icon(Icons.book, color: Color(0xFFD4AF37), size: 16),
+                Icon(Icons.book, color: Color(0xFF4A90E2), size: 16),
                 SizedBox(width: 6),
                 Text('📖 النص الصحيح',
                     style:
-                        TextStyle(color: Color(0xFFD4AF37), fontSize: 12)),
+                        TextStyle(color: Color(0xFF4A90E2), fontSize: 12)),
               ],
             ),
             const SizedBox(height: 10),
             Text(
               _correctAyah,
               style: const TextStyle(
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF4A90E2),
                 fontSize: 24,
                 fontFamily: 'Amiri',
                 height: 2.2,
@@ -766,19 +766,19 @@ class _RecitationScreenState extends State<RecitationScreen> {
         color: const Color(0xFF1C2541).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+            color: const Color(0xFF4A90E2).withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Row(
             children: [
-              Icon(Icons.spellcheck, color: Color(0xFFD4AF37), size: 18),
+              Icon(Icons.spellcheck, color: Color(0xFF4A90E2), size: 18),
               SizedBox(width: 8),
               Text(
                 '📝 التصحيح كلمة بكلمة',
                 style: TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: Color(0xFF4A90E2),
                     fontSize: 14,
                     fontWeight: FontWeight.bold),
               ),
@@ -892,7 +892,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
             label: Text(_isSpeaking ? 'إيقاف' : 'الحصري'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1C2541),
-              foregroundColor: const Color(0xFFD4AF37),
+              foregroundColor: const Color(0xFF4A90E2),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -917,7 +917,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  _isRecording ? Colors.red : const Color(0xFFD4AF37),
+                  _isRecording ? Colors.red : const Color(0xFF4A90E2),
               foregroundColor: _isRecording ? Colors.white : Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -974,7 +974,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         color: const Color(0xFF1C2541).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: (_accuracy > 0 ? _accuracyColor() : const Color(0xFFD4AF37))
+            color: (_accuracy > 0 ? _accuracyColor() : const Color(0xFF4A90E2))
                 .withValues(alpha: 0.5)),
       ),
       child: Column(

@@ -72,7 +72,7 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.security, color: Color(0xFFD4AF37), size: 80),
+              const Icon(Icons.security, color: Color(0xFF4A90E2), size: 80),
               const SizedBox(height: 20),
               const Text(
                 'مرحباً بك في نور الحرمين',

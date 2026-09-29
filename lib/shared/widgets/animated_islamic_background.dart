@@ -63,10 +63,10 @@ class _AnimatedIslamicBackgroundState extends State<AnimatedIslamicBackground>
                   height: 300,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFD4AF37).withOpacity(0.04),
+                    color: const Color(0xFF4A90E2).withOpacity(0.04),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withOpacity(0.15),
+                        color: const Color(0xFF4A90E2).withOpacity(0.15),
                         blurRadius: 100,
                         spreadRadius: 50,
                       ),
@@ -95,10 +95,10 @@ class _AnimatedIslamicBackgroundState extends State<AnimatedIslamicBackground>
                   height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFD4AF37).withOpacity(0.03),
+                    color: const Color(0xFF4A90E2).withOpacity(0.03),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withOpacity(0.1),
+                        color: const Color(0xFF4A90E2).withOpacity(0.1),
                         blurRadius: 80,
                         spreadRadius: 40,
                       ),
@@ -121,7 +121,7 @@ class _AnimatedIslamicBackgroundState extends State<AnimatedIslamicBackground>
               child: const Text(
                 'الله 🌙 نور',
                 style: TextStyle(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 10,

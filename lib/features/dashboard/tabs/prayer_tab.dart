@@ -25,7 +25,7 @@ class IslamicBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFD4AF37).withValues(alpha: 0.08)
+      ..color = const Color(0xFF4A90E2).withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -825,7 +825,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           backgroundColor: const Color(0xFF1C2541),
           title: Text(
             '⚙️ إعدادات صلاة $prayerName',
-            style: const TextStyle(color: Color(0xFFD4AF37)),
+            style: const TextStyle(color: Color(0xFF4A90E2)),
           ),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
@@ -847,7 +847,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                           color:
-                              const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                              const Color(0xFF4A90E2).withValues(alpha: 0.3)),
                     ),
                     child: DropdownButton<String>(
                       value: validValue,
@@ -877,7 +877,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove,
-                            color: Color(0xFFD4AF37)),
+                            color: Color(0xFF4A90E2)),
                         onPressed: () =>
                             setDialogState(() => tempOffset -= 1),
                       ),
@@ -886,7 +886,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               color: Colors.white, fontSize: 18)),
                       IconButton(
                         icon:
-                            const Icon(Icons.add, color: Color(0xFFD4AF37)),
+                            const Icon(Icons.add, color: Color(0xFF4A90E2)),
                         onPressed: () =>
                             setDialogState(() => tempOffset += 1),
                       ),
@@ -903,7 +903,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
+                  backgroundColor: const Color(0xFF4A90E2),
                   foregroundColor: Colors.black),
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
@@ -950,16 +950,16 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                 colors: [Color(0xFF1C2541), Color(0xFF0B132B)]),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+                color: const Color(0xFF4A90E2).withValues(alpha: 0.5)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.mosque, color: Color(0xFFD4AF37), size: 60),
+              const Icon(Icons.mosque, color: Color(0xFF4A90E2), size: 60),
               const SizedBox(height: 16),
               const Text('دعاء الأذان',
                   style: TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: Color(0xFF4A90E2),
                       fontSize: 22,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
@@ -974,7 +974,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 20),
               const CircularProgressIndicator(
-                  color: Color(0xFFD4AF37), strokeWidth: 2),
+                  color: Color(0xFF4A90E2), strokeWidth: 2),
             ],
           ),
         ),
@@ -1031,7 +1031,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                        color: Color(0xFFD4AF37)))
+                        color: Color(0xFF4A90E2)))
                 : Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
@@ -1047,7 +1047,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                 Row(
                                   children: [
                                     const Icon(Icons.location_on,
-                                        color: Color(0xFFD4AF37), size: 16),
+                                        color: Color(0xFF4A90E2), size: 16),
                                     const SizedBox(width: 6),
                                     Text(_cityName,
                                         style: const TextStyle(
@@ -1074,7 +1074,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                   const SizedBox(height: 2),
                                   Text(hijriDate,
                                       style: const TextStyle(
-                                          color: Color(0xFFD4AF37),
+                                          color: Color(0xFF4A90E2),
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold)),
                                 ],
@@ -1092,14 +1092,14 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                 .withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: const Color(0xFFD4AF37)
+                                color: const Color(0xFF4A90E2)
                                     .withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.volume_up,
-                                  color: Color(0xFFD4AF37), size: 16),
+                                  color: Color(0xFF4A90E2), size: 16),
                               const SizedBox(width: 8),
                               Text('المؤذن: $_selectedMuezzinName',
                                   style: const TextStyle(
@@ -1157,7 +1157,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                   .withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: const Color(0xFFD4AF37)
+                                  color: const Color(0xFF4A90E2)
                                       .withValues(alpha: 0.3)),
                             ),
                             child: Column(
@@ -1165,7 +1165,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               children: [
                                 const Text('📅 الأيام السبعة القادمة',
                                     style: TextStyle(
-                                        color: Color(0xFFD4AF37),
+                                        color: Color(0xFF4A90E2),
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 8),
@@ -1212,9 +1212,9 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFFD4AF37)
+                                const Color(0xFF4A90E2)
                                     .withValues(alpha: 0.15),
-                                const Color(0xFFD4AF37)
+                                const Color(0xFF4A90E2)
                                     .withValues(alpha: 0.05)
                               ],
                               begin: Alignment.topLeft,
@@ -1222,7 +1222,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             ),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                                color: const Color(0xFFD4AF37)
+                                color: const Color(0xFF4A90E2)
                                     .withValues(alpha: 0.3)),
                           ),
                           child: Column(
@@ -1242,7 +1242,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                       const SizedBox(height: 6),
                                       Text(_nextPrayer,
                                           style: const TextStyle(
-                                              color: Color(0xFFD4AF37),
+                                              color: Color(0xFF4A90E2),
                                               fontSize: 24,
                                               fontWeight:
                                                   FontWeight.bold)),
@@ -1255,7 +1255,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                     child: Container(
                                       padding: const EdgeInsets.all(14),
                                       decoration: const BoxDecoration(
-                                          color: Color(0xFFD4AF37),
+                                          color: Color(0xFF4A90E2),
                                           shape: BoxShape.circle),
                                       child: Icon(
                                         _isPlaying
@@ -1300,7 +1300,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                             86400)
                                         .clamp(0.0, 1.0),
                                 backgroundColor: Colors.white12,
-                                color: const Color(0xFFD4AF37),
+                                color: const Color(0xFF4A90E2),
                                 minHeight: 4,
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -1327,7 +1327,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                       horizontal: 16, vertical: 12),
                                   decoration: BoxDecoration(
                                     color: isNext
-                                        ? const Color(0xFFD4AF37)
+                                        ? const Color(0xFF4A90E2)
                                             .withValues(alpha: 0.15)
                                         : const Color(0xFF1C2541)
                                             .withValues(alpha: 0.5),
@@ -1335,7 +1335,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                         BorderRadius.circular(12),
                                     border: Border.all(
                                         color: isNext
-                                            ? const Color(0xFFD4AF37)
+                                            ? const Color(0xFF4A90E2)
                                             : Colors.white12,
                                         width: isNext ? 1.5 : 0.5),
                                   ),
@@ -1349,7 +1349,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                               prayer['icon'] as IconData? ??
                                                   Icons.access_time,
                                               color: isNext
-                                                  ? const Color(0xFFD4AF37)
+                                                  ? const Color(0xFF4A90E2)
                                                   : Colors.grey,
                                               size: 22),
                                           const SizedBox(width: 14),
@@ -1358,7 +1358,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                             style: TextStyle(
                                                 color: isNext
                                                     ? const Color(
-                                                        0xFFD4AF37)
+                                                        0xFF4A90E2)
                                                     : Colors.white,
                                                 fontSize: 15,
                                                 fontWeight: isNext
@@ -1372,7 +1372,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                           IconButton(
                                             icon: const Icon(
                                                 Icons.settings,
-                                                color: Color(0xFFD4AF37),
+                                                color: Color(0xFF4A90E2),
                                                 size: 16),
                                             onPressed: () =>
                                                 _showPrayerSettings(
@@ -1381,7 +1381,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                           IconButton(
                                             icon: const Icon(
                                                 Icons.volume_up,
-                                                color: Color(0xFFD4AF37),
+                                                color: Color(0xFF4A90E2),
                                                 size: 16),
                                             onPressed: () =>
                                                 _playAdhan(prayerName),
@@ -1392,7 +1392,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                             style: TextStyle(
                                                 color: isNext
                                                     ? const Color(
-                                                        0xFFD4AF37)
+                                                        0xFF4A90E2)
                                                     : Colors.white70,
                                                 fontSize: 15,
                                                 fontWeight: isNext
@@ -1439,10 +1439,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
               color: const Color(0xFF1C2541).withValues(alpha: 0.8),
               shape: BoxShape.circle,
               border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.5)),
             ),
             child:
-                Icon(icon, color: const Color(0xFFD4AF37), size: 20),
+                Icon(icon, color: const Color(0xFF4A90E2), size: 20),
           ),
           const SizedBox(height: 4),
           Text(label,

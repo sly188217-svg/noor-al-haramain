@@ -20,7 +20,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF4A90E2)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -33,7 +33,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 isArabic ? '📋 سياسة الخصوصية' : '📋 Privacy Policy',
                 style: const TextStyle(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF4A90E2),
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -116,7 +116,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFFD4AF37),
+              color: Color(0xFF4A90E2),
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),

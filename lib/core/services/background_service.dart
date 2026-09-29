@@ -42,7 +42,7 @@ class BackgroundService {
       'type': 'gradient',
       'colors': [
         Color(0xFF1A1A00),
-        Color(0xFFD4AF37),
+        Color(0xFF4A90E2),
         Color(0xFF1A1A00),
       ],
       'icon': Icons.temple_buddhist,

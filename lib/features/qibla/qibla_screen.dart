@@ -123,7 +123,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
       backgroundColor: const Color(0xFF0B132B),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B132B),
-        foregroundColor: const Color(0xFFD4AF37),
+        foregroundColor: const Color(0xFF4A90E2),
         title: const Text('🧭 اتجاه القبلة'),
         centerTitle: true,
       ),
@@ -138,7 +138,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
                 if (!_hasCompass || !_hasLocation)
                   const CircularProgressIndicator(
-                      color: Color(0xFFD4AF37)),
+                      color: Color(0xFF4A90E2)),
 
                 if (_hasCompass && _hasLocation) ...[
                   _build3DCompass(),
@@ -190,12 +190,12 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   ],
                 ),
                 border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.6),
                   width: 3,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                    color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
@@ -235,10 +235,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF0B132B),
-                border: Border.all(color: const Color(0xFFD4AF37), width: 3),
+                border: Border.all(color: const Color(0xFF4A90E2), width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                    color: const Color(0xFF4A90E2).withValues(alpha: 0.5),
                     blurRadius: 15,
                   ),
                 ],
@@ -250,7 +250,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                     Text(
                       '${_qiblaBearing.toStringAsFixed(0)}°',
                       style: const TextStyle(
-                        color: Color(0xFFD4AF37),
+                        color: Color(0xFF4A90E2),
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -285,8 +285,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
             width: 1.5,
             height: isMajor ? 12 : 6,
             color: isMajor
-                ? const Color(0xFFD4AF37)
-                : const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                ? const Color(0xFF4A90E2)
+                : const Color(0xFF4A90E2).withValues(alpha: 0.4),
           ),
         ),
       );
@@ -314,7 +314,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
         color: const Color(0xFF0F1A35),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+          color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -354,7 +354,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
           Text(
             value,
             style: const TextStyle(
-              color: Color(0xFFD4AF37),
+              color: Color(0xFF4A90E2),
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
@@ -428,7 +428,7 @@ class _Arrow3DPainter extends CustomPainter {
 
     final fillPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFFFFD700), Color(0xFFD4AF37), Color(0xFFB8860B)],
+        colors: [Color(0xFFFFD700), Color(0xFF4A90E2), Color(0xFF2E5C8A)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));

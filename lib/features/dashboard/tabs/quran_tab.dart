@@ -164,7 +164,7 @@ class _QuranTabState extends State<QuranTab> {
         return AlertDialog(
           backgroundColor: const Color(0xFF1C2541),
           title: const Text('اختر القارئ',
-              style: TextStyle(color: Color(0xFFD4AF37))),
+              style: TextStyle(color: Color(0xFF4A90E2))),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -178,7 +178,7 @@ class _QuranTabState extends State<QuranTab> {
                     reciter['name']!,
                     style: TextStyle(
                       color: isSelected
-                          ? const Color(0xFFD4AF37)
+                          ? const Color(0xFF4A90E2)
                           : Colors.white,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
@@ -186,7 +186,7 @@ class _QuranTabState extends State<QuranTab> {
                   ),
                   trailing: isSelected
                       ? const Icon(Icons.check,
-                          color: Color(0xFFD4AF37))
+                          color: Color(0xFF4A90E2))
                       : null,
                   onTap: () async {
                     final prefs = await SharedPreferences.getInstance();
@@ -236,7 +236,7 @@ class _QuranTabState extends State<QuranTab> {
           backgroundColor: const Color(0xFF1C2541),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back,
-                color: Color(0xFFD4AF37)),
+                color: Color(0xFF4A90E2)),
             onPressed: _goBackToSurahs,
           ),
           title: Text(_selectedSurah!.name,
@@ -247,7 +247,7 @@ class _QuranTabState extends State<QuranTab> {
                 _isPlaying && _playingSurah == _selectedSurah!.number
                     ? Icons.pause
                     : Icons.play_arrow,
-                color: const Color(0xFFD4AF37),
+                color: const Color(0xFF4A90E2),
               ),
               onPressed: () => _playRecitation(_selectedSurah!),
             ),
@@ -273,14 +273,14 @@ class _QuranTabState extends State<QuranTab> {
                     height: 28,
                     decoration: BoxDecoration(
                       color:
-                          const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          const Color(0xFF4A90E2).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
                       child: Text(
                         '${ayah.number}',
                         style: const TextStyle(
-                          color: Color(0xFFD4AF37),
+                          color: Color(0xFF4A90E2),
                           fontSize: 11,
                         ),
                       ),
@@ -330,20 +330,20 @@ class _QuranTabState extends State<QuranTab> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                      const Color(0xFFD4AF37).withValues(alpha: 0.05),
+                      const Color(0xFF4A90E2).withValues(alpha: 0.2),
+                      const Color(0xFF4A90E2).withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color:
-                        const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                        const Color(0xFF4A90E2).withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.menu_book,
-                        color: Color(0xFFD4AF37), size: 40),
+                        color: Color(0xFF4A90E2), size: 40),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
@@ -351,7 +351,7 @@ class _QuranTabState extends State<QuranTab> {
                         children: [
                           Text('📖 اقرأ المصحف ككتاب',
                               style: TextStyle(
-                                  color: Color(0xFFD4AF37),
+                                  color: Color(0xFF4A90E2),
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
@@ -362,7 +362,7 @@ class _QuranTabState extends State<QuranTab> {
                       ),
                     ),
                     const Icon(Icons.arrow_forward_ios,
-                        color: Color(0xFFD4AF37), size: 16),
+                        color: Color(0xFF4A90E2), size: 16),
                   ],
                 ),
               ),
@@ -391,7 +391,7 @@ class _QuranTabState extends State<QuranTab> {
                               : '🔍 Search for a surah...',
                           hintStyle: const TextStyle(color: Colors.grey),
                           prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFFD4AF37)),
+                              color: Color(0xFF4A90E2)),
                           filled: true,
                           fillColor: const Color(0xFF0B132B),
                           border: OutlineInputBorder(
@@ -404,7 +404,7 @@ class _QuranTabState extends State<QuranTab> {
                     const SizedBox(width: 12),
                     IconButton(
                       icon: const Icon(Icons.record_voice_over,
-                          color: Color(0xFFD4AF37)),
+                          color: Color(0xFF4A90E2)),
                       tooltip: 'اختر القارئ',
                       onPressed: _showReciterDialog,
                     ),
@@ -423,7 +423,7 @@ class _QuranTabState extends State<QuranTab> {
                             orElse: () => QuranService.reciters.first,
                           )['name']!}',
                       style: const TextStyle(
-                          color: Color(0xFFD4AF37), fontSize: 12),
+                          color: Color(0xFF4A90E2), fontSize: 12),
                     ),
                   ],
                 ),
@@ -436,7 +436,7 @@ class _QuranTabState extends State<QuranTab> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                        color: Color(0xFFD4AF37)))
+                        color: Color(0xFF4A90E2)))
                 : _errorMessage.isNotEmpty
                     ? _buildError()
                     : _filteredSurahs.isEmpty
@@ -464,7 +464,7 @@ class _QuranTabState extends State<QuranTab> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isPlaying
-              ? const Color(0xFFD4AF37)
+              ? const Color(0xFF4A90E2)
               : Colors.white12,
         ),
       ),
@@ -478,14 +478,14 @@ class _QuranTabState extends State<QuranTab> {
             color: const Color(0xFF0B132B),
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+              color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
             ),
           ),
           child: Center(
             child: Text(
               '${surah.number}',
               style: const TextStyle(
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF4A90E2),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -511,7 +511,7 @@ class _QuranTabState extends State<QuranTab> {
             IconButton(
               icon: Icon(
                 isPlaying ? Icons.pause : Icons.play_arrow,
-                color: const Color(0xFFD4AF37),
+                color: const Color(0xFF4A90E2),
               ),
               onPressed: () => _playRecitation(surah),
             ),
@@ -542,7 +542,7 @@ class _QuranTabState extends State<QuranTab> {
             ElevatedButton(
               onPressed: _loadQuran,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
+                backgroundColor: const Color(0xFF4A90E2),
                 foregroundColor: Colors.black,
               ),
               child: const Text('إعادة المحاولة'),
