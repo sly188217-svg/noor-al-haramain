@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🎨 خدمة الخلفيات — 4 صور + 2 تدرجات (6 خلفيات)
+/// 🎨 خدمة الخلفيات — 4 صور WebP + 2 تدرجات (6 خلفيات)
 /// ═══════════════════════════════════════════════════════════
 class BackgroundService {
   static const String _key = 'background_index';
@@ -12,38 +12,38 @@ class BackgroundService {
     {
       'name': 'الكعبة المشرفة',
       'type': 'image',
-      'imagePath': 'assets/images/backgrounds/makkah.jpg',
+      'imagePath': 'assets/images/backgrounds/makkah.webp',
       'icon': Icons.mosque,
     },
     // 2. المسجد النبوي 🕌
     {
       'name': 'المسجد النبوي',
       'type': 'image',
-      'imagePath': 'assets/images/backgrounds/madinah.jpg',
+      'imagePath': 'assets/images/backgrounds/madinah.webp',
       'icon': Icons.mosque,
     },
     // 3. المدينة المنورة 🕌
     {
       'name': 'المدينة المنورة',
       'type': 'image',
-      'imagePath': 'assets/images/backgrounds/madinah2.jpg',
+      'imagePath': 'assets/images/backgrounds/madinah2.webp',
       'icon': Icons.mosque,
     },
-    // 4. الحرم المكي 🕋 (الصورة الجديدة)
+    // 4. الحرم المكي 🕋
     {
       'name': 'الحرم المكي',
       'type': 'image',
-      'imagePath': 'assets/images/backgrounds/makkah2.jpg',
+      'imagePath': 'assets/images/backgrounds/makkah2.webp',
       'icon': Icons.mosque,
     },
-    // 5. ذهبي فاخر ⭐
+    // 5. أزرق فاخر ⭐
     {
-      'name': 'ذهبي فاخر',
+      'name': 'أزرق فاخر',
       'type': 'gradient',
       'colors': [
-        Color(0xFF1A1A00),
+        Color(0xFF0B132B),
         Color(0xFF4A90E2),
-        Color(0xFF1A1A00),
+        Color(0xFF0B132B),
       ],
       'icon': Icons.temple_buddhist,
     },
