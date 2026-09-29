@@ -20,9 +20,10 @@ class _SettingsTabState extends State<SettingsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const Color _primary = Color(0xFF4A90E2);
-  static const Color _primaryDark = Color(0xFF2E5C8A);
-  static const Color _primaryLight = Color(0xFF64B5F6);
+  // 🎨 الألوان
+  static const Color _primary = Color(0xFFE53935);
+  static const Color _primaryDark = Color(0xFFB71C1C);
+  static const Color _primaryLight = Color(0xFFFF5252);
   static const Color _bg = Color(0xFF0A1929);
   static const Color _surface = Color(0xFF132F4C);
   static const Color _surfaceDark = Color(0xFF0F2236);
@@ -40,6 +41,7 @@ class _SettingsTabState extends State<SettingsTab>
   double _soundVolume = 0.8;
   String _appVersion = '1.0.0';
 
+  // 📿 إعدادات الأذكار الدورية
   bool _periodicAzkarEnabled = false;
   int _periodicAzkarInterval = 15;
   int _periodicAzkarStartHour = 6;
@@ -320,9 +322,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 اختيار الخلفية (مع معاينة الصور)
-  // ═══════════════════════════════════════════════════════════
   void _showBackgroundPicker() {
     showModalBottomSheet(
       context: context,
@@ -335,18 +334,11 @@ class _SettingsTabState extends State<SettingsTab>
         height: 500,
         child: Column(
           children: [
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.image, color: _primary, size: 24),
-                SizedBox(width: 8),
-                Text('اختر خلفية التطبيق',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-              ],
-            ),
+            const Text('اختر خلفية التطبيق',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Expanded(
               child: GridView.builder(
@@ -397,26 +389,14 @@ class _SettingsTabState extends State<SettingsTab>
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // الخلفية (صورة أو تدرج)
                             if (type == 'image')
                               Image.asset(
                                 bg['imagePath'] as String,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0xFF0A1929),
-                                        Color(0xFF132F4C),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.image_not_supported,
-                                        color: Colors.white24, size: 40),
-                                  ),
+                                  color: _surface,
+                                  child: const Icon(Icons.image,
+                                      color: Colors.white24, size: 40),
                                 ),
                               )
                             else
@@ -429,13 +409,9 @@ class _SettingsTabState extends State<SettingsTab>
                                   ),
                                 ),
                               ),
-
-                            // طبقة داكنة لتحسين القراءة
                             Container(
                               color: Colors.black.withValues(alpha: 0.35),
                             ),
-
-                            // الأيقونة الصغيرة
                             Positioned(
                               top: 8,
                               left: 8,
@@ -445,8 +421,6 @@ class _SettingsTabState extends State<SettingsTab>
                                 size: 24,
                               ),
                             ),
-
-                            // الاسم
                             Positioned(
                               bottom: 6,
                               left: 6,
@@ -470,8 +444,6 @@ class _SettingsTabState extends State<SettingsTab>
                                 ),
                               ),
                             ),
-
-                            // علامة الاختيار
                             if (isSelected)
                               Positioned(
                                 top: 6,
@@ -630,6 +602,9 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 1. الدينية
+  // ═══════════════════════════════════════════════════════════
   Widget _buildReligiousSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -753,6 +728,8 @@ class _SettingsTabState extends State<SettingsTab>
                 },
               ),
               const SizedBox(height: 10),
+
+              // 🧪 اختبار الأذان
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -777,10 +754,38 @@ class _SettingsTabState extends State<SettingsTab>
                   ),
                 ),
               ),
+
+              const SizedBox(height: 8),
+
+              // 🕌 اختبار إشعار الإقامة
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await NotificationService.showTestIqamaNotification();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content:
+                              Text('🕌 إشعار الإقامة سيرن بعد 10 ثوانٍ')),
+                    );
+                  },
+                  icon: const Icon(Icons.timer),
+                  label: const Text('🕌 اختبار إشعار الإقامة (10 ثوانٍ)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary.withValues(alpha: 0.7),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
 
+        // 📿 قسم الأذكار الدورية
         _buildPeriodicAzkarCard(),
 
         _buildSettingsCard(
@@ -812,6 +817,9 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 📿 بطاقة الأذكار الدورية
+  // ═══════════════════════════════════════════════════════════
   Widget _buildPeriodicAzkarCard() {
     return _buildSettingsCard(
       Column(
@@ -1048,6 +1056,9 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 2. العامة
+  // ═══════════════════════════════════════════════════════════
   Widget _buildGeneralSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1220,6 +1231,9 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 3. الصوت
+  // ═══════════════════════════════════════════════════════════
   Widget _buildSoundSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1267,6 +1281,9 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 4. المعلومات
+  // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
