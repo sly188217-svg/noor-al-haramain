@@ -6,8 +6,10 @@ import 'dart:convert';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/periodic_azkar_service.dart';
+import '../../../core/services/premium_service.dart';
 import '../../../core/data/muezzins.dart';
 import '../../../widgets/saudi_flag.dart';
+import '../../premium/premium_screen.dart';
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -20,7 +22,6 @@ class _SettingsTabState extends State<SettingsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // 🎨 الألوان
   static const Color _primary = Color(0xFFE53935);
   static const Color _primaryDark = Color(0xFFB71C1C);
   static const Color _primaryLight = Color(0xFFFF5252);
@@ -41,7 +42,6 @@ class _SettingsTabState extends State<SettingsTab>
   double _soundVolume = 0.8;
   String _appVersion = '1.0.0';
 
-  // 📿 إعدادات الأذكار الدورية
   bool _periodicAzkarEnabled = false;
   int _periodicAzkarInterval = 15;
   int _periodicAzkarStartHour = 6;
@@ -609,6 +609,9 @@ class _SettingsTabState extends State<SettingsTab>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // 💎 بطاقة Premium
+        _buildPremiumCard(),
+
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,8 +731,6 @@ class _SettingsTabState extends State<SettingsTab>
                 },
               ),
               const SizedBox(height: 10),
-
-              // 🧪 اختبار الأذان
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -754,10 +755,7 @@ class _SettingsTabState extends State<SettingsTab>
                   ),
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // 🕌 اختبار إشعار الإقامة
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -785,7 +783,6 @@ class _SettingsTabState extends State<SettingsTab>
           ),
         ),
 
-        // 📿 قسم الأذكار الدورية
         _buildPeriodicAzkarCard(),
 
         _buildSettingsCard(
@@ -818,8 +815,106 @@ class _SettingsTabState extends State<SettingsTab>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📿 بطاقة الأذكار الدورية
+  // 💎 بطاقة Premium
   // ═══════════════════════════════════════════════════════════
+  Widget _buildPremiumCard() {
+    final isPremium = PremiumService.isPremium;
+
+    return _buildSettingsCard(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium,
+                  color: _primary, size: 28),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  '💎 الاشتراك المميز',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (isPremium)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    '✅ نشط',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isPremium
+                ? '🎉 اشتراكك نشط — استمتع بكل الميزات'
+                : 'افتح المساعد الذكي والتصحيح الذكي واقرأ معي',
+            style: TextStyle(
+              color: isPremium ? Colors.green : Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PremiumScreen(),
+                  ),
+                );
+                if (result == true && mounted) {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 تم تفعيل الاشتراك بنجاح!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              icon: Icon(
+                isPremium ? Icons.check_circle : Icons.star,
+              ),
+              label: Text(
+                isPremium
+                    ? '✅ اشتراكك نشط'
+                    : '💎 اشترك الآن (2.99\$ / شهر)',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 6,
+                shadowColor: _primary.withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPeriodicAzkarCard() {
     return _buildSettingsCard(
       Column(

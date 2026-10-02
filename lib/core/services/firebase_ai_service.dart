@@ -1,4 +1,4 @@
-import 'dart:convert';
+kimport 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -8,9 +8,10 @@ import 'usage_service.dart';
 import 'recitation_corrector.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🤖 خدمة الذكاء الاصطناعي — Groq API (مباشر)
+/// 🤖 خدمة الذكاء الاصطناعي — Groq API
 /// ✅ Whisper v3 Turbo لتحويل الصوت
 /// ✅ مقارنة ذكية مع التشكيل
+/// ✅ Premium checks (3 أسئلة + تصحيحان مجاناً)
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -84,19 +85,23 @@ class FirebaseAiService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي "المرشد"
+  // 🤖 المساعد الذكي "المرشد" — مع حد 3 أسئلة مجاناً
   // ═══════════════════════════════════════════════════════════
   static Future<String> askQuestion(String question) async {
     if (_apiKey.isEmpty) {
       return '⚠️ مفتاح Groq API غير موجود.';
     }
 
+    // ✅ فحص الحد المجاني
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingChats();
       if (remaining <= 0) {
-        return '🔒 انتهت تجربتك المجانية لليوم.\n'
+        return '🔒 **انتهت تجربتك المجانية لليوم**\n\n'
             '⏰ يتجدد تلقائياً غداً\n\n'
-            '💎 للاشتراك: \$2.99/شهر أو \$19.99/سنة';
+            '💎 **للاشتراك الفوري:**\n'
+            '• شهرياً: \$2.99\n'
+            '• سنوياً: \$22.99\n\n'
+            'افتح الإعدادات ← اشترك في Premium';
       }
     }
 
@@ -133,7 +138,10 @@ class FirebaseAiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final text = data['choices']?[0]?['message']?['content'];
+
+        // ✅ خصم من العداد
         await UsageService.incrementChat();
+
         return text?.toString().trim() ?? '⚠️ لا يوجد رد.';
       } else if (response.statusCode == 401) {
         return '⚠️ مفتاح Groq غير صالح.';
@@ -169,12 +177,7 @@ $correctText
 $userText
 
 📋 مهمتك:
-أعد بناء نص المستخدم بإضافة التشكيل المناسب لكل كلمة **بناءً على ما قرأه هو فعلاً**.
-
-⚠️ قواعد:
-1. حافظ على كلمات المستخدم كما هي.
-2. أضف التشكيل حسب ما نطق به.
-3. إذا لم تستطع، استخدم التشكيل من الآية الصحيحة.
+أعد بناء نص المستخدم بإضافة التشكيل المناسب لكل كلمة.
 
 📤 أعد JSON فقط:
 {
@@ -224,12 +227,13 @@ $userText
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 تحليل التلاوة الكامل
+  // 📖 تحليل التلاوة — مع حد تصحيحين مجاناً
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
     required String correctAyah,
   }) async {
+    // ✅ فحص الحد المجاني
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingRecitations();
       if (remaining <= 0) {
@@ -237,7 +241,7 @@ $userText
           'accuracy': 0,
           'words': [],
           'stats': {},
-          'feedback': '🔒 انتهت تجربتك المجانية.\n⏰ يتجدد غداً',
+          'feedback': '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً\n\n💎 اشترك من الإعدادات',
         };
       }
     }
@@ -262,7 +266,9 @@ $userText
         tashkeelResult: tashkeelResult,
       );
 
+      // ✅ خصم من العداد
       await UsageService.incrementRecitation();
+
       return result.toJson();
     } catch (e) {
       debugPrint('❌ خطأ في المقارنة: $e');
