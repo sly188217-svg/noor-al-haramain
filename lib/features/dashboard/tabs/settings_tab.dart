@@ -609,7 +609,6 @@ class _SettingsTabState extends State<SettingsTab>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // 💎 بطاقة Premium
         _buildPremiumCard(),
 
         _buildSettingsCard(
@@ -765,11 +764,11 @@ class _SettingsTabState extends State<SettingsTab>
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content:
-                              Text('🕌 إشعار الإقامة سيرن بعد 10 ثوانٍ')),
+                              Text('🕌 إشعار الإقامة سيرن بعد 3 ثوانٍ')),
                     );
                   },
                   icon: const Icon(Icons.timer),
-                  label: const Text('🕌 اختبار إشعار الإقامة (10 ثوانٍ)'),
+                  label: const Text('🕌 اختبار إشعار الإقامة'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primary.withValues(alpha: 0.7),
                     foregroundColor: Colors.white,
@@ -806,6 +805,36 @@ class _SettingsTabState extends State<SettingsTab>
                 tileColor: _bg.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
+              ),
+              const Divider(color: Colors.white12),
+              ListTile(
+                leading:
+                    const Icon(Icons.fullscreen, color: _primary, size: 24),
+                title: const Text(
+                  '🔓 إشعار الأذان ملء الشاشة',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'اضغط لفتح الإعدادات وتفعيل الخيار',
+                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white54, size: 14),
+                onTap: () async {
+                  final canUse =
+                      await NotificationService.canUseFullScreenIntent();
+                  if (canUse) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ ملء الشاشة مفعّل بالفعل'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    await NotificationService.openFullScreenSettings();
+                  }
+                },
               ),
             ],
           ),
@@ -934,7 +963,7 @@ class _SettingsTabState extends State<SettingsTab>
             ],
           ),
           const SizedBox(height: 4),
-          const Text('تذكير تلقائي بالأذكار كل فترة',
+          const Text('تذكير تلقائي بالأذكار — يعمل حتى مع إغلاق التطبيق',
               style: TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 12),
           SwitchListTile(

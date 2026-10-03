@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/firebase_ai_service.dart';
 import '../../../core/services/usage_service.dart';
+import '../../premium/premium_screen.dart';
 import '../../recitation/recitation_screen.dart';
 import '../../quran/read_with_me_screen.dart';
 import '../../quran/services/quran_service.dart';
@@ -157,6 +158,17 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     setState(() => _filteredSurahs = filtered);
   }
 
+  /// 💎 فتح شاشة الاشتراك الحقيقية
+  Future<void> _openPremiumScreen() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PremiumScreen()),
+    );
+    if (result == true && mounted) {
+      await _checkPremium();
+    }
+  }
+
   void _showPremiumDialog() {
     showDialog(
       context: context,
@@ -200,7 +212,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _activatePremiumForTesting();
+              _openPremiumScreen();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A90E2),
@@ -209,18 +221,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             child: const Text('💎 اشترك الآن'),
           ),
         ],
-      ),
-    );
-  }
-
-  Future<void> _activatePremiumForTesting() async {
-    await UsageService.activatePremium();
-    if (!mounted) return;
-    setState(() => _isPremium = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ تم تفعيل Premium (وضع الاختبار)'),
-        backgroundColor: Colors.green,
       ),
     );
   }
@@ -302,7 +302,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               ),
             ),
             const SizedBox(height: 24),
-            // 🎁 بطاقة التجربة المجانية
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -343,7 +342,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               ),
             ),
             const SizedBox(height: 24),
-            // 🎁 زر التجربة المجانية
             if (_remainingReadWithMe > 0)
               ElevatedButton.icon(
                 onPressed: _tryFreeTrial,
@@ -363,7 +361,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                 ),
               ),
             const SizedBox(height: 12),
-            // 💎 زر الاشتراك
             OutlinedButton.icon(
               onPressed: _showPremiumDialog,
               icon: const Icon(Icons.star, size: 20),
@@ -393,7 +390,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   Widget _buildAccessScreen() {
     return Column(
       children: [
-        // شريط Premium
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           margin: const EdgeInsets.all(12),
@@ -434,7 +430,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           ),
         ),
 
-        // شريط البحث
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextField(
@@ -480,7 +475,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
 
         const SizedBox(height: 8),
 
-        // قائمة السور
         Expanded(
           child: _isLoadingSurahs
               ? const Center(
@@ -505,9 +499,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 بطاقة السورة
-  // ═══════════════════════════════════════════════════════════
   Widget _buildSurahCard(SurahModel surah) {
     final isMeccan = surah.revelationType == 'Meccan';
 

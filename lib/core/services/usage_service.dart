@@ -16,9 +16,9 @@ class UsageService {
   // ═══════════════════════════════════════════════════════════
   // 📊 حدود التجربة المجانية
   // ═══════════════════════════════════════════════════════════
-  static const int freeChatsPerDay = 3;          // 🤖 3 أسئلة للمرشد
-  static const int freeRecitationsPerDay = 2;    // 🎙️ تصحيحان
-  static const int freeReadWithMePerDay = 3;     // 📖 3 مرات
+  static const int freeChatsPerDay = 3;
+  static const int freeRecitationsPerDay = 2;
+  static const int freeReadWithMePerDay = 3;
 
   // ═══════════════════════════════════════════════════════════
   // 💎 هل المستخدم Premium؟
@@ -28,7 +28,7 @@ class UsageService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي — 3 مجاناً يومياً
+  // 🤖 المساعد الذكي
   // ═══════════════════════════════════════════════════════════
   static Future<int> remainingChats() async {
     if (await isPremium()) return 999999;
@@ -51,7 +51,7 @@ class UsageService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎙️ تصحيح التلاوة — تصحيحان مجاناً يومياً
+  // 🎙️ تصحيح التلاوة
   // ═══════════════════════════════════════════════════════════
   static Future<int> remainingRecitations() async {
     if (await isPremium()) return 999999;
@@ -74,7 +74,7 @@ class UsageService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 اقرأ معي — 3 مرات مجاناً يومياً
+  // 📖 اقرأ معي
   // ═══════════════════════════════════════════════════════════
   static Future<int> remainingReadWithMe() async {
     if (await isPremium()) return 999999;
@@ -112,7 +112,7 @@ class UsageService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🧪 اختبار (للمطور فقط)
+  // 🧪 تصفير كل العدادات (للمطور)
   // ═══════════════════════════════════════════════════════════
   static Future<void> resetAll() async {
     final prefs = await SharedPreferences.getInstance();

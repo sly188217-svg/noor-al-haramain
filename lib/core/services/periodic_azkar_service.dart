@@ -1,25 +1,18 @@
-import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
-/// ═══════════════════════════════════════════════════════════
-/// 🕌 خدمة الأذكار الدورية
-/// ✅ إشعارات صامتة + اهتزاز
-/// ✅ 20 ذكر يومي + 5 أذكار الجمعة
-/// ✅ تتبع الساعات (من 6 صباحاً إلى 10 مساءً)
-/// ═══════════════════════════════════════════════════════════
 class PeriodicAzkarService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  static Timer? _timer;
-  static int _currentIndex = 0;
-  static int _fridayIndex = 0;
+  static const String _channelId = 'periodic_azkar_channel_v5';
+  static const int _baseId = 50000;
 
-  // 📋 الأذكار اليومية (20)
   static const List<String> _azkar = [
     'سبحان الله',
     'الحمد لله',
@@ -43,7 +36,6 @@ class PeriodicAzkarService {
     'سبحان الله وبحمده سبحان الله العظيم',
   ];
 
-  // 📋 أذكار الجمعة (5)
   static const List<String> _fridayAzkar = [
     'اللهم صل وسلم على نبينا محمد ﷺ',
     'اللهم صل على محمد وعلى آل محمد',
@@ -52,7 +44,9 @@ class PeriodicAzkarService {
     'أكثر من الصلاة على النبي اليوم (يوم الجمعة)',
   ];
 
-  /// 🚀 بدء الخدمة
+  static final Int64List _azkarVibration =
+      Int64List.fromList([0, 300, 200, 300]);
+
   static Future<void> start() async {
     await stop();
 
@@ -68,90 +62,154 @@ class PeriodicAzkarService {
     final endHour = prefs.getInt('periodic_azkar_end_hour') ?? 22;
 
     debugPrint(
-        '🕌 بدء الأذكار كل $intervalMinutes دقيقة ($startHour-$endHour)');
+        '🕌 جدولة الأذكار كل $intervalMinutes دقيقة ($startHour-$endHour)');
 
-    // أول ذكر فوري
-    _showZikrIfInTimeRange(startHour, endHour);
+    if (Platform.isAndroid) {
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          'الأذكار الدورية (v5)',
+          description: 'تذكير بالأذكار كل فترة',
+          importance: Importance.high,
+          playSound: false,
+          enableVibration: true,
+        ),
+      );
+    }
 
-    _timer = Timer.periodic(
-      Duration(minutes: intervalMinutes),
-      (_) => _showZikrIfInTimeRange(startHour, endHour),
+    await _scheduleAllAzkarForToday(
+      intervalMinutes: intervalMinutes,
+      startHour: startHour,
+      endHour: endHour,
     );
+
+    debugPrint('✅ تم جدولة الأذكار');
+  }
+
+  static Future<void> _scheduleAllAzkarForToday({
+    required int intervalMinutes,
+    required int startHour,
+    required int endHour,
+  }) async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day, startHour, 0);
+
+    int index = 0;
+    int notificationId = _baseId;
+    int scheduledCount = 0;
+
+    DateTime slot = todayStart;
+    while (slot.isBefore(now)) {
+      slot = slot.add(Duration(minutes: intervalMinutes));
+    }
+
+    final endDate = DateTime(now.year, now.month, now.day + 2, 0, 0);
+
+    while (slot.isBefore(endDate)) {
+      if (slot.hour >= startHour && slot.hour < endHour) {
+        final isFriday = slot.weekday == DateTime.friday;
+        final zikr = isFriday
+            ? _fridayAzkar[index % _fridayAzkar.length]
+            : _azkar[index % _azkar.length];
+        final title = isFriday ? '🕌 الصلاة على النبي ﷺ' : '📿 ذكر';
+
+        try {
+          await _notifications.zonedSchedule(
+            notificationId++,
+            title,
+            zikr,
+            tz.TZDateTime.from(slot, tz.local),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                _channelId,
+                'الأذكار الدورية (v5)',
+                channelDescription: 'تذكير بالأذكار',
+                importance: Importance.high,
+                priority: Priority.high,
+                playSound: false,
+                enableVibration: true,
+                vibrationPattern: _azkarVibration,
+                category: AndroidNotificationCategory.reminder,
+                color: const Color(0xFFE53935),
+                colorized: true,
+                styleInformation: const BigTextStyleInformation(''),
+              ),
+              iOS: const DarwinNotificationDetails(
+                presentAlert: true,
+                presentSound: false,
+                presentBadge: true,
+              ),
+            ),
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+          );
+          index++;
+          scheduledCount++;
+
+          if (scheduledCount >= 100) break;
+        } catch (e) {
+          debugPrint('⚠️ فشل جدولة ذكر في $slot: $e');
+        }
+      }
+
+      slot = slot.add(Duration(minutes: intervalMinutes));
+    }
+
+    debugPrint('✅ تم جدولة $scheduledCount ذكر');
   }
 
   static Future<void> stop() async {
-    _timer?.cancel();
-    _timer = null;
     debugPrint('🛑 إيقاف الأذكار الدورية');
+    try {
+      final pending = await _notifications.pendingNotificationRequests();
+      for (final p in pending) {
+        if (p.id >= _baseId && p.id < _baseId + 200) {
+          await _notifications.cancel(p.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ فشل إلغاء الأذكار: $e');
+    }
   }
 
   static Future<void> restart() async => await start();
 
-  static Future<void> _showZikrIfInTimeRange(
-      int startHour, int endHour) async {
-    final now = DateTime.now();
-    final currentHour = now.hour;
-    if (currentHour < startHour || currentHour >= endHour) return;
-
-    final isFriday = now.weekday == DateTime.friday;
-    String zikr;
-    String title;
-
-    if (isFriday) {
-      zikr = _fridayAzkar[_fridayIndex % _fridayAzkar.length];
-      _fridayIndex++;
-      title = '🕌 الصلاة على النبي ﷺ';
-    } else {
-      zikr = _azkar[_currentIndex % _azkar.length];
-      _currentIndex++;
-      title = '📿 ذكر';
-    }
-
-    try {
-      // ✅ إشعار صامت + اهتزاز (بدون صوت الأذان)
-      final androidDetails = AndroidNotificationDetails(
-        'periodic_azkar_channel_v3', // ✅ قناة جديدة
-        'الأذكار الدورية',
-        channelDescription: 'تذكير بالأذكار كل فترة',
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: false, // ✅ صامت
-        enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
-        category: AndroidNotificationCategory.reminder,
-        color: const Color(0xFFE53935),
-        colorized: true,
-        ongoing: false,
-        autoCancel: true,
-        visibility: NotificationVisibility.public,
-        styleInformation: BigTextStyleInformation(''),
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentSound: false,
-        presentBadge: true,
-        interruptionLevel: InterruptionLevel.active,
-      );
-
-      await _notifications.show(
-        DateTime.now().millisecondsSinceEpoch % 100000,
-        title,
-        zikr,
-        NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
-        ),
-      );
-
-      debugPrint('📿 $title: $zikr');
-    } catch (e) {
-      debugPrint('⚠️ فشل إشعار الذكر: $e');
-    }
-  }
-
-  /// 🧪 اختبار فوري
   static Future<void> showTestZikr() async {
-    await _showZikrIfInTimeRange(0, 24);
+    final now = DateTime.now();
+    final isFriday = now.weekday == DateTime.friday;
+    final zikr = isFriday
+        ? _fridayAzkar[now.second % _fridayAzkar.length]
+        : _azkar[now.second % _azkar.length];
+    final title = isFriday ? '🕌 الصلاة على النبي ﷺ' : '📿 ذكر';
+
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch % 100000,
+      title,
+      zikr,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          'الأذكار الدورية (v5)',
+          channelDescription: 'تذكير بالأذكار',
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: false,
+          enableVibration: true,
+          vibrationPattern: _azkarVibration,
+          category: AndroidNotificationCategory.reminder,
+          color: const Color(0xFFE53935),
+          colorized: true,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+          presentBadge: true,
+        ),
+      ),
+    );
+    debugPrint('🧪 $title: $zikr');
   }
 }

@@ -9,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/providers/language_provider.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/periodic_azkar_service.dart';
+import 'core/services/premium_service.dart';
 import 'features/adhan/adhan_screen.dart';
 import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
@@ -57,7 +58,15 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // 5. الإشعارات
+  // 5. RevenueCat
+  try {
+    await PremiumService.initialize();
+    debugPrint('✅ Premium Service initialized');
+  } catch (e) {
+    debugPrint('⚠️ فشل تهيئة Premium: $e');
+  }
+
+  // 6. الإشعارات
   try {
     await NotificationService.initialize();
     await NotificationService.requestFullScreenIntentPermission();
@@ -66,7 +75,7 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
 
-  // 6. ✅ الأذكار الدورية
+  // 7. الأذكار الدورية
   try {
     await PeriodicAzkarService.start();
     debugPrint('✅ تم تفعيل الأذكار الدورية');
@@ -74,7 +83,7 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تفعيل الأذكار الدورية: $e');
   }
 
-  // 7. ErrorWidget
+  // 8. ErrorWidget
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
