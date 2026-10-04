@@ -1,9 +1,9 @@
 workflows:
   # ═══════════════════════════════════════════════════════════
-  # 🤖 Android Build (APK Split + AAB)
+  # 🤖 Android Build (APK Split + AAB) — مع تشويش الكود
   # ═══════════════════════════════════════════════════════════
   android-workflow:
-    name: Build Android (APK + AAB)
+    name: Build Android (APK + AAB) — Obfuscated
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -16,9 +16,7 @@ workflows:
         - ~/.pub-cache
         - ~/.gradle/caches
     scripts:
-      # ═══════════════════════════════════════════════════════
       # 1) إنشاء assets/.env
-      # ═══════════════════════════════════════════════════════
       - name: Create assets/.env file
         script: |
           mkdir -p $CM_BUILD_DIR/assets
@@ -28,9 +26,7 @@ workflows:
           echo "📋 محتوى الملف (مخفي):"
           sed 's/gsk_.*/gsk_***HIDDEN***/' $CM_BUILD_DIR/assets/.env
 
-      # ═══════════════════════════════════════════════════════
       # 2) فك تشفير Keystore
-      # ═══════════════════════════════════════════════════════
       - name: Decode keystore
         script: |
           mkdir -p $CM_BUILD_DIR/android/app
@@ -40,37 +36,47 @@ workflows:
           ls -lh $CM_BUILD_DIR/android/app/noor-release.jks
           file $CM_BUILD_DIR/android/app/noor-release.jks
 
-      # ═══════════════════════════════════════════════════════
-      # 3) تحميل الحزم
-      # ═══════════════════════════════════════════════════════
+      # 3) إنشاء key.properties
+      - name: Create key.properties
+        script: |
+          cat > $CM_BUILD_DIR/android/key.properties << KEYEOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=noor-release.jks
+          KEYEOF
+          echo "✅ key.properties created"
+
+      # 4) تحميل الحزم
       - name: Get Flutter packages
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      # ═══════════════════════════════════════════════════════
-      # 4) بناء APK مقسم حسب المعالج (توفير 30 MB/APK)
-      # ═══════════════════════════════════════════════════════
-      - name: Build APK (Split per ABI)
+      # 5) بناء APK مقسم + مشوّش
+      - name: Build APK (Split per ABI + Obfuscated)
         script: |
           cd $CM_BUILD_DIR
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi \
+            --obfuscate \
+            --split-debug-info=build/debug-info/apk
           echo "✅ APKs created"
           ls -lh $CM_BUILD_DIR/build/app/outputs/flutter-apk/
 
-      # ═══════════════════════════════════════════════════════
-      # 5) بناء AAB (Google Play يقسمه تلقائياً)
-      # ═══════════════════════════════════════════════════════
-      - name: Build AAB (for Google Play)
+      # 6) بناء AAB مشوّش
+      - name: Build AAB (Obfuscated)
         script: |
           cd $CM_BUILD_DIR
-          flutter build appbundle --release
+          flutter build appbundle --release \
+            --obfuscate \
+            --split-debug-info=build/debug-info/aab
           echo "✅ AAB created"
           ls -lh $CM_BUILD_DIR/build/app/outputs/bundle/release/
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
       - build/app/outputs/bundle/release/*.aab
+      - build/debug-info/**
     publishing:
       email:
         recipients:
@@ -108,9 +114,7 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      # ═══════════════════════════════════════════════════════
       # 1) إنشاء assets/.env
-      # ═══════════════════════════════════════════════════════
       - name: Create assets/.env file
         script: |
           mkdir -p $CM_BUILD_DIR/assets
@@ -118,26 +122,20 @@ workflows:
           echo "✅ assets/.env created"
           ls -lh $CM_BUILD_DIR/assets/.env
 
-      # ═══════════════════════════════════════════════════════
       # 2) إعداد Firebase (iOS)
-      # ═══════════════════════════════════════════════════════
       - name: Setup Firebase config (iOS)
         script: |
           echo "$GOOGLE_SERVICES_PLIST_IOS" | base64 -d > $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
           echo "✅ GoogleService-Info.plist created"
           ls -lh $CM_BUILD_DIR/ios/Runner/GoogleService-Info.plist
 
-      # ═══════════════════════════════════════════════════════
       # 3) تحميل الحزم
-      # ═══════════════════════════════════════════════════════
       - name: Get Flutter packages
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      # ═══════════════════════════════════════════════════════
       # 4) تثبيت Pods (إن وُجد Podfile)
-      # ═══════════════════════════════════════════════════════
       - name: Install pods
         script: |
           cd $CM_BUILD_DIR/ios
@@ -147,31 +145,28 @@ workflows:
             echo "⚠️ No Podfile — using Swift Package Manager"
           fi
 
-      # ═══════════════════════════════════════════════════════
       # 5) إعداد التوقيع
-      # ═══════════════════════════════════════════════════════
       - name: Set up code signing
         script: |
           xcode-project use-profiles
 
-      # ═══════════════════════════════════════════════════════
-      # 6) بناء iOS IPA
-      # ═══════════════════════════════════════════════════════
-      - name: Build iOS IPA
+      # 6) بناء iOS IPA مشوّش
+      - name: Build iOS IPA (Obfuscated)
         script: |
           cd $CM_BUILD_DIR
           flutter build ipa --release \
+            --obfuscate \
+            --split-debug-info=build/debug-info/ios \
             --export-options-plist=/Users/builder/export_options.plist
 
-      # ═══════════════════════════════════════════════════════
       # 7) التحقق من IPA
-      # ═══════════════════════════════════════════════════════
       - name: Verify IPA
         script: |
           ls -lh $CM_BUILD_DIR/build/ios/ipa/ || true
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/debug-info/ios/**
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
