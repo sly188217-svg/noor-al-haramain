@@ -9,27 +9,31 @@ rootProject.buildDir = '../build'
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
 
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                if (project.name != 'app') {
-                    compileSdkVersion 36
-                }
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            }
-        }
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                jvmTarget = '17'
+// 1) evaluationDependsOn — ضروري لـ flutter property في android_intent_plus
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+// 2) Java 17 — يعمل بعد تقييم كل المشاريع (بدون afterEvaluate)
+gradle.projectsEvaluated {
+    subprojects { project ->
+        if (project.plugins.hasPlugin('com.android.library') ||
+            project.plugins.hasPlugin('com.android.application')) {
+            project.android.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
             }
         }
         project.tasks.withType(JavaCompile).configureEach {
             sourceCompatibility = '17'
             targetCompatibility = '17'
+        }
+        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = '17'
+            }
         }
     }
 }
