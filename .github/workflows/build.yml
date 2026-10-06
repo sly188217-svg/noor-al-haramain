@@ -22,14 +22,11 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.1'
           channel: 'stable'
           cache: true
 
       - name: Verify Flutter
-        run: |
-          flutter --version
-          dart --version
+        run: flutter --version
 
       - name: Create .env file
         run: |
