@@ -92,7 +92,7 @@ dependencies:
   encrypt: ^5.0.3
   flutter_jailbreak_detection: ^1.10.0
   device_info_plus: ^13.3.0
-  package_info_plus: ^8.1.0
+  package_info_plus: 10.2.1
   http_certificate_pinning: ^3.0.2
 
 dev_dependencies:
