@@ -6,27 +6,32 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 
 // ✅ 1. تسجيل afterEvaluate أولاً (قبل evaluationDependsOn)
-// هذا يجبر geocoding_android على استخدام compileSdk 36
+// يضبط compileSdk + Java 17 لجميع المشاريع الفرعية
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
                 compileSdkVersion 36
                 compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_11
-                    targetCompatibility JavaVersion.VERSION_11
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
                 }
             }
         }
         tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
             kotlinOptions {
-                jvmTarget = '11'
+                jvmTarget = '17'
             }
+        }
+        project.tasks.withType(JavaCompile).configureEach {
+            sourceCompatibility = '17'
+            targetCompatibility = '17'
         }
     }
 }
@@ -38,25 +43,4 @@ subprojects {
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
-}
-
-
-// ═══════════════════════════════════════════════════════════
-// 🔧 Force Java 17 for all subprojects (flutter_secure_storage)
-// ═══════════════════════════════════════════════════════════
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            }
-            project.tasks.withType(JavaCompile).configureEach {
-                sourceCompatibility = '17'
-                targetCompatibility = '17'
-            }
-        }
-    }
 }
