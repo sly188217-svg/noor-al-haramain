@@ -503,6 +503,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         _loadLocationAndFetchTimes();
       }
       _checkAdhanTime();
+      _updatePersistentNotification();
     });
   }
 
@@ -522,6 +523,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       await NotificationService.showPersistentNotification(
         nextPrayer: _nextPrayer,
         targetTime: nextPrayerTime,
+        remaining: _timeRemainingNotifier.value,
         hijriDate: hijri,
         city: _cityName,
       );

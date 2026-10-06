@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../core/services/premium_service.dart';
 
-/// ═══════════════════════════════════════════════════════════
-/// 💎 شاشة Premium — 3 ميزات فقط
-/// ✅ المساعد الذكي (3 مجاناً)
-/// ✅ التصحيح الذكي (تصحيحان مجاناً)
-/// ✅ اقرأ معي (3 مرات مجاناً)
-/// ═══════════════════════════════════════════════════════════
 class PremiumScreen extends StatefulWidget {
   const PremiumScreen({super.key});
 
@@ -26,9 +21,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
   static const Color _bg = Color(0xFF0A1929);
   static const Color _surface = Color(0xFF132F4C);
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 الميزات المدفوعة
-  // ═══════════════════════════════════════════════════════════
   static const List<Map<String, String>> _premiumFeatures = [
     {
       'icon': '🤖',
@@ -61,7 +53,18 @@ class _PremiumScreenState extends State<PremiumScreen> {
   @override
   void initState() {
     super.initState();
+
+    // 🔒 منع لقطة الشاشة في شاشة الاشتراك
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
     _loadOfferings();
+  }
+
+  @override
+  void dispose() {
+    // إعادة العرض الطبيعي
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
   }
 
   Future<void> _loadOfferings() async {
@@ -146,7 +149,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: _primary))
           : _hasError
-              ? _buildErrorState()
+              ? _buildComingSoonState()
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -186,12 +189,106 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       const Text(
                         'يمكنك إلغاء الاشتراك في أي وقت من إعدادات متجر التطبيقات',
                         textAlign: TextAlign.center,
-                        style:
-                            TextStyle(color: Colors.white38, fontSize: 11),
+                        style: TextStyle(color: Colors.white38, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🚀 حالة "قادم قريباً" (بدل رسالة الخطأ)
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildComingSoonState() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _primary.withValues(alpha: 0.15),
+                border: Border.all(color: _primary, width: 2),
+              ),
+              child: const Icon(
+                Icons.rocket_launch,
+                color: _primary,
+                size: 56,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '🚀 الاشتراكات قادمة قريباً',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'نعمل حالياً على تفعيل نظام الاشتراكات.\n'
+              'يمكنك الاستمتاع بكل الميزات المجانية الآن:',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.8,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildFeaturePill('✅ 3 أسئلة يومياً للمرشد'),
+            _buildFeaturePill('✅ تصحيحان للتلاوة'),
+            _buildFeaturePill('✅ 3 مرات لـ "اقرأ معي"'),
+            _buildFeaturePill('✅ مواقيت الصلاة والأذان'),
+            _buildFeaturePill('✅ المصحف والأذكار'),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadOfferings,
+              icon: const Icon(Icons.refresh),
+              label: const Text('🔄 إعادة المحاولة'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                '⬅️ العودة للاستمتاع بالميزات المجانية',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturePill(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: _surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+      ),
     );
   }
 
@@ -480,40 +577,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
             }).toList(),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.orange, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              '⚠️ تعذر تحميل خيارات الاشتراك',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'تأكد من اتصالك بالإنترنت',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _loadOfferings,
-              icon: const Icon(Icons.refresh),
-              label: const Text('إعادة المحاولة'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

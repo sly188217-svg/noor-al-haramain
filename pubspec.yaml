@@ -85,6 +85,15 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.8.0
   android_intent_plus: ^6.1.0
+  flutter_secure_storage: ^11.2.0
+  safe_device: ^1.4.1
+  crypto: ^3.0.7
+  pointycastle: ^3.9.1
+  encrypt: ^5.0.3
+  flutter_jailbreak_detection: ^1.10.0
+  device_info_plus: ^13.3.0
+  package_info_plus: ^10.2.2
+  http_certificate_pinning: ^3.0.2
 
 dev_dependencies:
   flutter_test:

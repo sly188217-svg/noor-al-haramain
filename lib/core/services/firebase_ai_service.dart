@@ -6,26 +6,27 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'usage_service.dart';
 import 'recitation_corrector.dart';
+import 'certificate_pinning_service.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// 🤖 خدمة الذكاء الاصطناعي — Groq API
-/// ✅ Whisper v3 Turbo لتحويل الصوت
-/// ✅ مقارنة ذكية مع التشكيل
-/// ✅ Premium checks (3 أسئلة + تصحيحان مجاناً)
+/// 🤖 خدمة الذكاء الاصطناعي — عبر Cloudflare Worker
+/// ✅ المفتاح محمي على السيرفر
+/// ✅ Certificate Pinning ضد MITM
+/// ✅ تشفير الاتصال
 /// ═══════════════════════════════════════════════════════════
 class FirebaseAiService {
-  static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
+  // 🔐 Worker URL
+  static String get _workerUrl =>
+      dotenv.env['WORKER_URL'] ??
+      'https://noor-groq-proxy-v2.sly188217.workers.dev';
 
-  static const String _chatUrl =
-      'https://api.groq.com/openai/v1/chat/completions';
-  static const String _whisperUrl =
-      'https://api.groq.com/openai/v1/audio/transcriptions';
+  static String get _chatUrl => '$_workerUrl/chat';
+  static String get _whisperUrl => '$_workerUrl/whisper';
 
+  // ✅ الموديلات المتاحة
   static const List<String> _models = [
     'openai/gpt-oss-120b',
     'openai/gpt-oss-20b',
-    'groq/compound',
-    'groq/compound-mini',
   ];
 
   static String? _activeModel;
@@ -38,17 +39,18 @@ class FirebaseAiService {
     String audioFilePath, {
     String? correctText,
   }) async {
-    if (_apiKey.isEmpty) {
-      debugPrint('⚠️ مفتاح Groq غير موجود');
+    // 🔒 التحقق من شهادة SSL
+    final isSecure = await CertificatePinningService.verifyConnection();
+    if (!isSecure) {
+      debugPrint('🚨 رُفض الاتصال — الشهادة غير صحيحة');
       return null;
     }
 
     try {
-      debugPrint('🎤 جاري تحويل الصوت إلى نص...');
+      debugPrint('🎤 جاري تحويل الصوت إلى نص عبر Worker...');
 
       final uri = Uri.parse(_whisperUrl);
       final request = http.MultipartRequest('POST', uri)
-        ..headers['Authorization'] = 'Bearer $_apiKey'
         ..fields['model'] = 'whisper-large-v3-turbo'
         ..fields['language'] = 'ar'
         ..fields['response_format'] = 'json'
@@ -85,13 +87,9 @@ class FirebaseAiService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي "المرشد" — مع حد 3 أسئلة مجاناً
+  // 🤖 المساعد الذكي "المرشد"
   // ═══════════════════════════════════════════════════════════
   static Future<String> askQuestion(String question) async {
-    if (_apiKey.isEmpty) {
-      return '⚠️ مفتاح Groq API غير موجود.';
-    }
-
     // ✅ فحص الحد المجاني
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingChats();
@@ -139,12 +137,13 @@ class FirebaseAiService {
         final data = jsonDecode(response.body);
         final text = data['choices']?[0]?['message']?['content'];
 
-        // ✅ خصم من العداد
         await UsageService.incrementChat();
 
         return text?.toString().trim() ?? '⚠️ لا يوجد رد.';
       } else if (response.statusCode == 401) {
-        return '⚠️ مفتاح Groq غير صالح.';
+        return '⚠️ مفتاح API غير صالح.';
+      } else if (response.statusCode == 403) {
+        return '🚨 تم رفض الاتصال — تحقق من سلامة التطبيق.';
       } else if (response.statusCode == 429) {
         return '⚠️ تجاوزت حد الاستخدام. حاول بعد دقيقة.';
       } else {
@@ -162,10 +161,6 @@ class FirebaseAiService {
     required String userText,
     required String correctText,
   }) async {
-    if (_apiKey.isEmpty) {
-      return {'reconstructed': userText, 'words': {}};
-    }
-
     try {
       final prompt = '''
 لديك آية قرآنية بالتشكيل الكامل، ونص مقروء بدون تشكيل.
@@ -227,13 +222,12 @@ $userText
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📖 تحليل التلاوة — مع حد تصحيحين مجاناً
+  // 📖 تحليل التلاوة
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> analyzeRecitation({
     required String userRecitation,
     required String correctAyah,
   }) async {
-    // ✅ فحص الحد المجاني
     if (!await UsageService.isPremium()) {
       final remaining = await UsageService.remainingRecitations();
       if (remaining <= 0) {
@@ -241,7 +235,8 @@ $userText
           'accuracy': 0,
           'words': [],
           'stats': {},
-          'feedback': '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً\n\n💎 اشترك من الإعدادات',
+          'feedback':
+              '🔒 انتهت تجربتك المجانية لليوم.\n⏰ يتجدد غداً\n\n💎 اشترك من الإعدادات',
         };
       }
     }
@@ -266,7 +261,6 @@ $userText
         tashkeelResult: tashkeelResult,
       );
 
-      // ✅ خصم من العداد
       await UsageService.incrementRecitation();
 
       return result.toJson();
@@ -285,7 +279,7 @@ $userText
   // 🎯 التعرف على الآية
   // ═══════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>?> identifyAyah(String spokenText) async {
-    if (_apiKey.isEmpty || spokenText.trim().isEmpty) return null;
+    if (spokenText.trim().isEmpty) return null;
 
     try {
       final prompt = '''
@@ -362,10 +356,20 @@ $userText
     debugPrint('✅ الموديل النشط: $model');
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 📤 إرسال الطلب مع Certificate Pinning
+  // ═══════════════════════════════════════════════════════════
   static Future<http.Response?> _sendRequest(
     Map<String, dynamic> body, {
     Duration timeout = const Duration(seconds: 60),
   }) async {
+    // 🔒 التحقق من شهادة SSL قبل أي طلب
+    final isSecure = await CertificatePinningService.verifyConnection();
+    if (!isSecure) {
+      debugPrint('🚨 رُفض الاتصال — الشهادة غير صحيحة');
+      return null;
+    }
+
     final active = await _getActiveModel();
     final modelsToTry = [active, ..._models.where((m) => m != active)];
 
@@ -377,7 +381,8 @@ $userText
               Uri.parse(_chatUrl),
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer $_apiKey',
+                'X-App-Version': '1.0.0',
+                'X-Platform': 'flutter',
               },
               body: jsonEncode(body),
             )

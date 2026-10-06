@@ -23,13 +23,18 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-// ═══════════════════════════════════════════════════════════
-// 🔑 تحميل بيانات التوقيع
-// ═══════════════════════════════════════════════════════════
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🔐 دالة للحصول على هاش التوقيع
+// ═══════════════════════════════════════════════════════════
+def getExpectedSignature() {
+    // من متغيرات البيئة (Codemagic) أو الافتراضي
+    return System.getenv("EXPECTED_SIGNATURE") ?: "PLACEHOLDER_UPDATE_AFTER_BUILD"
 }
 
 android {
@@ -52,8 +57,12 @@ android {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 🔐 إعدادات التوقيع
+    // ✅ BuildConfig (مطلوب للتحقق من التوقيع)
     // ═══════════════════════════════════════════════════════════
+    buildFeatures {
+        buildConfig = true
+    }
+
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias'] ?: 'noor-key'
@@ -73,27 +82,20 @@ android {
         multiDexEnabled true
 
         manifestPlaceholders["firebaseAppCheckDebugToken"] = "A0CD6B2F-9F70-4037-B04C-7C1D58CE299D"
+
+        // 🔐 هاش التوقيع المتوقع (يُحدَّث بعد أول بناء)
+        buildConfigField "String", "EXPECTED_SIGNATURE", "\"${getExpectedSignature()}\""
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // ✅ R8 + ShrinkResources (توفير 30-50 MB)
-    // ═══════════════════════════════════════════════════════════
     buildTypes {
         release {
             signingConfig signingConfigs.release
-
-            // ✅ تفعيل التصغير
             minifyEnabled true
             shrinkResources true
-
-            // ✅ قواعد ProGuard
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 📦 تنظيف الموارد
-    // ═══════════════════════════════════════════════════════════
     packagingOptions {
         resources {
             excludes += [

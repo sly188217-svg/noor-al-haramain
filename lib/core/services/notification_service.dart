@@ -27,8 +27,8 @@ class NotificationService {
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
     {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
     {'name': 'الشيخ ياسر الدوسري', 'file': 'adhan_yasser'},
-    {'name': 'الشيخ ناصر القطامي', 'file': 'adhan_qatami'},
-    {'name': 'الشيخ محمد مروان القصاص', 'file': 'adhan_qassas'},
+    {'name': 'الشيخ محمد مروان القصاص', 'file': 'adhan_qatami'},
+    {'name': 'الشيخ ناصر القطامي', 'file': 'adhan_qassas'},
     {'name': 'الشيخ عبد الباسط عبد الصمد', 'file': 'adhan_abdalbaset'},
     {'name': 'الشيخ مشاري العفاسي', 'file': 'adhan_alafasy'},
     {'name': 'الشيخ سعد الغامدي', 'file': 'adhan_ghamdi'},
@@ -375,13 +375,14 @@ class NotificationService {
     String? body,
     String? nextPrayer,
     DateTime? targetTime,
+    Duration? remaining,
     String? hijriDate,
     String? city,
     int? minutesLeft,
   }) async {
     if (Platform.isLinux || !_initialized) return;
 
-    // بناء العنوان
+    // ─── العنوان ───
     String t;
     if (title != null && title.isNotEmpty) {
       t = title;
@@ -391,31 +392,51 @@ class NotificationService {
       t = '🕌 الصلاة القادمة';
     }
 
-    // بناء النص
+    // ─── النص ───
     final buffer = StringBuffer();
-    if (body != null && body.isNotEmpty) {
-      buffer.write(body);
-    } else {
-      if (targetTime != null) {
-        final hh = targetTime.hour.toString().padLeft(2, '0');
-        final mm = targetTime.minute.toString().padLeft(2, '0');
-        buffer.write('🕐 $hh:$mm');
-      }
-      if (minutesLeft != null) {
-        if (buffer.isNotEmpty) buffer.write(' • ');
-        buffer.write('باقي $minutesLeft دقيقة');
-      }
-      if (city != null && city.isNotEmpty) {
-        if (buffer.isNotEmpty) buffer.write('\n');
-        buffer.write('📍 $city');
-      }
-      if (hijriDate != null && hijriDate.isNotEmpty) {
-        if (buffer.isNotEmpty) buffer.write('\n');
-        buffer.write('📅 $hijriDate');
+
+    // ⏳ الوقت المتبقي (نص ثابت احتياطي)
+    if (remaining != null && !remaining.isNegative) {
+      final h = remaining.inHours;
+      final m = remaining.inMinutes.remainder(60);
+      final s = remaining.inSeconds.remainder(60);
+      if (h > 0) {
+        buffer.write(
+            '⏳ ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}');
+      } else {
+        buffer.write(
+            '⏳ ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}');
       }
     }
 
-    final b = buffer.toString().trim().isEmpty ? 'اقترب وقت الصلاة' : buffer.toString();
+    // 🕐 وقت الصلاة
+    if (targetTime != null) {
+      final hh = targetTime.hour.toString().padLeft(2, '0');
+      final mm = targetTime.minute.toString().padLeft(2, '0');
+      if (buffer.isNotEmpty) buffer.write('  •  ');
+      buffer.write('🕐 $hh:$mm');
+    }
+
+    // 📍 المدينة
+    if (city != null && city.isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.write('\n');
+      buffer.write('📍 $city');
+    }
+
+    // 📅 التاريخ
+    if (hijriDate != null && hijriDate.isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.write('\n');
+      buffer.write('📅 $hijriDate');
+    }
+
+    final b = buffer.toString().trim().isEmpty
+        ? 'اقترب وقت الصلاة'
+        : buffer.toString();
+
+    // ═══════════════════════════════════════════════════════
+    // ⏱️ Chronometer مدمج في Android — عد تنازلي تلقائي
+    // ═══════════════════════════════════════════════════════
+    final whenMillis = targetTime?.millisecondsSinceEpoch;
 
     await _notifications.show(
       _persistentId,
@@ -431,7 +452,14 @@ class NotificationService {
           enableVibration: false,
           ongoing: true,
           autoCancel: false,
-          showWhen: true,
+
+          // ✅ السحر: العد التنازلي المدمج في Android
+          when: whenMillis,
+          usesChronometer: whenMillis != null,
+          chronometerCountDown: true,
+          showWhen: whenMillis != null,
+          onlyAlertOnce: true,
+
           color: const Color(0xFF4A90E2),
         ),
       ),

@@ -5,19 +5,24 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'core/providers/language_provider.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/periodic_azkar_service.dart';
 import 'core/services/premium_service.dart';
+import 'core/services/security_service.dart';
 import 'features/adhan/adhan_screen.dart';
+import 'features/security/security_block_screen.dart';
 import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ═══════════════════════════════════════════════════════════
   // 1. تحميل .env
+  // ═══════════════════════════════════════════════════════════
   try {
     await dotenv.load(fileName: 'assets/.env');
     debugPrint('✅ تم تحميل ملف .env');
@@ -25,7 +30,43 @@ Future<void> main() async {
     debugPrint('⚠️ تعذر تحميل .env: $e');
   }
 
-  // 2. Firebase
+  // ═══════════════════════════════════════════════════════════
+  // 2. 🛡️ الفحص الأمني الشامل
+  // ═══════════════════════════════════════════════════════════
+  SecurityReport? securityReport;
+  try {
+    securityReport = await SecurityService.runFullCheck();
+
+    if (securityReport.criticalCount > 0) {
+      debugPrint('🚨 مشاكل أمنية حرجة:');
+      for (final issue in securityReport.issues) {
+        debugPrint('   $issue');
+      }
+    }
+
+    if (securityReport.warningCount > 0) {
+      debugPrint('⚠️ تحذيرات:');
+      for (final warning in securityReport.warnings) {
+        debugPrint('   $warning');
+      }
+    }
+
+    if (securityReport.isSafe) {
+      debugPrint('✅ الفحص الأمني: سليم');
+    }
+  } catch (e) {
+    debugPrint('⚠️ فشل الفحص الأمني: $e');
+  }
+
+  // 🚨 إذا كانت البيئة غير آمنة → اعرض شاشة الحجب
+  if (securityReport != null && !securityReport.isSafe && !kDebugMode) {
+    runApp(SecurityBlockApp(issues: securityReport.issues));
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 3. Firebase
+  // ═══════════════════════════════════════════════════════════
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -35,7 +76,9 @@ Future<void> main() async {
     debugPrint('❌ فشل تهيئة Firebase: $e');
   }
 
-  // 3. تسجيل دخول مجهول
+  // ═══════════════════════════════════════════════════════════
+  // 4. تسجيل دخول مجهول
+  // ═══════════════════════════════════════════════════════════
   try {
     if (FirebaseAuth.instance.currentUser == null) {
       await FirebaseAuth.instance.signInAnonymously();
@@ -47,7 +90,9 @@ Future<void> main() async {
     debugPrint('❌ فشل تسجيل الدخول المجهول: $e');
   }
 
-  // 4. App Check
+  // ═══════════════════════════════════════════════════════════
+  // 5. App Check
+  // ═══════════════════════════════════════════════════════════
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
@@ -58,7 +103,9 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تفعيل App Check: $e');
   }
 
-  // 5. RevenueCat
+  // ═══════════════════════════════════════════════════════════
+  // 6. RevenueCat
+  // ═══════════════════════════════════════════════════════════
   try {
     await PremiumService.initialize();
     debugPrint('✅ Premium Service initialized');
@@ -66,7 +113,9 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تهيئة Premium: $e');
   }
 
-  // 6. الإشعارات
+  // ═══════════════════════════════════════════════════════════
+  // 7. الإشعارات
+  // ═══════════════════════════════════════════════════════════
   try {
     await NotificationService.initialize();
     await NotificationService.requestFullScreenIntentPermission();
@@ -75,7 +124,9 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تهيئة الإشعارات: $e');
   }
 
-  // 7. الأذكار الدورية
+  // ═══════════════════════════════════════════════════════════
+  // 8. الأذكار الدورية
+  // ═══════════════════════════════════════════════════════════
   try {
     await PeriodicAzkarService.start();
     debugPrint('✅ تم تفعيل الأذكار الدورية');
@@ -83,7 +134,9 @@ Future<void> main() async {
     debugPrint('⚠️ فشل تفعيل الأذكار الدورية: $e');
   }
 
-  // 8. ErrorWidget
+  // ═══════════════════════════════════════════════════════════
+  // 9. ErrorWidget
+  // ═══════════════════════════════════════════════════════════
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -168,6 +221,23 @@ class MyApp extends StatelessWidget {
         },
         home: const SplashScreen(),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🚨 شاشة الحجب الأمني
+// ═══════════════════════════════════════════════════════════
+class SecurityBlockApp extends StatelessWidget {
+  final List<String> issues;
+  const SecurityBlockApp({super.key, required this.issues});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(),
+      home: SecurityBlockScreen(issues: issues),
     );
   }
 }

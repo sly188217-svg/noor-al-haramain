@@ -17,6 +17,9 @@ class PremiumService {
   static const String _entitlementId = 'Noor Al-Haramain Premium';
 
   static bool _isInitialized = false;
+
+  /// ✅ هل الخدمة جاهزة؟
+  static bool get initialized => _isInitialized;
   static bool _isPremium = false;
 
   /// 🚀 التهيئة عند بدء التطبيق
