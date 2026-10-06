@@ -20,10 +20,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SecurityService {
   static const _nativeChannel = MethodChannel('com.apexsec.noor/security');
 
+  // ✅ flutter_secure_storage 11.x — API جديد
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-      keyCipherAlgorithm: KeyCipherAlgorithm.RSA_ECB_OAEPwithSHA_256andMGF1Padding,
+      keyCipherAlgorithm:
+          KeyCipherAlgorithm.RSA_ECB_OAEPwithSHA_256andMGF1Padding,
       storageCipherAlgorithm: StorageCipherAlgorithm.AES_GCM_NoPadding,
     ),
     iOptions: IOSOptions(
@@ -73,7 +74,8 @@ class SecurityService {
 
     // 2) Debugger Detection
     try {
-      final hasDebugger = await _nativeChannel.invokeMethod<bool>('isDebuggerAttached');
+      final hasDebugger =
+          await _nativeChannel.invokeMethod<bool>('isDebuggerAttached');
       if (hasDebugger == true) {
         critical.add('🐛 Debugger متصل بالتطبيق');
       }
@@ -219,7 +221,8 @@ class SecurityService {
 
       if (rawId.isEmpty) {
         final r = Random.secure();
-        rawId = List.generate(32, (_) => r.nextInt(16).toRadixString(16)).join();
+        rawId =
+            List.generate(32, (_) => r.nextInt(16).toRadixString(16)).join();
       }
 
       final hashed = sha256.convert(utf8.encode('noor_v2_$rawId')).toString();
