@@ -9,15 +9,13 @@ rootProject.buildDir = '../build'
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
 
-// ✅ 1. تسجيل afterEvaluate أولاً (قبل evaluationDependsOn)
-// يضبط compileSdk + Java 17 لجميع المشاريع الفرعية
-subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
-                compileSdkVersion 36
+                if (project.name != 'app') {
+                    compileSdkVersion 36
+                }
                 compileOptions {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
@@ -34,11 +32,6 @@ subprojects {
             targetCompatibility = '17'
         }
     }
-}
-
-// ✅ 2. ثم استدعاء evaluationDependsOn (بعد afterEvaluate)
-subprojects {
-    project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
