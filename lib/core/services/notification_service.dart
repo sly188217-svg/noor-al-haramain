@@ -16,12 +16,17 @@ class NotificationService {
   static bool _initialized = false;
   static const int _persistentId = 999999;
 
-  static const String _adhanChannelId = 'adhan_channel_v5';
-  static const String _iqamaChannelId = 'iqama_channel_v5';
-  static const String _persistentChannelId = 'persistent_channel_v5';
+  // ✅ v6 — لإجبار Android على إنشاء قنوات جديدة بأيقونة جديدة
+  static const String _adhanChannelId = 'adhan_channel_v6';
+  static const String _iqamaChannelId = 'iqama_channel_v6';
+  static const String _persistentChannelId = 'persistent_channel_v6';
 
   static const String _muezzinKey = 'selected_muezzin';
   static const String _defaultMuezzin = 'adhan_sudais';
+
+  // ✅ الأيقونة البيضاء للإشعار (شكل المسجد)
+  static const String _notifIcon = '@drawable/ic_notification';
+  static const String _largeIconAsset = '@drawable/ic_app_colored';
 
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
@@ -48,8 +53,7 @@ class NotificationService {
 
     tz.initializeTimeZones();
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(_notifIcon);
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -71,7 +75,7 @@ class NotificationService {
     await _requestPermissions();
 
     _initialized = true;
-    debugPrint('✅ تم تهيئة الإشعارات');
+    debugPrint('✅ تم تهيئة الإشعارات (v6)');
   }
 
   static Future<void> _createChannels() async {
@@ -80,11 +84,21 @@ class NotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     if (android == null) return;
 
+    // حذف القنوات القديمة (v5) إن وُجدت
+    try {
+      await android.deleteNotificationChannel('adhan_channel_v5');
+      await android.deleteNotificationChannel('iqama_channel_v5');
+      await android.deleteNotificationChannel('persistent_channel_v5');
+      debugPrint('🗑️ تم حذف القنوات القديمة (v5)');
+    } catch (e) {
+      debugPrint('ℹ️ لا توجد قنوات قديمة');
+    }
+
     await android.createNotificationChannel(
       const AndroidNotificationChannel(
         _adhanChannelId,
-        'الأذان (v5)',
-        description: 'إشعارات الأذان - ملء الشاشة تلقائياً',
+        'الأذان',
+        description: 'إشعارات الأذان - ملء الشاشة',
         importance: Importance.max,
         playSound: true,
         enableVibration: true,
@@ -94,7 +108,7 @@ class NotificationService {
     await android.createNotificationChannel(
       const AndroidNotificationChannel(
         _iqamaChannelId,
-        'الإقامة (v5)',
+        'الإقامة',
         description: 'إشعارات الإقامة',
         importance: Importance.max,
         playSound: true,
@@ -105,14 +119,14 @@ class NotificationService {
     await android.createNotificationChannel(
       const AndroidNotificationChannel(
         _persistentChannelId,
-        'الإشعار المستمر (v5)',
-        description: 'إشعار الصلاة القادمة',
+        'الصلاة القادمة',
+        description: 'إشعار الصلاة القادمة مع العد التنازلي',
         importance: Importance.low,
         playSound: false,
       ),
     );
 
-    debugPrint('✅ تم إنشاء قنوات الإشعارات (v5)');
+    debugPrint('✅ تم إنشاء قنوات الإشعارات (v6)');
   }
 
   static Future<void> _requestPermissions() async {
@@ -127,9 +141,7 @@ class NotificationService {
     debugPrint('ℹ️ استخدم زر الإعدادات لتفعيل ملء الشاشة يدوياً');
   }
 
-  static Future<bool> canUseFullScreenIntent() async {
-    return true;
-  }
+  static Future<bool> canUseFullScreenIntent() async => true;
 
   static Future<void> openFullScreenSettings() async {
     if (!Platform.isAndroid) return;
@@ -258,7 +270,8 @@ class NotificationService {
             matchDateTimeComponents: DateTimeComponents.time,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
-            payload: 'إقامة|$prayerNameAr|$iqamaTimeStr|$cityName|$muezzinName',
+            payload:
+                'إقامة|$prayerNameAr|$iqamaTimeStr|$cityName|$muezzinName',
           );
           debugPrint('✅ جدولة إقامة $prayerNameAr: $iqamaTime');
         } catch (e) {
@@ -296,7 +309,7 @@ class NotificationService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 التفاصيل
+  // 🎨 تفاصيل الأذان
   // ═══════════════════════════════════════════════════════════
   static Future<NotificationDetails> _adhanNotificationDetails() async {
     final selectedFile = await getSelectedMuezzin();
@@ -305,8 +318,10 @@ class NotificationService {
     return NotificationDetails(
       android: AndroidNotificationDetails(
         _adhanChannelId,
-        'الأذان (v5)',
+        'الأذان',
         channelDescription: 'إشعارات الأذان - ملء الشاشة',
+        icon: _notifIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_largeIconAsset),
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -320,7 +335,7 @@ class NotificationService {
         autoCancel: true,
         ongoing: false,
         color: const Color(0xFFE53935),
-        colorized: true,
+        colorized: false, // ✅ false لضمان ظهور شكل الأيقونة
         visibility: NotificationVisibility.public,
         ticker: 'حان وقت الصلاة',
         audioAttributesUsage: AudioAttributesUsage.alarm,
@@ -334,13 +349,18 @@ class NotificationService {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 🎨 تفاصيل الإقامة
+  // ═══════════════════════════════════════════════════════════
   static Future<NotificationDetails> _iqamaNotificationDetails() async {
     final selectedFile = await getSelectedMuezzin();
     return NotificationDetails(
       android: AndroidNotificationDetails(
         _iqamaChannelId,
-        'الإقامة (v5)',
+        'الإقامة',
         channelDescription: 'إشعارات الإقامة',
+        icon: _notifIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_largeIconAsset),
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -353,7 +373,7 @@ class NotificationService {
         autoCancel: true,
         ongoing: false,
         color: const Color(0xFFE53935),
-        colorized: true,
+        colorized: false,
         visibility: NotificationVisibility.public,
         ticker: 'حان وقت الإقامة',
         audioAttributesUsage: AudioAttributesUsage.alarm,
@@ -368,7 +388,7 @@ class NotificationService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 📌 إشعار الصلاة القادمة (المستخدم من prayer_tab)
+  // 📌 إشعار الصلاة القادمة (مع أيقونة المسجد + العد التنازلي)
   // ═══════════════════════════════════════════════════════════
   static Future<void> showPersistentNotification({
     String? title,
@@ -395,7 +415,6 @@ class NotificationService {
     // ─── النص ───
     final buffer = StringBuffer();
 
-    // ⏳ الوقت المتبقي (نص ثابت احتياطي)
     if (remaining != null && !remaining.isNegative) {
       final h = remaining.inHours;
       final m = remaining.inMinutes.remainder(60);
@@ -409,7 +428,6 @@ class NotificationService {
       }
     }
 
-    // 🕐 وقت الصلاة
     if (targetTime != null) {
       final hh = targetTime.hour.toString().padLeft(2, '0');
       final mm = targetTime.minute.toString().padLeft(2, '0');
@@ -417,13 +435,11 @@ class NotificationService {
       buffer.write('🕐 $hh:$mm');
     }
 
-    // 📍 المدينة
     if (city != null && city.isNotEmpty) {
       if (buffer.isNotEmpty) buffer.write('\n');
       buffer.write('📍 $city');
     }
 
-    // 📅 التاريخ
     if (hijriDate != null && hijriDate.isNotEmpty) {
       if (buffer.isNotEmpty) buffer.write('\n');
       buffer.write('📅 $hijriDate');
@@ -433,9 +449,6 @@ class NotificationService {
         ? 'اقترب وقت الصلاة'
         : buffer.toString();
 
-    // ═══════════════════════════════════════════════════════
-    // ⏱️ Chronometer مدمج في Android — عد تنازلي تلقائي
-    // ═══════════════════════════════════════════════════════
     final whenMillis = targetTime?.millisecondsSinceEpoch;
 
     await _notifications.show(
@@ -445,22 +458,24 @@ class NotificationService {
       NotificationDetails(
         android: AndroidNotificationDetails(
           _persistentChannelId,
-          'الإشعار المستمر (v5)',
+          'الصلاة القادمة',
+          channelDescription: 'إشعار الصلاة القادمة مع العد التنازلي',
+          // ✅ أيقونة المسجد (كانت مفقودة هنا!)
+          icon: _notifIcon,
+          largeIcon: DrawableResourceAndroidBitmap(_largeIconAsset),
           importance: Importance.low,
           priority: Priority.low,
           playSound: false,
           enableVibration: false,
           ongoing: true,
           autoCancel: false,
-
-          // ✅ السحر: العد التنازلي المدمج في Android
           when: whenMillis,
           usesChronometer: whenMillis != null,
           chronometerCountDown: true,
           showWhen: whenMillis != null,
           onlyAlertOnce: true,
-
           color: const Color(0xFF4A90E2),
+          colorized: false,
         ),
       ),
     );
