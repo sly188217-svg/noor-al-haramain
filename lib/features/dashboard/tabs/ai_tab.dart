@@ -318,7 +318,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                 children: [
                   Text(
                     _remainingReadWithMe > 0
-                        ? '🎁 تجربة مجانية: $_remainingReadWithMe مرات'
+                        ? '🎁 تجربة مجانية: $_remainingReadWithMe محاولتان'
                         : '🔒 انتهت التجربة المجانية',
                     style: const TextStyle(
                       color: Color(0xFF4A90E2),
@@ -329,7 +329,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                   const SizedBox(height: 8),
                   Text(
                     _remainingReadWithMe > 0
-                        ? 'جرّب الميزة مجاناً $_remainingReadWithMe مرات\nثم اشترك للاستخدام غير المحدود'
+                        ? 'جرّب الميزة مجاناً ($_remainingReadWithMe محاولات)\nثم اشترك للاستخدام غير المحدود'
                         : 'عاود غداً لتجربة جديدة\nأو اشترك الآن للاستخدام غير المحدود',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -891,7 +891,7 @@ class _ChatTabState extends State<_ChatTab> {
           ],
         ),
         content: const Text(
-          'لقد استخدمت 3 أسئلة مجانية اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.\n\n'
+          'لقد استخدمت سؤالان مجانيان اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.\n\n'
           '💎 اشترك الآن بـ \$2.99/شهر للاستخدام غير المحدود.',
           style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6),
         ),
