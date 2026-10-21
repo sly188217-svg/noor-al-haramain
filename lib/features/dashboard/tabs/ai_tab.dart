@@ -1,3 +1,6 @@
+
+  void _showLimitDialog() {
+    showDialog(
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -158,7 +161,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     setState(() => _filteredSurahs = filtered);
   }
 
-  /// 💎 فتح شاشة الاشتراك الحقيقية
   Future<void> _openPremiumScreen() async {
     final result = await Navigator.push(
       context,
@@ -255,9 +257,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     return _buildAccessScreen();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔒 شاشة القفل — مع تجربة مجانية
-  // ═══════════════════════════════════════════════════════════
   Widget _buildPremiumLockScreen() {
     return Center(
       child: SingleChildScrollView(
@@ -384,9 +383,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ شاشة الوصول — جميع السور 114 (Premium فقط)
-  // ═══════════════════════════════════════════════════════════
   Widget _buildAccessScreen() {
     return Column(
       children: [
@@ -429,7 +425,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             ],
           ),
         ),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextField(
@@ -472,9 +467,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             ),
           ),
         ),
-
         const SizedBox(height: 8),
-
         Expanded(
           child: _isLoadingSurahs
               ? const Center(
@@ -804,35 +797,39 @@ class _ChatTabState extends State<_ChatTab> {
                                 .withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: ListTile(
-                            leading: const Icon(Icons.chat,
-                                color: Color(0xFF4A90E2)),
-                            title: Text(
-                              c['title'] ?? '',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 14),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              c['date'] ?? '',
-                              style: const TextStyle(
-                                  color: Colors.grey, fontSize: 11),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete,
-                                  color: Colors.red, size: 18),
-                              onPressed: () async {
-                                await _deleteConversation(index);
-                                if (!context.mounted) return;
+                          // ✅ الحل: تغليف ListTile بـ Material
+                          child: Material(
+                            color: Colors.transparent,
+                            child: ListTile(
+                              leading: const Icon(Icons.chat,
+                                  color: Color(0xFF4A90E2)),
+                              title: Text(
+                                c['title'] ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                c['date'] ?? '',
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 11),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.red, size: 18),
+                                onPressed: () async {
+                                  await _deleteConversation(index);
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                  _showHistory();
+                                },
+                              ),
+                              onTap: () {
                                 Navigator.pop(context);
-                                _showHistory();
+                                _openConversation(c);
                               },
                             ),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _openConversation(c);
-                            },
                           ),
                         );
                       },

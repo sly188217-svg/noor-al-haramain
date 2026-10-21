@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // ✅ إضافة مهمة
+
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/periodic_azkar_service.dart';
@@ -51,6 +53,13 @@ class _SettingsTabState extends State<SettingsTab>
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+
+  // دالة مساعدة لطلب صلاحية الإشعارات
+  Future<void> _requestNotificationPermission() async {
+    final androidPlugin = FlutterLocalNotificationsPlugin();
+    final androidImpl = androidPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.requestNotificationsPermission();
+  }
 
   @override
   void initState() {
@@ -734,6 +743,7 @@ class _SettingsTabState extends State<SettingsTab>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    await _requestNotificationPermission(); // ✅ طلب الصلاحية
                     await NotificationService.showTestNotification();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -759,6 +769,7 @@ class _SettingsTabState extends State<SettingsTab>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    await _requestNotificationPermission(); // ✅ طلب الصلاحية
                     await NotificationService.showTestIqamaNotification();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1037,6 +1048,7 @@ class _SettingsTabState extends State<SettingsTab>
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
+                  await _requestNotificationPermission(); // ✅ طلب الصلاحية
                   await PeriodicAzkarService.showTestZikr();
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
