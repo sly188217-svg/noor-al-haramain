@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart'; // ✅ أضفنا هذا للتعامل مع النقر على الكلمات
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:record/record.dart';
@@ -100,7 +101,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   int _userLevel = 1;
   int _userXP = 0;
   int _userAchievements = 0;
-  bool _aiPersonalityEnabled = true;
   String _aiPersonality = 'المستوى المتوسط';
   double _lastAccuracy = 0.0;
 
@@ -1059,9 +1059,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ⚙️ نوافذ الإعدادات
-  // ═══════════════════════════════════════════════════════════
   void _showSpeedDialog() {
     showModalBottomSheet(
       context: context,
@@ -1427,10 +1424,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🆕 دوال الأزرار الإضافية
-  // ═══════════════════════════════════════════════════════════
-
   void _showTranslationDialog() {
     showModalBottomSheet(
       context: context,
@@ -1731,9 +1724,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 مفتاح التجويد
-  // ═══════════════════════════════════════════════════════════
   Widget _buildTajweedLegend() {
     final rules = [
       {
@@ -1877,10 +1867,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 بناء الكلمة
-  // ═══════════════════════════════════════════════════════════
-  Widget _buildWord(int index) {
+  // ✅ دالة بناء الكلمة كـ TextSpan لمنع التفرق
+  TextSpan _buildWordSpan(int index) {
     final word = _currentWords[index];
     final isHidden =
         _hifzLevel > 1 && index < _hiddenMask.length && _hiddenMask[index];
@@ -1889,7 +1877,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     Color color = _inkColor;
     Color? bgColor;
     TextDecoration decoration = TextDecoration.none;
-    String displayWord = word;
+    String displayWord = '$word '; // ✅ مسافة بعد الكلمة للربط الصحيح
 
     if (isSelected) {
       bgColor = Colors.blue.shade100;
@@ -1913,31 +1901,23 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       bgColor = _goldColor;
     } else if (isHidden) {
       color = Colors.grey.shade400;
-      displayWord = HifzMode.getMaskedWord(word);
+      displayWord = '${HifzMode.getMaskedWord(word)} ';
     }
 
-    return GestureDetector(
-      onTap: () => _onWordTap(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
-        decoration: bgColor != null
-            ? BoxDecoration(
-                color: bgColor, borderRadius: BorderRadius.circular(8))
-            : null,
-        child: Text(displayWord,
-            style: TextStyle(
-              color: color,
-              fontSize: 28,
-              fontFamily: 'Amiri',
-              fontWeight: FontWeight.bold,
-              height: 1.6,
-              decoration: decoration,
-              decorationColor: color,
-              decorationThickness: 2.5,
-            )),
+    return TextSpan(
+      text: displayWord,
+      style: TextStyle(
+        color: color,
+        fontSize: 28,
+        fontFamily: 'Amiri',
+        fontWeight: FontWeight.bold,
+        height: 2.2, // ✅ مسافة أفقية ممتازة للقرآن
+        decoration: decoration,
+        decorationColor: color,
+        decorationThickness: 2.5,
+        background: bgColor != null ? (Paint()..color = bgColor) : null,
       ),
+      recognizer: TapGestureRecognizer()..onTap = () => _onWordTap(index),
     );
   }
 
@@ -1960,9 +1940,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎨 الواجهة
-  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     if (_isLocked) return _buildLockScreen();
@@ -2141,6 +2118,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
+  // ✅ التعديل الأهم: استخدام Text.rich بدلاً من Wrap
   Widget _buildTextPanel() {
     return Container(
       margin: const EdgeInsets.all(10),
@@ -2162,12 +2140,15 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               else
                 Directionality(
                   textDirection: TextDirection.rtl,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    children: [
-                      for (int i = 0; i < _currentWords.length; i++)
-                        _buildWord(i),
-                    ],
+                  child: Text.rich(
+                    TextSpan(
+                      children: List.generate(
+                        _currentWords.length,
+                        (index) => _buildWordSpan(index),
+                      ),
+                    ),
+                    textAlign: TextAlign.justify, // ✅ ضبط النص
+                    textDirection: TextDirection.rtl,
                   ),
                 ),
               if (_showTranslation && _ayahTranslation != null) ...[
@@ -2191,7 +2172,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: RichText(
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.justify,
         text: TextSpan(
           children: spans.map((s) {
             final color = TajweedColorer.colors[s.type] ?? _inkColor;
@@ -2202,7 +2183,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 fontSize: 28,
                 fontFamily: 'Amiri',
                 fontWeight: FontWeight.bold,
-                height: 2.3,
+                height: 2.2,
               ),
             );
           }).toList(),
@@ -2225,9 +2206,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 🎯 شريط التحكم السفلي
-  // ═══════════════════════════════════════════════════════════
   Widget _buildControls() {
     final progress = _totalDuration.inMilliseconds > 0
         ? _currentPosition.inMilliseconds / _totalDuration.inMilliseconds
