@@ -54,7 +54,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.3.5
   provider: ^6.1.2
-  intl: any          # ← الأفضل: اتركه لـ flutter_localizations ليحدد النسخة
+  intl: any
   http: ^1.3.0
   url_launcher: ^6.3.0
 
@@ -91,7 +91,7 @@ dependencies:
   pointycastle: ^3.9.1
   encrypt: ^5.0.3
   device_info_plus: ^13.3.0
-  package_info_plus: ^10.2.1   # ← أضِف ^ لتفادي تثبيت نسخة واحدة (pin)
+  package_info_plus: ^10.2.1
   http_certificate_pinning: ^3.0.2
 
 dev_dependencies:
@@ -104,15 +104,12 @@ flutter:
   uses-material-design: true
 
   # ═══════════════════════════════════════════════════════════
-  # 🔤 الخطوط (مدمجة في قسم flutter واحد فقط)
+  # 🔤 الخطوط
   # ═══════════════════════════════════════════════════════════
   fonts:
     - family: Amiri
       fonts:
         - asset: assets/fonts/Amiri-Regular.ttf
-    - family: AmiriQuran
-      fonts:
-        - asset: assets/fonts/AmiriQuran.ttf
 
   assets:
     # البيانات
@@ -132,7 +129,7 @@ flutter:
     - assets/adhan/raw/
     - assets/adhan/dua/
 
-    # ملف .env (لـ flutter_dotenv)
+    # ملف .env
     - assets/.env
 
 flutter_launcher_icons:
