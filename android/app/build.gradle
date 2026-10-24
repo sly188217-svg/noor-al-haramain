@@ -33,7 +33,6 @@ if (keystorePropertiesFile.exists()) {
 // 🔐 دالة للحصول على هاش التوقيع
 // ═══════════════════════════════════════════════════════════
 def getExpectedSignature() {
-    // من متغيرات البيئة (Codemagic) أو الافتراضي
     return System.getenv("EXPECTED_SIGNATURE") ?: "PLACEHOLDER_UPDATE_AFTER_BUILD"
 }
 
@@ -56,19 +55,17 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // ✅ BuildConfig (مطلوب للتحقق من التوقيع)
-    // ═══════════════════════════════════════════════════════════
     buildFeatures {
         buildConfig = true
     }
 
     signingConfigs {
         release {
-            keyAlias keystoreProperties['keyAlias'] ?: 'noor-key'
-            keyPassword keystoreProperties['keyPassword'] ?: System.getenv("KEY_PASSWORD") ?: 'Noor2026Pass'
-            storeFile file('noor-release.jks')
-            storePassword keystoreProperties['storePassword'] ?: System.getenv("KEYSTORE_PASSWORD") ?: 'Noor2026Pass'
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            // ✅ التعديل هنا: قراءة مسار المفتاح من key.properties بدلاً من تثبيته
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
             storeType 'JKS'
         }
     }
@@ -82,8 +79,6 @@ android {
         multiDexEnabled true
 
         manifestPlaceholders["firebaseAppCheckDebugToken"] = "A0CD6B2F-9F70-4037-B04C-7C1D58CE299D"
-
-        // 🔐 هاش التوقيع المتوقع (يُحدَّث بعد أول بناء)
         buildConfigField "String", "EXPECTED_SIGNATURE", "\"${getExpectedSignature()}\""
     }
 
