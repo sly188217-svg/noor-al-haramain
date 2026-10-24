@@ -38,6 +38,7 @@ class RecitationScreen extends StatefulWidget {
 }
 
 class _RecitationScreenState extends State<RecitationScreen> {
+  String? _recordingPath;
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -46,7 +47,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
   bool _isSpeaking = false;
   bool _isPremium = false;
   bool _autoDetectMode = true;
-  String? _recordingPath;
 
   int _remainingRecitations = 2;
 

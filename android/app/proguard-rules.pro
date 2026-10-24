@@ -13,7 +13,7 @@
 -keep class com.revenuecat.purchases.** { *; }
 -dontwarn com.revenuecat.purchases.**
 
-# Audio
+# Audio & Video
 -keep class com.google.android.exoplayer2.** { *; }
 -dontwarn com.google.android.exoplayer2.**
 -keep class com.ryanheise.audioservice.** { *; }
@@ -23,9 +23,16 @@
 -keep class com.baseflow.geolocator.** { *; }
 -keep class com.baseflow.geocoding.** { *; }
 
-# Notifications
+# ═══════════════════════════════════════════════════════════
+# ✅ حماية الإشعارات (السبب في عدم عمل الأزرار)
+# ═══════════════════════════════════════════════════════════
 -keep class com.dexterous.** { *; }
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
 -keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
 
 # WebView
 -keepclassmembers class * {

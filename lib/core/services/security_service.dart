@@ -10,7 +10,6 @@ import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:safe_device/safe_device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

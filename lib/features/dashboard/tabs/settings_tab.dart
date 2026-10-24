@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // ✅ إضافة مهمة
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -51,13 +51,13 @@ class _SettingsTabState extends State<SettingsTab>
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
-  String _searchQuery = '';
+  String _searchQuery = ''; // ✅ المتغير الذي كان مفقوداً
   final TextEditingController _searchController = TextEditingController();
 
-  // دالة مساعدة لطلب صلاحية الإشعارات
   Future<void> _requestNotificationPermission() async {
     final androidPlugin = FlutterLocalNotificationsPlugin();
-    final androidImpl = androidPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidImpl = androidPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     await androidImpl?.requestNotificationsPermission();
   }
 
@@ -611,15 +611,11 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 1. الدينية
-  // ═══════════════════════════════════════════════════════════
   Widget _buildReligiousSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildPremiumCard(),
-
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,7 +686,6 @@ class _SettingsTabState extends State<SettingsTab>
             ],
           ),
         ),
-
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,7 +738,7 @@ class _SettingsTabState extends State<SettingsTab>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await _requestNotificationPermission(); // ✅ طلب الصلاحية
+                    await _requestNotificationPermission();
                     await NotificationService.showTestNotification();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -769,7 +764,7 @@ class _SettingsTabState extends State<SettingsTab>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await _requestNotificationPermission(); // ✅ طلب الصلاحية
+                    await _requestNotificationPermission();
                     await NotificationService.showTestIqamaNotification();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -792,9 +787,7 @@ class _SettingsTabState extends State<SettingsTab>
             ],
           ),
         ),
-
         _buildPeriodicAzkarCard(),
-
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -854,9 +847,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 💎 بطاقة Premium
-  // ═══════════════════════════════════════════════════════════
   Widget _buildPremiumCard() {
     final isPremium = PremiumService.isPremium;
 
@@ -1048,7 +1038,7 @@ class _SettingsTabState extends State<SettingsTab>
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  await _requestNotificationPermission(); // ✅ طلب الصلاحية
+                  await _requestNotificationPermission();
                   await PeriodicAzkarService.showTestZikr();
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1192,9 +1182,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 2. العامة
-  // ═══════════════════════════════════════════════════════════
   Widget _buildGeneralSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1298,7 +1285,6 @@ class _SettingsTabState extends State<SettingsTab>
             ],
           ),
         ),
-
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1334,7 +1320,6 @@ class _SettingsTabState extends State<SettingsTab>
             ],
           ),
         ),
-
         _buildSettingsCard(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1367,9 +1352,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 3. الصوت
-  // ═══════════════════════════════════════════════════════════
   Widget _buildSoundSettings() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1417,9 +1399,6 @@ class _SettingsTabState extends State<SettingsTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 4. المعلومات
-  // ═══════════════════════════════════════════════════════════
   Widget _buildInfoTab() {
     return ListView(
       padding: const EdgeInsets.all(16),

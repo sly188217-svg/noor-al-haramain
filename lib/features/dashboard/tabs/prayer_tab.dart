@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -685,7 +684,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤲 تشغيل دعاء الأذان
+  // 🤲 تشغيل دعاء الأذان (ملف صوتي فقط — بدون TTS)
   // ═══════════════════════════════════════════════════════════
   Future<void> _playDuaAfterAdhan() async {
     debugPrint('🤲 محاولة تشغيل دعاء الأذان...');
@@ -709,26 +708,10 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       await duaPlayer.dispose();
     } catch (e) {
       debugPrint('❌ فشل تشغيل الدعاء: $e');
-
       try {
         await duaPlayer.dispose();
       } catch (_) {}
-
-      await _speakDuaWithTts();
-    }
-  }
-
-  Future<void> _speakDuaWithTts() async {
-    try {
-      final tts = FlutterTts();
-      await tts.setLanguage('ar');
-      await tts.setSpeechRate(0.4);
-      await tts.speak(
-        'اللهم رب هذه الدعوة التامة، والصلاة القائمة، '
-        'آت محمداً الوسيلة والفضيلة، وابعثه مقاماً محموداً الذي وعدته',
-      );
-    } catch (e) {
-      debugPrint('⚠️ فشل TTS: $e');
+      // ⛔ تم حذف fallback إلى TTS — الدعاء يعتمد على ملف MP3 فقط
     }
   }
 

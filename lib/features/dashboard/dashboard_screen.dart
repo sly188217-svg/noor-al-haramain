@@ -21,9 +21,9 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  String _userName = "مستخدم";
+  String _userCity = "";
   int _currentIndex = 0;
-  String _userName = 'مستخدم';
-  String _userCity = 'مكة المكرمة';
   int _currentBackground = 0;
 
   static const Color _primary = Color(0xFF4A90E2);

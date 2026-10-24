@@ -51,9 +51,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   String _processingStatus = '';
   String _processingError = '';
   String _lastTranscription = '';
-  double _accuracy = 0;
 
   bool _isPremium = false;
+  double _accuracy = 0;
   int _remainingReadWithMe = 3;
   bool _isLocked = false;
 
@@ -1907,7 +1907,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         color: color,
         fontSize: 28,
         fontFamily: 'Amiri',
-        fontWeight: FontWeight.normal, // تم التغيير من bold إلى normal لأنه يمنع الترتيب المتصل
+        fontWeight: FontWeight.normal,
         height: 2.2,
         decoration: decoration,
         decorationColor: color,
@@ -2115,7 +2115,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ✅ التعديل الأهم: استخدام RichText بدلاً من Text.rich لضمان الترتيب
+  // ✅ التعديل الجذري لعرض النص كصفحة مصحف متصلة
   Widget _buildTextPanel() {
     return Container(
       margin: const EdgeInsets.all(10),
@@ -2125,24 +2125,24 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         border: Border.all(color: _frameColor, width: 2),
       ),
       child: Container(
-        decoration:
-            BoxDecoration(border: Border.all(color: _frameColor, width: 1)),
+        decoration: BoxDecoration(border: Border.all(color: _frameColor, width: 1)),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_showTajweed && !_testMode && _hifzLevel <= 1)
                 _buildTajweedText()
               else
+                // ✅ إجبار النص على أخذ العرض بالكامل لضمان الاتصال
                 SizedBox(
-                  width: double.infinity, // إجبار النص على أخذ عرض الشاشة
+                  width: double.infinity, 
                   child: Directionality(
                     textDirection: TextDirection.rtl,
                     child: RichText(
-                      textAlign: TextAlign.justify,
+                      textAlign: TextAlign.justify, // يوزع المسافات لتملأ السطر
                       textDirection: TextDirection.rtl,
-                      textWidthBasis: TextWidthBasis.parent, // ضبط المسافات بين الكلمات
+                      textWidthBasis: TextWidthBasis.parent, // يجبره على الالتفاف
                       text: TextSpan(
                         children: List.generate(
                           _currentWords.length,

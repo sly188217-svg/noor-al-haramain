@@ -15,11 +15,11 @@ class QuranTab extends StatefulWidget {
 }
 
 class _QuranTabState extends State<QuranTab> {
+  String _searchQuery = "";
   List<SurahModel> _surahs = [];
   List<SurahModel> _filteredSurahs = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  String _searchQuery = '';
   String _selectedReciter = 'maher';
   final AudioPlayer _audioPlayer = AudioPlayer();
   int? _playingSurah;
