@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/gestures.dart'; // ✅ أضفنا هذا للتعامل مع النقر على الكلمات
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:record/record.dart';
@@ -161,8 +161,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         _userLevel = prefs.getInt('user_level') ?? 1;
         _userXP = prefs.getInt('user_xp') ?? 0;
         _userAchievements = prefs.getInt('user_achievements') ?? 0;
-        _aiPersonality =
-            prefs.getString('ai_personality') ?? 'المستوى المتوسط';
+        _aiPersonality = prefs.getString('ai_personality') ?? 'المستوى المتوسط';
       });
     } catch (e) {
       debugPrint('⚠️ فشل تحميل التقدم: $e');
@@ -172,8 +171,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   String _getCurrentSurahName() {
     if (_allSurahs.isEmpty) return 'اقرأ معي';
     try {
-      final surah =
-          _allSurahs.firstWhere((s) => s.number == _currentSurahNumber);
+      final surah = _allSurahs.firstWhere((s) => s.number == _currentSurahNumber);
       return surah.name.replaceAll('سورة ', '');
     } catch (_) {
       return 'اقرأ معي';
@@ -285,8 +283,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                     prefixIcon: const Icon(Icons.search, color: _goldColor),
                     filled: true,
                     fillColor: Colors.white,
-                    border:
-                        OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -1348,7 +1346,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   Future<void> _showProgressDialog() async {
     final progress = await ProgressService.getProgress();
     final streak = await ProgressService.getStreak();
-    final unlocked = await ProgressService.getUnlockedAchievements();
+    await ProgressService.getUnlockedAchievements();
 
     if (!mounted) return;
 
@@ -1867,7 +1865,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ✅ دالة بناء الكلمة كـ TextSpan لمنع التفرق
   TextSpan _buildWordSpan(int index) {
     final word = _currentWords[index];
     final isHidden =
@@ -1877,7 +1874,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     Color color = _inkColor;
     Color? bgColor;
     TextDecoration decoration = TextDecoration.none;
-    String displayWord = '$word '; // ✅ مسافة بعد الكلمة للربط الصحيح
+    String displayWord = '$word ';
 
     if (isSelected) {
       bgColor = Colors.blue.shade100;
@@ -1910,8 +1907,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         color: color,
         fontSize: 28,
         fontFamily: 'Amiri',
-        fontWeight: FontWeight.bold,
-        height: 2.2, // ✅ مسافة أفقية ممتازة للقرآن
+        fontWeight: FontWeight.normal, // تم التغيير من bold إلى normal لأنه يمنع الترتيب المتصل
+        height: 2.2,
         decoration: decoration,
         decorationColor: color,
         decorationThickness: 2.5,
@@ -2118,7 +2115,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ✅ التعديل الأهم: استخدام Text.rich بدلاً من Wrap
+  // ✅ التعديل الأهم: استخدام RichText بدلاً من Text.rich لضمان الترتيب
   Widget _buildTextPanel() {
     return Container(
       margin: const EdgeInsets.all(10),
@@ -2138,17 +2135,21 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               if (_showTajweed && !_testMode && _hifzLevel <= 1)
                 _buildTajweedText()
               else
-                Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Text.rich(
-                    TextSpan(
-                      children: List.generate(
-                        _currentWords.length,
-                        (index) => _buildWordSpan(index),
+                SizedBox(
+                  width: double.infinity, // إجبار النص على أخذ عرض الشاشة
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: RichText(
+                      textAlign: TextAlign.justify,
+                      textDirection: TextDirection.rtl,
+                      textWidthBasis: TextWidthBasis.parent, // ضبط المسافات بين الكلمات
+                      text: TextSpan(
+                        children: List.generate(
+                          _currentWords.length,
+                          (index) => _buildWordSpan(index),
+                        ),
                       ),
                     ),
-                    textAlign: TextAlign.justify, // ✅ ضبط النص
-                    textDirection: TextDirection.rtl,
                   ),
                 ),
               if (_showTranslation && _ayahTranslation != null) ...[
@@ -2173,6 +2174,8 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       textDirection: TextDirection.rtl,
       child: RichText(
         textAlign: TextAlign.justify,
+        textDirection: TextDirection.rtl,
+        textWidthBasis: TextWidthBasis.parent,
         text: TextSpan(
           children: spans.map((s) {
             final color = TajweedColorer.colors[s.type] ?? _inkColor;
@@ -2182,7 +2185,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                 color: color,
                 fontSize: 28,
                 fontFamily: 'Amiri',
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.normal,
                 height: 2.2,
               ),
             );
