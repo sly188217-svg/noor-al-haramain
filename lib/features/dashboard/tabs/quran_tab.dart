@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../widgets/professional_ui.dart'; // ✅ التصميم الزجاجي
 import '../../quran/models/surah_model.dart';
 import '../../quran/services/quran_service.dart';
 import '../../quran/mushaf_screen.dart';
@@ -40,24 +41,15 @@ class _QuranTabState extends State<QuranTab> {
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ تحميل تفضيل القارئ مع التحقق
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadReciterPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final reciter = prefs.getString('quran_reciter') ?? 'maher';
-
-    // ✅ تحقق أن القارئ موجود في القائمة الحالية
     final exists = QuranService.reciters.any((r) => r['id'] == reciter);
-
     if (mounted) {
       setState(() => _selectedReciter = exists ? reciter : 'maher');
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // تحميل القرآن
-  // ═══════════════════════════════════════════════════════════
   Future<void> _loadQuran() async {
     setState(() {
       _isLoading = true;
@@ -82,9 +74,6 @@ class _QuranTabState extends State<QuranTab> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // البحث عن سورة
-  // ═══════════════════════════════════════════════════════════
   void _filterSurahs(String query) {
     setState(() {
       _searchQuery = query;
@@ -100,9 +89,6 @@ class _QuranTabState extends State<QuranTab> {
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // فتح السورة (عرض الآيات)
-  // ═══════════════════════════════════════════════════════════
   void _openSurah(SurahModel surah) {
     setState(() {
       _selectedSurah = surah;
@@ -117,13 +103,9 @@ class _QuranTabState extends State<QuranTab> {
     });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // تشغيل التلاوة
-  // ═══════════════════════════════════════════════════════════
   Future<void> _playRecitation(SurahModel surah) async {
     try {
-      final url =
-          QuranService.getRecitationUrl(surah.number, _selectedReciter);
+      final url = QuranService.getRecitationUrl(surah.number, _selectedReciter);
 
       if (_playingSurah == surah.number && _isPlaying) {
         await _audioPlayer.pause();
@@ -146,25 +128,20 @@ class _QuranTabState extends State<QuranTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('⚠️ تعذر تشغيل التلاوة، تأكد من الاتصال بالإنترنت')),
+          const SnackBar(content: Text('⚠️ تعذر تشغيل التلاوة، تأكد من الاتصال بالإنترنت')),
         );
       }
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // اختيار القارئ
-  // ═══════════════════════════════════════════════════════════
   void _showReciterDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF1C2541),
-          title: const Text('اختر القارئ',
-              style: TextStyle(color: Color(0xFF4A90E2))),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('اختر القارئ', style: TextStyle(color: Color(0xFF4A90E2))),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -177,21 +154,14 @@ class _QuranTabState extends State<QuranTab> {
                   title: Text(
                     reciter['name']!,
                     style: TextStyle(
-                      color: isSelected
-                          ? const Color(0xFF4A90E2)
-                          : Colors.white,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? const Color(0xFF4A90E2) : Colors.white,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
-                  trailing: isSelected
-                      ? const Icon(Icons.check,
-                          color: Color(0xFF4A90E2))
-                      : null,
+                  trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF4A90E2)) : null,
                   onTap: () async {
                     final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString(
-                        'quran_reciter', reciter['id']!);
+                    await prefs.setString('quran_reciter', reciter['id']!);
 
                     if (_isPlaying) {
                       await _audioPlayer.stop();
@@ -207,9 +177,7 @@ class _QuranTabState extends State<QuranTab> {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              '✅ تم اختيار ${reciter['name']}')),
+                      SnackBar(content: Text('✅ تم اختيار ${reciter['name']}')),
                     );
                   },
                 );
@@ -221,9 +189,6 @@ class _QuranTabState extends State<QuranTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // الواجهة الرئيسية
-  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageProvider>().currentLang;
@@ -235,18 +200,14 @@ class _QuranTabState extends State<QuranTab> {
         appBar: AppBar(
           backgroundColor: const Color(0xFF1C2541),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back,
-                color: Color(0xFF4A90E2)),
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF4A90E2)),
             onPressed: _goBackToSurahs,
           ),
-          title: Text(_selectedSurah!.name,
-              style: const TextStyle(color: Colors.white)),
+          title: Text(_selectedSurah!.name, style: const TextStyle(color: Colors.white, fontFamily: 'Amiri')),
           actions: [
             IconButton(
               icon: Icon(
-                _isPlaying && _playingSurah == _selectedSurah!.number
-                    ? Icons.pause
-                    : Icons.play_arrow,
+                _isPlaying && _playingSurah == _selectedSurah!.number ? Icons.pause : Icons.play_arrow,
                 color: const Color(0xFF4A90E2),
               ),
               onPressed: () => _playRecitation(_selectedSurah!),
@@ -254,35 +215,25 @@ class _QuranTabState extends State<QuranTab> {
           ],
         ),
         body: ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           itemCount: _selectedSurah!.ayahs?.length ?? 0,
           itemBuilder: (context, index) {
             final ayah = _selectedSurah!.ayahs![index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C2541).withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(8),
-              ),
+            return ProCard(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
-                      color:
-                          const Color(0xFF4A90E2).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     child: Center(
                       child: Text(
                         '${ayah.number}',
-                        style: const TextStyle(
-                          color: Color(0xFF4A90E2),
-                          fontSize: 11,
-                        ),
+                        style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -290,12 +241,7 @@ class _QuranTabState extends State<QuranTab> {
                   Expanded(
                     child: Text(
                       ayah.text,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontFamily: 'Amiri',
-                        height: 1.6,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontFamily: 'Amiri', height: 1.8),
                       textAlign: TextAlign.right,
                       textDirection: TextDirection.rtl,
                     ),
@@ -313,117 +259,73 @@ class _QuranTabState extends State<QuranTab> {
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          // 🆕 بطاقة المصحف ككتاب
+          // ✅ بطاقة المصحف ككتاب (زجاجية)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: InkWell(
+            child: GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const MushafScreen()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const MushafScreen()));
               },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF4A90E2).withValues(alpha: 0.2),
-                      const Color(0xFF4A90E2).withValues(alpha: 0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color:
-                        const Color(0xFF4A90E2).withValues(alpha: 0.5),
-                  ),
-                ),
+              child: ProCard(
                 child: Row(
                   children: [
-                    const Icon(Icons.menu_book,
-                        color: Color(0xFF4A90E2), size: 40),
+                    const Icon(Icons.menu_book, color: Color(0xFF4A90E2), size: 40),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('📖 اقرأ المصحف ككتاب',
-                              style: TextStyle(
-                                  color: Color(0xFF4A90E2),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold)),
+                          Text('📖 اقرأ المصحف ككتاب', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 16, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
-                          Text('604 صفحة بتصميم المصحف المدني',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 12)),
+                          Text('604 صفحة بتصميم المصحف المدني', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios,
-                        color: Color(0xFF4A90E2), size: 16),
+                    const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A90E2), size: 16),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ─── شريط البحث + القارئ ───
-          Container(
+          // ✅ شريط البحث والقارئ (زجاجي)
+          Padding(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1C2541),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(16)),
-            ),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        onChanged: _filterSurahs,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: lang == 'ar'
-                              ? '🔍 ابحث عن سورة...'
-                              : '🔍 Search for a surah...',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF4A90E2)),
-                          filled: true,
-                          fillColor: const Color(0xFF0B132B),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                ProCard(
+                  padding: EdgeInsets.zero,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          onChanged: _filterSurahs,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: lang == 'ar' ? '🔍 ابحث عن سورة...' : '🔍 Search for a surah...',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFF4A90E2)),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.record_voice_over,
-                          color: Color(0xFF4A90E2)),
-                      tooltip: 'اختر القارئ',
-                      onPressed: _showReciterDialog,
-                    ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.record_voice_over, color: Color(0xFF4A90E2)),
+                        tooltip: 'اختر القارئ',
+                        onPressed: _showReciterDialog,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('📖 ${_filteredSurahs.length} سورة',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 12)),
+                    Text('📖 ${_filteredSurahs.length} سورة', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                     Text(
-                      '🎙️ ${QuranService.reciters.firstWhere(
-                            (r) => r['id'] == _selectedReciter,
-                            orElse: () => QuranService.reciters.first,
-                          )['name']!}',
-                      style: const TextStyle(
-                          color: Color(0xFF4A90E2), fontSize: 12),
+                      '🎙️ ${QuranService.reciters.firstWhere((r) => r['id'] == _selectedReciter, orElse: () => QuranService.reciters.first)['name']!}',
+                      style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12),
                     ),
                   ],
                 ),
@@ -431,22 +333,19 @@ class _QuranTabState extends State<QuranTab> {
             ),
           ),
 
-          // ─── قائمة السور ───
+          // ✅ قائمة السور (زجاجية)
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFF4A90E2)))
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
                 : _errorMessage.isNotEmpty
                     ? _buildError()
                     : _filteredSurahs.isEmpty
                         ? _buildEmpty()
                         : ListView.builder(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: _filteredSurahs.length,
                             itemBuilder: (context, index) {
-                              return _buildSurahCard(
-                                  _filteredSurahs[index]);
+                              return _buildSurahCard(_filteredSurahs[index]);
                             },
                           ),
           ),
@@ -457,49 +356,27 @@ class _QuranTabState extends State<QuranTab> {
 
   Widget _buildSurahCard(SurahModel surah) {
     final isPlaying = _playingSurah == surah.number && _isPlaying;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isPlaying
-              ? const Color(0xFF4A90E2)
-              : Colors.white12,
-        ),
-      ),
+    return ProCard(
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: EdgeInsets.zero,
         leading: Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             color: const Color(0xFF0B132B),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: const Color(0xFF4A90E2).withValues(alpha: 0.3)),
           ),
           child: Center(
             child: Text(
               '${surah.number}',
-              style: const TextStyle(
-                color: Color(0xFF4A90E2),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
         title: Text(
           surah.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontFamily: 'Amiri',
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Amiri', fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
           '${surah.numberOfAyahs} آية • ${surah.revelationType == "Meccan" ? "مكية" : "مدنية"}',
@@ -509,14 +386,10 @@ class _QuranTabState extends State<QuranTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(
-                isPlaying ? Icons.pause : Icons.play_arrow,
-                color: const Color(0xFF4A90E2),
-              ),
+              icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: const Color(0xFF4A90E2)),
               onPressed: () => _playRecitation(surah),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                color: Colors.white24, size: 14),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 14),
           ],
         ),
         onTap: () => _openSurah(surah),
@@ -531,20 +404,13 @@ class _QuranTabState extends State<QuranTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                color: Colors.orange, size: 60),
+            const Icon(Icons.error_outline, color: Colors.orange, size: 60),
             const SizedBox(height: 16),
-            Text(_errorMessage,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center),
+            Text(_errorMessage, style: const TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadQuran,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
-                foregroundColor: Colors.black,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A90E2), foregroundColor: Colors.black),
               child: const Text('إعادة المحاولة'),
             ),
           ],
@@ -562,8 +428,7 @@ class _QuranTabState extends State<QuranTab> {
           children: [
             Icon(Icons.search_off, color: Colors.grey, size: 60),
             SizedBox(height: 16),
-            Text('لا توجد نتائج',
-                style: TextStyle(color: Colors.white54, fontSize: 16)),
+            Text('لا توجد نتائج', style: TextStyle(color: Colors.white54, fontSize: 16)),
           ],
         ),
       ),

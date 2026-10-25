@@ -6,6 +6,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'services/quran_service.dart';
 import 'models/ayah_model.dart';
 import 'models/surah_model.dart';
@@ -47,6 +48,10 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   bool _isProcessing = false;
   bool _autoAdvance = true;
   bool _hasSaved = false;
+  
+  bool _isDownloading = false;
+  bool _isDownloaded = false;
+  double _downloadProgress = 0.0;
 
   String _processingStatus = '';
   String _processingError = '';
@@ -345,6 +350,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
       _selectedReciter = prefs.getString('read_reciter') ?? 'Husary_128kbps';
       _hifzLevel = prefs.getInt('read_hifz_level') ?? 1;
     });
+    _checkIfDownloaded();
   }
 
   Future<void> _loadTranslationPrefs() async {
@@ -402,6 +408,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
         _isLoading = false;
       });
       _prepareCurrentAyah();
+      _checkIfDownloaded();
     } catch (e) {
       debugPrint('❌ loadSurah: $e');
       if (mounted) setState(() => _isLoading = false);
@@ -457,20 +464,91 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     await _playCurrentAyah();
   }
 
+  // ✅ دالة التشغيل (تقرأ من الذاكرة المحلية إذا وُجدت)
   Future<void> _playCurrentAyah() async {
     final ayah = _ayahs[_currentAyahIndex];
     final surahStr = _currentSurahNumber.toString().padLeft(3, '0');
     final ayahStr = ayah.number.toString().padLeft(3, '0');
-    final url =
-        'https://everyayah.com/data/$_selectedReciter/$surahStr$ayahStr.mp3';
+    
+    final dir = await getApplicationDocumentsDirectory();
+    final filePath = '${dir.path}/quran_audio/$_selectedReciter/${surahStr}${ayahStr}.mp3';
+    final file = File(filePath);
+
     try {
       await _audioPlayer.stop();
       await _audioPlayer.setPlaybackRate(_playbackSpeed);
-      await _audioPlayer.play(UrlSource(url));
+      
+      if (await file.exists()) {
+        // تشغيل من الملف المحلي
+        await _audioPlayer.play(DeviceFileSource(filePath));
+      } else {
+        // تشغيل من الإنترنت
+        final url = 'https://everyayah.com/data/$_selectedReciter/$surahStr$ayahStr.mp3';
+        await _audioPlayer.play(UrlSource(url));
+      }
       if (mounted) setState(() => _isPlaying = true);
     } catch (e) {
       debugPrint('❌ play: $e');
       if (mounted) setState(() => _isPlaying = false);
+    }
+  }
+
+  // ✅ دالة التحقق من وجود السورة محلياً
+  Future<void> _checkIfDownloaded() async {
+    if (_ayahs.isEmpty) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final surahStr = _currentSurahNumber.toString().padLeft(3, '0');
+    final ayahStr = _ayahs.first.number.toString().padLeft(3, '0');
+    final filePath = '${dir.path}/quran_audio/$_selectedReciter/${surahStr}${ayahStr}.mp3';
+    final exists = await File(filePath).exists();
+    if (mounted) setState(() => _isDownloaded = exists);
+  }
+
+  // ✅ دالة تحميل السورة بالكامل
+  Future<void> _downloadSurah() async {
+    if (_isDownloading) return;
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
+    final dir = await getApplicationDocumentsDirectory();
+    final folder = Directory('${dir.path}/quran_audio/$_selectedReciter');
+    if (!await folder.exists()) await folder.create(recursive: true);
+
+    final surahStr = _currentSurahNumber.toString().padLeft(3, '0');
+    int downloaded = 0;
+
+    for (final ayah in _ayahs) {
+      final ayahStr = ayah.number.toString().padLeft(3, '0');
+      final filePath = '${folder.path}/${surahStr}${ayahStr}.mp3';
+      final file = File(filePath);
+
+      if (!await file.exists()) {
+        final url = 'https://everyayah.com/data/$_selectedReciter/$surahStr$ayahStr.mp3';
+        try {
+          final response = await http.get(Uri.parse(url));
+          if (response.statusCode == 200) {
+            await file.writeAsBytes(response.bodyBytes);
+          }
+        } catch (e) {
+          debugPrint('❌ فشل تحميل الآية $ayahStr: $e');
+        }
+      }
+      downloaded++;
+      if (mounted) {
+        setState(() => _downloadProgress = downloaded / _ayahs.length);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isDownloading = false;
+        _isDownloaded = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ تم تحميل السورة بنجاح')),
+      );
     }
   }
 
@@ -1174,6 +1252,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
                   onTap: () {
                     setState(() => _selectedReciter = r['id']!);
                     _savePreferences();
+                    _checkIfDownloaded();
                     Navigator.pop(context);
                   },
                   child: Container(
@@ -2115,7 +2194,6 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     );
   }
 
-  // ✅ التعديل الجذري لعرض النص كصفحة مصحف متصلة
   Widget _buildTextPanel() {
     return Container(
       margin: const EdgeInsets.all(10),
@@ -2134,15 +2212,14 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               if (_showTajweed && !_testMode && _hifzLevel <= 1)
                 _buildTajweedText()
               else
-                // ✅ إجبار النص على أخذ العرض بالكامل لضمان الاتصال
                 SizedBox(
                   width: double.infinity, 
                   child: Directionality(
                     textDirection: TextDirection.rtl,
                     child: RichText(
-                      textAlign: TextAlign.justify, // يوزع المسافات لتملأ السطر
+                      textAlign: TextAlign.right, 
                       textDirection: TextDirection.rtl,
-                      textWidthBasis: TextWidthBasis.parent, // يجبره على الالتفاف
+                      textWidthBasis: TextWidthBasis.parent, 
                       text: TextSpan(
                         children: List.generate(
                           _currentWords.length,
@@ -2173,7 +2250,7 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: RichText(
-        textAlign: TextAlign.justify,
+        textAlign: TextAlign.right,
         textDirection: TextDirection.rtl,
         textWidthBasis: TextWidthBasis.parent,
         text: TextSpan(
@@ -2283,9 +2360,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
+              value: _isDownloading ? _downloadProgress : progress.clamp(0.0, 1.0),
               backgroundColor: _frameColor.withValues(alpha: 0.2),
-              color: _goldColor,
+              color: _isDownloading ? Colors.orange : _goldColor,
               minHeight: 5,
             ),
           ),
@@ -2310,6 +2387,13 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
               _btn(_isPlaying ? Icons.pause : Icons.play_arrow,
                   _isPlaying ? 'إيقاف' : 'استمع', _togglePlay,
                   large: true, color: _goldColor),
+              // ✅ زر التحميل الجديد
+              _btn(
+                _isDownloaded ? Icons.check_circle : Icons.download,
+                _isDownloaded ? 'مُحمل' : (_isDownloading ? 'جاري...' : 'تحميل'),
+                _isDownloaded || _isDownloading ? null : _downloadSurah,
+                color: _isDownloaded ? Colors.green : Colors.teal,
+              ),
               _btn(
                   _isRecording
                       ? Icons.stop

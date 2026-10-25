@@ -1,13 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../widgets/professional_ui.dart'; // ✅ التصميم الزجاجي
 
 class AzkarTab extends StatefulWidget {
   const AzkarTab({super.key});
@@ -20,12 +18,7 @@ class _AzkarTabState extends State<AzkarTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // 🎨 لوحة الألوان الجديدة (أزرق)
   static const Color _primary = Color(0xFF4A90E2);
-  static const Color _primaryDark = Color(0xFF2E5C8A);
-  static const Color _primaryLight = Color(0xFF64B5F6);
-  static const Color _bg = Color(0xFF0A1929);
-  static const Color _surface = Color(0xFF132F4C);
 
   // ═══════════════════════════════════════════════════════════
   // 🌅 أذكار الصباح
@@ -119,34 +112,18 @@ class _AzkarTabState extends State<AzkarTab>
 
   // 📺 البث المباشر
   final List<Map<String, String>> _liveStreams = [
-    {
-      'name': 'الحرم المكي',
-      'nameEn': 'Makkah Live',
-      'icon': '🕋',
-      'url': 'https://www.youtube.com/@SaudiQuranTv/live',
-    },
-    {
-      'name': 'المسجد النبوي',
-      'nameEn': 'Madinah Live',
-      'icon': '🕌',
-      'url': 'https://www.youtube.com/@SaudiSunnahTv/live',
-    },
+    {'name': 'الحرم المكي', 'nameEn': 'Makkah Live', 'icon': '🕋', 'url': 'https://www.youtube.com/@SaudiQuranTv/live'},
+    {'name': 'المسجد النبوي', 'nameEn': 'Madinah Live', 'icon': '🕌', 'url': 'https://www.youtube.com/@SaudiSunnahTv/live'},
   ];
+
   // 📿 السبحة
   int _tasbihCount = 0;
   String _selectedDhikr = 'سبحان الله';
   Map<String, int> _tasbihCounts = {};
 
   final List<String> _dhikrList = [
-    'سبحان الله',
-    'الحمد لله',
-    'لا إله إلا الله',
-    'الله أكبر',
-    'أستغفر الله',
-    'لا حول ولا قوة إلا بالله',
-    'اللهم صل على محمد',
-    'سبحان الله وبحمده',
-    'لا إله إلا الله وحده لا شريك له',
+    'سبحان الله', 'الحمد لله', 'لا إله إلا الله', 'الله أكبر', 'أستغفر الله',
+    'لا حول ولا قوة إلا بالله', 'اللهم صل على محمد', 'سبحان الله وبحمده', 'لا إله إلا الله وحده لا شريك له',
   ];
 
   @override
@@ -171,8 +148,7 @@ class _AzkarTabState extends State<AzkarTab>
     if (savedCounts != null) {
       try {
         final decoded = jsonDecode(savedCounts) as Map<String, dynamic>;
-        loadedCounts = decoded.map(
-            (key, value) => MapEntry(key, (value as num).toInt()));
+        loadedCounts = decoded.map((key, value) => MapEntry(key, (value as num).toInt()));
       } catch (_) {}
     }
     setState(() {
@@ -207,26 +183,15 @@ class _AzkarTabState extends State<AzkarTab>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _primary, width: 1.5),
-        ),
-        title: const Text('🔄 إعادة تعيين',
-            style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
-        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟',
-            style: const TextStyle(color: Colors.white70)),
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: _primary, width: 1.5)),
+        title: const Text('🔄 إعادة تعيين', style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
+        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟', style: const TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء',
-                  style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                elevation: 4),
+            style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
             child: const Text('إعادة'),
           ),
         ],
@@ -244,27 +209,15 @@ class _AzkarTabState extends State<AzkarTab>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Colors.orange, width: 1.5),
-        ),
-        title:
-            const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
-        content: const Text(
-            'هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!',
-            style: TextStyle(color: Colors.white70)),
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.orange, width: 1.5)),
+        title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
+        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!', style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء',
-                  style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                elevation: 4),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('حذف الكل'),
           ),
         ],
@@ -289,7 +242,6 @@ class _AzkarTabState extends State<AzkarTab>
     _saveTasbihPreference();
   }
 
-  // ✅ فتح البث في يوتيوب مباشرة (أضمن طريقة)
   Future<void> _openLiveStream(String url, String title) async {
     final uri = Uri.parse(url);
     try {
@@ -297,173 +249,73 @@ class _AzkarTabState extends State<AzkarTab>
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('⚠️ تعذّر فتح $title')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚠️ تعذّر فتح $title')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('⚠️ خطأ: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚠️ خطأ: $e')));
     }
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🎨 بناء الواجهات
+  // 🎨 بناء الواجهات (بالتصميم الزجاجي)
   // ═══════════════════════════════════════════════════════════
-  Widget _buildAzkarList(
-      List<Map<String, dynamic>> items, bool isArabic, String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [_primaryDark, _surface],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: _primary.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
+  Widget _buildAzkarList(List<Map<String, dynamic>> items, bool isArabic, String title) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final count = item['count'] ?? 1;
+        
+        return ProCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              const Spacer(),
+              Text(
+                item['text']!,
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+              ),
+              const SizedBox(height: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [_primary, _primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: _primary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _primary.withValues(alpha: 0.5)),
                 ),
-                child: Text('${items.length}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  '🔄 $count ${isArabic ? 'مرات' : 'times'}',
+                  style: const TextStyle(color: _primary, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final count = item['count'] ?? 1;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _surface.withValues(alpha: 0.9),
-                      _bg.withValues(alpha: 0.9),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _primary.withValues(alpha: 0.25),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(item['text']!,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontFamily: 'Amiri',
-                            height: 1.8),
-                        textAlign: TextAlign.right,
-                        textDirection: TextDirection.rtl),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_primary, _primaryDark],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _primary.withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                          '🔄 $count ${isArabic ? 'مرات' : 'times'}',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildDuasList(bool isArabic) {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: _duas.length,
       itemBuilder: (context, index) {
         final dua = _duas[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_surface.withValues(alpha: 0.9), _bg.withValues(alpha: 0.9)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _primary.withValues(alpha: 0.25)),
-          ),
+        return ProCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(dua['text']!,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontFamily: 'Amiri',
-                      height: 1.8),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl),
-              const SizedBox(height: 8),
-              Text('📖 ${dua['reference']}',
-                  style: const TextStyle(color: _primaryLight, fontSize: 12)),
+              Text(
+                dua['text']!,
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+              ),
+              const SizedBox(height: 10),
+              Text('📖 ${dua['reference']}', style: const TextStyle(color: _primary, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
         );
@@ -473,46 +325,32 @@ class _AzkarTabState extends State<AzkarTab>
 
   Widget _buildRuqyahList(bool isArabic) {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: _ruqyah.length,
       itemBuilder: (context, index) {
         final item = _ruqyah[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_surface.withValues(alpha: 0.9), _bg.withValues(alpha: 0.9)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-          ),
+        return ProCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(item['text']!,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontFamily: 'Amiri',
-                      height: 1.8),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl),
-              const SizedBox(height: 8),
+              Text(
+                item['text']!,
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+              ),
+              const SizedBox(height: 10),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green, width: 0.5),
+                  border: Border.all(color: Colors.green),
                 ),
                 child: Text(
-                    '🔄 ${item['count']} ${isArabic ? 'مرات' : 'times'}',
-                    style: const TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
+                  '🔄 ${item['count']} ${isArabic ? 'مرات' : 'times'}',
+                  style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -523,129 +361,62 @@ class _AzkarTabState extends State<AzkarTab>
 
   Widget _buildLiveStreams(bool isArabic) {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: _liveStreams.length,
       itemBuilder: (context, index) {
         final stream = _liveStreams[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_surface, _bg],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: _primary.withValues(alpha: 0.4), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: _primary.withValues(alpha: 0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => _openLiveStream(
-                  stream['url']!,
-                  isArabic ? stream['name']! : stream['nameEn']!),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_primary, _primaryDark],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _primary.withValues(alpha: 0.5),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(stream['icon']!,
-                            style: const TextStyle(fontSize: 30)),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              isArabic ? stream['name']! : stream['nameEn']!,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                      color: Colors.red, width: 0.8),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.circle,
-                                        color: Colors.red, size: 8),
-                                    SizedBox(width: 4),
-                                    Text('LIVE',
-                                        style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('اضغط للمشاهدة',
-                                  style: TextStyle(
-                                      color: Colors.white54, fontSize: 11)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_primary, _primaryDark],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _primary.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.play_arrow,
-                          color: Colors.white, size: 26),
-                    ),
-                  ],
+        return GestureDetector(
+          onTap: () => _openLiveStream(stream['url']!, isArabic ? stream['name']! : stream['nameEn']!),
+          child: ProCard(
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: _primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _primary),
+                  ),
+                  child: Center(child: Text(stream['icon']!, style: const TextStyle(fontSize: 30))),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isArabic ? stream['name']! : stream['nameEn']!,
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.red, width: 0.8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.circle, color: Colors.red, size: 8),
+                                SizedBox(width: 4),
+                                Text('LIVE', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('اضغط للمشاهدة', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.play_circle_fill, color: _primary, size: 40),
+              ],
             ),
           ),
         );
@@ -658,25 +429,11 @@ class _AzkarTabState extends State<AzkarTab>
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_surface, _bg],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _primary.withValues(alpha: 0.4)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
+          ProCard(
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: DropdownButton<String>(
               value: _selectedDhikr,
-              dropdownColor: _surface,
+              dropdownColor: const Color(0xFF1C2541),
               style: const TextStyle(color: Colors.white, fontSize: 18),
               underline: const SizedBox(),
               isExpanded: true,
@@ -686,180 +443,91 @@ class _AzkarTabState extends State<AzkarTab>
                   value: dhikr,
                   child: Row(
                     children: [
-                      Text(dhikr,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontFamily: 'Amiri')),
+                      Text(dhikr, style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri')),
                       const Spacer(),
                       if (count > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [_primary, _primaryDark],
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text('$count',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(10)),
+                          child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),
                 );
               }).toList(),
-              onChanged: (value) {
-                if (value != null) _changeDhikr(value);
-              },
+              onChanged: (value) { if (value != null) _changeDhikr(value); },
             ),
           ),
-          const SizedBox(height: 30),
-          // 🎯 الزر الدائري الكبير (3D)
+          const SizedBox(height: 40),
+          
+          // ✅ زر التسبيح الزجاجي
           GestureDetector(
             onTap: _incrementTasbih,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 220,
+              height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [_primaryLight, _primary, _primaryDark],
-                  stops: [0.1, 0.6, 1.0],
-                ),
+                color: Colors.white.withValues(alpha: 0.1),
+                border: Border.all(color: _primary, width: 3),
                 boxShadow: [
-                  BoxShadow(
-                    color: _primary.withValues(alpha: 0.6),
-                    blurRadius: 30,
-                    spreadRadius: 8,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
+                  BoxShadow(color: _primary.withValues(alpha: 0.3), blurRadius: 30, spreadRadius: 10),
+                  BoxShadow(color: Colors.white.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(-5, -5)),
                 ],
               ),
-              child: Container(
-                margin: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [_primaryLight, _primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('$_tasbihCount',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 56,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 3),
-                                ),
-                              ])),
-                      const SizedBox(height: 6),
-                      Text(isArabic ? 'اضغط للعد' : 'Tap to count',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$_tasbihCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))]),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(isArabic ? 'اضغط للعد' : 'Tap to count', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
+          
+          // أزرار التحكم
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildElevatedCircleButton(
-                icon: Icons.remove,
-                color: Colors.orange,
-                onTap: _decrementTasbih,
-              ),
+              _buildGlassCircleButton(icon: Icons.remove, color: Colors.orange, onTap: _decrementTasbih),
               const SizedBox(width: 20),
-              _buildElevatedCircleButton(
-                icon: Icons.refresh,
-                color: _primary,
-                onTap: _resetCurrentTasbih,
-              ),
+              _buildGlassCircleButton(icon: Icons.refresh, color: _primary, onTap: _resetCurrentTasbih),
               const SizedBox(width: 20),
-              _buildElevatedCircleButton(
-                icon: Icons.add,
-                color: Colors.green,
-                onTap: _incrementTasbih,
-              ),
+              _buildGlassCircleButton(icon: Icons.add, color: Colors.green, onTap: _incrementTasbih),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
+          
+          // سجل العدادات
           if (_tasbihCounts.values.any((v) => v > 0)) ...[
             const Align(
               alignment: Alignment.centerRight,
-              child: Text('📊 سجل العدادات',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold)),
+              child: Text('📊 سجل العدادات', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_surface, _bg],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _primary.withValues(alpha: 0.3)),
-              ),
+            ProCard(
               child: Column(
                 children: _dhikrList.map((dhikr) {
                   final count = _tasbihCounts[dhikr] ?? 0;
                   if (count == 0) return const SizedBox.shrink();
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.circle,
-                            color: _primary, size: 8),
+                        const Icon(Icons.circle, color: _primary, size: 10),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(dhikr,
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontFamily: 'Amiri')),
-                        ),
+                        Expanded(child: Text(dhikr, style: const TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Amiri'))),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [_primary, _primaryDark],
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text('$count',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(10)),
+                          child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -875,14 +543,10 @@ class _AzkarTabState extends State<AzkarTab>
                 icon: const Icon(Icons.delete_forever, size: 18),
                 label: const Text('🗑️ حذف جميع العدادات'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: Colors.red.withValues(alpha: 0.8),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 6,
-                  shadowColor: Colors.red.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
@@ -892,36 +556,19 @@ class _AzkarTabState extends State<AzkarTab>
     );
   }
 
-  Widget _buildElevatedCircleButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      elevation: 6,
-      shadowColor: color.withValues(alpha: 0.5),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [color, color.withValues(alpha: 0.7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.3),
-              width: 2,
-            ),
-          ),
-          child: Icon(icon, color: Colors.white, size: 30),
+  Widget _buildGlassCircleButton({required IconData icon, required Color color, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withValues(alpha: 0.2),
+          border: Border.all(color: color, width: 2),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
         ),
+        child: Icon(icon, color: color, size: 30),
       ),
     );
   }
@@ -932,27 +579,19 @@ class _AzkarTabState extends State<AzkarTab>
     final isArabic = lang == 'ar';
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_primaryDark, _surface],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: const Color(0xFF0B132B).withValues(alpha: 0.5),
+              border: const Border(bottom: BorderSide(color: Colors.white12)),
             ),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: Colors.white,
+              indicatorColor: _primary,
               indicatorWeight: 3,
-              labelColor: Colors.white,
+              labelColor: _primary,
               unselectedLabelColor: Colors.white54,
               isScrollable: true,
               tabs: [
@@ -971,14 +610,10 @@ class _AzkarTabState extends State<AzkarTab>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildAzkarList(_morningAzkar, isArabic,
-                    isArabic ? '🌅 أذكار الصباح' : 'Morning Azkar'),
-                _buildAzkarList(_eveningAzkar, isArabic,
-                    isArabic ? '🌙 أذكار المساء' : 'Evening Azkar'),
-                _buildAzkarList(_sleepAzkar, isArabic,
-                    isArabic ? '😴 أذكار النوم' : 'Sleep Azkar'),
-                _buildAzkarList(_prayerAzkar, isArabic,
-                    isArabic ? '🕌 بعد الصلاة' : 'After Prayer'),
+                _buildAzkarList(_morningAzkar, isArabic, isArabic ? '🌅 أذكار الصباح' : 'Morning Azkar'),
+                _buildAzkarList(_eveningAzkar, isArabic, isArabic ? '🌙 أذكار المساء' : 'Evening Azkar'),
+                _buildAzkarList(_sleepAzkar, isArabic, isArabic ? '😴 أذكار النوم' : 'Sleep Azkar'),
+                _buildAzkarList(_prayerAzkar, isArabic, isArabic ? '🕌 بعد الصلاة' : 'After Prayer'),
                 _buildDuasList(isArabic),
                 _buildRuqyahList(isArabic),
                 _buildLiveStreams(isArabic),

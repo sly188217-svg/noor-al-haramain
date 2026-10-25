@@ -92,6 +92,7 @@ dependencies:
   device_info_plus: ^13.3.0
   package_info_plus: ^10.2.1
   http_certificate_pinning: ^3.0.2
+  arabic_justified_text: ^1.0.4
 
 dev_dependencies:
   flutter_test:

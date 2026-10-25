@@ -5,7 +5,6 @@ import '../../core/providers/language_provider.dart';
 import '../../core/services/background_service.dart';
 import '../../core/services/translation_service.dart';
 import '../../widgets/saudi_flag.dart';
-import '../location/location_permission_screen.dart';
 import 'tabs/prayer_tab.dart';
 import 'tabs/quran_tab.dart';
 import 'tabs/library_tab.dart';
@@ -22,7 +21,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String _userName = "مستخدم";
-  String _userCity = "";
+  String _userCity = "مكة المكرمة";
   int _currentIndex = 0;
   int _currentBackground = 0;
 

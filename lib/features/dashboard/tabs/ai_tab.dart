@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/firebase_ai_service.dart';
 import '../../../core/services/usage_service.dart';
+import '../../../widgets/professional_ui.dart'; // ✅ التصميم الزجاجي
 import '../../premium/premium_screen.dart';
 import '../../recitation/recitation_screen.dart';
 import '../../quran/read_with_me_screen.dart';
@@ -21,8 +22,7 @@ class AiTab extends StatefulWidget {
   State<AiTab> createState() => _AiTabState();
 }
 
-class _AiTabState extends State<AiTab>
-    with SingleTickerProviderStateMixin {
+class _AiTabState extends State<AiTab> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -45,7 +45,7 @@ class _AiTabState extends State<AiTab>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1C2541),
+        backgroundColor: const Color(0xFF1C2541).withValues(alpha: 0.8),
         elevation: 0,
         title: Row(
           children: [
@@ -61,7 +61,7 @@ class _AiTabState extends State<AiTab>
           controller: _tabController,
           indicatorColor: const Color(0xFF4A90E2),
           labelColor: const Color(0xFF4A90E2),
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: Colors.white54,
           isScrollable: true,
           tabs: [
             Tab(text: isArabic ? '📖 تلاوة وتصحيح' : '📖 Recite'),
@@ -147,14 +147,12 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
       setState(() => _filteredSurahs = _surahs);
       return;
     }
-
     final q = query.trim();
     final filtered = _surahs.where((s) {
       return s.name.contains(q) ||
           s.number.toString() == q ||
           s.number.toString().startsWith(q);
     }).toList();
-
     setState(() => _filteredSurahs = filtered);
   }
 
@@ -174,17 +172,14 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
         ),
         title: const Row(
           children: [
             Icon(Icons.star, color: Color(0xFF4A90E2)),
             SizedBox(width: 8),
-            Text(
-              'اشترك في Premium',
-              style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18),
-            ),
+            Text('اشترك في Premium', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18)),
           ],
         ),
         content: const Text(
@@ -197,11 +192,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           '✨ بدون إعلانات\n\n'
           '💎 \$2.99/شهر\n'
           'أو \$22.99/سنة (وفّر 36%)',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            height: 1.7,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: 14, height: 1.7),
         ),
         actions: [
           TextButton(
@@ -213,10 +204,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
               Navigator.pop(context);
               _openPremiumScreen();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.black,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A90E2), foregroundColor: Colors.white),
             child: const Text('💎 اشترك الآن'),
           ),
         ],
@@ -233,24 +221,14 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ReadWithMeScreen(surahNumber: 1),
-      ),
+      MaterialPageRoute(builder: (_) => const ReadWithMeScreen(surahNumber: 1)),
     ).then((_) => _checkPremium());
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF4A90E2)),
-      );
-    }
-
-    if (!_isPremium) {
-      return _buildPremiumLockScreen();
-    }
-
+    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)));
+    if (!_isPremium) return _buildPremiumLockScreen();
     return _buildAccessScreen();
   }
 
@@ -258,123 +236,77 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
-                border: Border.all(color: const Color(0xFF4A90E2), width: 2),
+        child: ProCard(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
+                  border: Border.all(color: const Color(0xFF4A90E2), width: 2),
+                ),
+                child: const Icon(Icons.mic, color: Color(0xFF4A90E2), size: 60),
               ),
-              child: const Icon(
-                Icons.mic,
-                color: Color(0xFF4A90E2),
-                size: 60,
+              const SizedBox(height: 24),
+              const Text('🎙️ اقرأ معي', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'Amiri')),
+              const SizedBox(height: 12),
+              const Text(
+                'استمع للقارئ مع تظليل الكلمات\nسجّل تلاوتك واحصل على تصحيح فوري\nجميع سور القرآن (114 سورة)\nمثالية لتعليم الأطفال والأجانب',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.8),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              '🎙️ اقرأ معي',
-              style: TextStyle(
-                color: Color(0xFF4A90E2),
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Amiri',
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'استمع للقارئ مع تظليل الكلمات\n'
-              'سجّل تلاوتك واحصل على تصحيح فوري\n'
-              'جميع سور القرآن (114 سورة)\n'
-              'مثالية لتعليم الأطفال والأجانب',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                height: 1.8,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF4A90E2).withValues(alpha: 0.3),
-                    const Color(0xFF4A90E2).withValues(alpha: 0.1),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF4A90E2).withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      _remainingReadWithMe > 0 ? '🎁 تجربة مجانية: $_remainingReadWithMe محاولات' : '🔒 انتهت التجربة المجانية',
+                      style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _remainingReadWithMe > 0 ? 'جرّب الميزة مجاناً ثم اشترك للاستخدام غير المحدود' : 'عاود غداً لتجربة جديدة أو اشترك الآن',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF4A90E2)),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    _remainingReadWithMe > 0
-                        ? '🎁 تجربة مجانية: $_remainingReadWithMe محاولتان'
-                        : '🔒 انتهت التجربة المجانية',
-                    style: const TextStyle(
-                      color: Color(0xFF4A90E2),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _remainingReadWithMe > 0
-                        ? 'جرّب الميزة مجاناً ($_remainingReadWithMe محاولات)\nثم اشترك للاستخدام غير المحدود'
-                        : 'عاود غداً لتجربة جديدة\nأو اشترك الآن للاستخدام غير المحدود',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (_remainingReadWithMe > 0)
-              ElevatedButton.icon(
-                onPressed: _tryFreeTrial,
-                icon: const Icon(Icons.play_arrow, size: 22),
-                label: const Text(
-                  '🎁 ابدأ التجربة المجانية',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A90E2),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 24),
+              if (_remainingReadWithMe > 0)
+                ElevatedButton.icon(
+                  onPressed: _tryFreeTrial,
+                  icon: const Icon(Icons.play_arrow, size: 22),
+                  label: const Text('🎁 ابدأ التجربة المجانية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A90E2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _showPremiumDialog,
-              icon: const Icon(Icons.star, size: 20),
-              label: const Text(
-                '💎 اشترك الآن — \$2.99/شهر',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF4A90E2),
-                side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _showPremiumDialog,
+                icon: const Icon(Icons.star, size: 20),
+                label: const Text('💎 اشترك الآن — \$2.99/شهر', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF4A90E2),
+                  side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -383,106 +315,59 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   Widget _buildAccessScreen() {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          margin: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF4A90E2).withValues(alpha: 0.2),
-                const Color(0xFF4A90E2).withValues(alpha: 0.05),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: ProCard(
+            child: Row(
+              children: [
+                const Icon(Icons.star, color: Color(0xFF4A90E2), size: 20),
+                const SizedBox(width: 8),
+                const Text('Premium مُفعّل', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 14, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                const Icon(Icons.menu_book, color: Color(0xFF4A90E2), size: 18),
+                const SizedBox(width: 4),
+                const Text('114 سورة', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 12, fontWeight: FontWeight.bold)),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF4A90E2)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.star, color: Color(0xFF4A90E2), size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Premium مُفعّل',
-                style: TextStyle(
-                  color: Color(0xFF4A90E2),
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Spacer(),
-              Icon(Icons.menu_book, color: Color(0xFF4A90E2), size: 18),
-              SizedBox(width: 4),
-              Text(
-                '114 سورة',
-                style: TextStyle(
-                  color: Color(0xFF4A90E2),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: TextField(
-            controller: _searchController,
-            onChanged: _filterSurahs,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: '🔍 ابحث عن سورة...',
-              hintStyle: const TextStyle(color: Colors.grey),
-              prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFF4A90E2)),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Color(0xFF4A90E2)),
-                      onPressed: () {
-                        _searchController.clear();
-                        _filterSurahs('');
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: const Color(0xFF1C2541).withValues(alpha: 0.6),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF4A90E2)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ProCard(
+            padding: EdgeInsets.zero,
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterSurahs,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: '🔍 ابحث عن سورة...',
+                hintStyle: const TextStyle(color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF4A90E2)),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Color(0xFF4A90E2)),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterSurahs('');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Expanded(
           child: _isLoadingSurahs
-              ? const Center(
-                  child: CircularProgressIndicator(
-                      color: Color(0xFF4A90E2)))
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
               : _filteredSurahs.isEmpty
-                  ? const Center(
-                      child: Text(
-                        '❌ لا توجد نتائج',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                    )
+                  ? const Center(child: Text('❌ لا توجد نتائج', style: TextStyle(color: Colors.white54)))
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: _filteredSurahs.length,
-                      itemBuilder: (context, index) {
-                        return _buildSurahCard(_filteredSurahs[index]);
-                      },
+                      itemBuilder: (context, index) => _buildSurahCard(_filteredSurahs[index]),
                     ),
         ),
       ],
@@ -491,113 +376,38 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
 
   Widget _buildSurahCard(SurahModel surah) {
     final isMeccan = surah.revelationType == 'Meccan';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openSurah(surah.number),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C2541).withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF4A90E2).withValues(alpha: 0.3),
-                        const Color(0xFF4A90E2).withValues(alpha: 0.1),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF4A90E2),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${surah.number}',
-                      style: const TextStyle(
-                        color: Color(0xFF4A90E2),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Amiri',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        surah.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Amiri',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: (isMeccan
-                                      ? Colors.orange
-                                      : Colors.green)
-                                  .withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              isMeccan ? 'مكية' : 'مدنية',
-                              style: TextStyle(
-                                color: isMeccan
-                                    ? Colors.orange
-                                    : Colors.green,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${surah.numberOfAyahs} آية',
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Color(0xFF4A90E2),
-                  size: 16,
-                ),
-              ],
-            ),
+    return ProCard(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        onTap: () => _openSurah(surah.number),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF4A90E2), width: 1.5),
+          ),
+          child: Center(
+            child: Text('${surah.number}', style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Amiri')),
           ),
         ),
+        title: Text(surah.name, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Amiri')),
+        subtitle: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: (isMeccan ? Colors.orange : Colors.green).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(isMeccan ? 'مكية' : 'مدنية', style: TextStyle(color: isMeccan ? Colors.orange : Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 6),
+            Text('${surah.numberOfAyahs} آية', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A90E2), size: 16),
       ),
     );
   }
@@ -605,9 +415,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
   void _openSurah(int surahNumber) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ReadWithMeScreen(surahNumber: surahNumber),
-      ),
+      MaterialPageRoute(builder: (_) => ReadWithMeScreen(surahNumber: surahNumber)),
     ).then((_) => _checkPremium());
   }
 }
@@ -668,8 +476,7 @@ class _ChatTabState extends State<_ChatTab> {
       final list = jsonDecode(raw) as List;
       if (!mounted) return;
       setState(() {
-        _savedConversations =
-            list.map((e) => Map<String, dynamic>.from(e)).toList();
+        _savedConversations = list.map((e) => Map<String, dynamic>.from(e)).toList();
       });
     } catch (e) {
       debugPrint('⚠️ فشل تحميل السجل: $e');
@@ -681,23 +488,17 @@ class _ChatTabState extends State<_ChatTab> {
     try {
       final now = DateTime.now();
       final firstText = _messages.first['text'] ?? 'محادثة';
-      final title = firstText.length > 50
-          ? '${firstText.substring(0, 50)}...'
-          : firstText;
+      final title = firstText.length > 50 ? '${firstText.substring(0, 50)}...' : firstText;
 
       final entry = {
-        'date':
-            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+        'date': '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
         'title': title,
-        'messages':
-            _messages.map((m) => Map<String, String>.from(m)).toList(),
+        'messages': _messages.map((m) => Map<String, String>.from(m)).toList(),
       };
 
       _savedConversations.removeWhere((c) => c['title'] == title);
       _savedConversations.insert(0, entry);
-      if (_savedConversations.length > 20) {
-        _savedConversations = _savedConversations.sublist(0, 20);
-      }
+      if (_savedConversations.length > 20) _savedConversations = _savedConversations.sublist(0, 20);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_historyKey, jsonEncode(_savedConversations));
@@ -732,101 +533,56 @@ class _ChatTabState extends State<_ChatTab> {
   void _showHistory() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: const Color(0xFF0B132B).withValues(alpha: 0.95),
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
+        initialChildSize: 0.6, minChildSize: 0.3, maxChildSize: 0.9, expand: false,
         builder: (context, scrollController) => Column(
           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Color(0xFF1C2541),
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.history, color: Color(0xFF4A90E2)),
                   const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      '📚 سجل المحادثات',
-                      style: TextStyle(
-                        color: Color(0xFF4A90E2),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  const Expanded(child: Text('📚 سجل المحادثات', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 16, fontWeight: FontWeight.bold))),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),
             Expanded(
               child: _savedConversations.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'لا يوجد سجل بعد',
-                        style:
-                            TextStyle(color: Colors.grey, fontSize: 14),
-                      ),
-                    )
+                  ? const Center(child: Text('لا يوجد سجل بعد', style: TextStyle(color: Colors.grey, fontSize: 14)))
                   : ListView.builder(
                       controller: scrollController,
+                      padding: const EdgeInsets.all(12),
                       itemCount: _savedConversations.length,
                       itemBuilder: (context, index) {
                         final c = _savedConversations[index];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1C2541)
-                                .withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          // ✅ الحل: تغليف ListTile بـ Material
-                          child: Material(
-                            color: Colors.transparent,
-                            child: ListTile(
-                              leading: const Icon(Icons.chat,
-                                  color: Color(0xFF4A90E2)),
-                              title: Text(
-                                c['title'] ?? '',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 14),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                c['date'] ?? '',
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 11),
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red, size: 18),
-                                onPressed: () async {
-                                  await _deleteConversation(index);
-                                  if (!context.mounted) return;
-                                  Navigator.pop(context);
-                                  _showHistory();
-                                },
-                              ),
-                              onTap: () {
+                        return ProCard(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.chat, color: Color(0xFF4A90E2)),
+                            title: Text(c['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(c['date'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                              onPressed: () async {
+                                await _deleteConversation(index);
+                                if (!context.mounted) return;
                                 Navigator.pop(context);
-                                _openConversation(c);
+                                _showHistory();
                               },
                             ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _openConversation(c);
+                            },
                           ),
                         );
                       },
@@ -872,30 +628,19 @@ class _ChatTabState extends State<_ChatTab> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF4A90E2), width: 2),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFF4A90E2), width: 2)),
         title: const Row(
           children: [
             Icon(Icons.hourglass_empty, color: Color(0xFF4A90E2)),
             SizedBox(width: 8),
-            Text('انتهى الحد اليومي',
-                style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18)),
+            Text('انتهى الحد اليومي', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 18)),
           ],
         ),
-        content: const Text(
-          'لقد استخدمت سؤالان مجانيان اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.\n\n'
-          '💎 اشترك الآن بـ \$2.99/شهر للاستخدام غير المحدود.',
-          style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6),
-        ),
+        content: const Text('لقد استخدمت سؤالان مجانيان اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.\n\n💎 اشترك الآن بـ \$2.99/شهر للاستخدام غير المحدود.', style: TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.black,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A90E2), foregroundColor: Colors.white),
             child: const Text('حسناً'),
           ),
         ],
@@ -906,11 +651,7 @@ class _ChatTabState extends State<_ChatTab> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
@@ -919,171 +660,102 @@ class _ChatTabState extends State<_ChatTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // ✅ الشريط العلوي للمحادثة
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: const Color(0xFF0B132B),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: const Color(0xFF0B132B).withValues(alpha: 0.5),
           child: Row(
             children: [
-              Icon(
-                _isPremium ? Icons.star : Icons.chat_bubble_outline,
-                color: const Color(0xFF4A90E2),
-                size: 14,
-              ),
+              Icon(_isPremium ? Icons.star : Icons.chat_bubble_outline, color: const Color(0xFF4A90E2), size: 16),
               const SizedBox(width: 6),
-              Text(
-                _isPremium
-                    ? 'Premium — غير محدود'
-                    : 'متبقي: $_remainingChats سؤال',
-                style: const TextStyle(
-                    color: Color(0xFF4A90E2), fontSize: 11),
-              ),
+              Text(_isPremium ? 'Premium — غير محدود' : 'متبقي: $_remainingChats سؤال', style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12)),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.history,
-                    color: Color(0xFF4A90E2), size: 20),
-                onPressed: _showHistory,
-                tooltip: 'السجل',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
+              IconButton(icon: const Icon(Icons.history, color: Color(0xFF4A90E2), size: 20), onPressed: _showHistory, tooltip: 'السجل', padding: EdgeInsets.zero, constraints: const BoxConstraints()),
               const SizedBox(width: 12),
-              IconButton(
-                icon: const Icon(Icons.add_comment,
-                    color: Color(0xFF4A90E2), size: 20),
-                onPressed: _newChat,
-                tooltip: 'محادثة جديدة',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
+              IconButton(icon: const Icon(Icons.add_comment, color: Color(0xFF4A90E2), size: 20), onPressed: _newChat, tooltip: 'محادثة جديدة', padding: EdgeInsets.zero, constraints: const BoxConstraints()),
             ],
           ),
         ),
+        
+        // ✅ منطقة الرسائل
         Expanded(
           child: _messages.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.chat_bubble_outline,
-                          color: Color(0xFF4A90E2), size: 60),
+                      const Icon(Icons.smart_toy, color: Color(0xFF4A90E2), size: 60),
                       const SizedBox(height: 16),
-                      Text(
-                        widget.isArabic
-                            ? '👋 اسأل المرشد أي سؤال ديني'
-                            : '👋 Ask Al-Murshid',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 16),
-                      ),
+                      Text(widget.isArabic ? '👋 اسأل المرشد أي سؤال ديني' : '👋 Ask Al-Murshid', style: const TextStyle(color: Colors.white54, fontSize: 16)),
                     ],
                   ),
                 )
               : ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   itemCount: _messages.length,
                   itemBuilder: (context, index) {
                     final m = _messages[index];
                     final isUser = m['role'] == 'user';
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      alignment: isUser
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth:
-                              MediaQuery.of(context).size.width * 0.8,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          gradient: isUser
-                              ? const LinearGradient(colors: [
-                                  Color(0xFF1C2541),
-                                  Color(0xFF0B132B)
-                                ])
-                              : const LinearGradient(colors: [
-                                  Color(0xFF4A90E2),
-                                  Color(0xFF2E5C8A)
-                                ]),
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: isUser
-                                ? const Radius.circular(16)
-                                : const Radius.circular(4),
-                            bottomRight: isUser
-                                ? const Radius.circular(4)
-                                : const Radius.circular(16),
+                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                        child: ProCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Text(
+                            m['text']!,
+                            style: TextStyle(
+                              color: isUser ? Colors.white : const Color(0xFF4A90E2),
+                              fontSize: 15,
+                              height: 1.6,
+                              fontFamily: isUser ? null : 'Amiri',
+                            ),
+                            textAlign: isUser ? TextAlign.right : TextAlign.left,
                           ),
-                        ),
-                        child: Text(
-                          m['text']!,
-                          style: TextStyle(
-                            color: isUser ? Colors.white : Colors.black,
-                            fontSize: 15,
-                            height: 1.6,
-                            fontFamily: isUser ? null : 'Amiri',
-                          ),
-                          textAlign:
-                              isUser ? TextAlign.right : TextAlign.left,
                         ),
                       ),
                     );
                   },
                 ),
         ),
+        
+        // ✅ مؤشر الكتابة
         if (_isLoading)
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                      color: Color(0xFF4A90E2), strokeWidth: 2),
-                ),
+                const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Color(0xFF4A90E2), strokeWidth: 2)),
                 const SizedBox(width: 12),
-                Text(
-                  widget.isArabic
-                      ? 'المرشد يكتب...'
-                      : 'Al-Murshid is typing...',
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                ),
+                Text(widget.isArabic ? 'المرشد يكتب...' : 'Al-Murshid is typing...', style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),
           ),
+          
+        // ✅ حقل الإدخال
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C2541),
-            border: Border(
-              top: BorderSide(
-                  color: const Color(0xFF4A90E2).withValues(alpha: 0.3)),
-            ),
+            color: const Color(0xFF1C2541).withValues(alpha: 0.8),
+            border: Border(top: BorderSide(color: const Color(0xFF4A90E2).withValues(alpha: 0.3))),
           ),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _controller,
-                  style: const TextStyle(color: Colors.white),
-                  onSubmitted: (_) => _send(),
-                  decoration: InputDecoration(
-                    hintText: widget.isArabic
-                        ? 'اكتب سؤالك هنا...'
-                        : 'Type your question...',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    filled: true,
-                    fillColor: const Color(0xFF0B132B),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+                child: ProCard(
+                  padding: EdgeInsets.zero,
+                  child: TextField(
+                    controller: _controller,
+                    style: const TextStyle(color: Colors.white),
+                    onSubmitted: (_) => _send(),
+                    decoration: InputDecoration(
+                      hintText: widget.isArabic ? 'اكتب سؤالك هنا...' : 'Type your question...',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
                   ),
                 ),
               ),
@@ -1093,12 +765,8 @@ class _ChatTabState extends State<_ChatTab> {
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4A90E2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.send,
-                      color: Colors.black, size: 24),
+                  decoration: const BoxDecoration(color: Color(0xFF4A90E2), shape: BoxShape.circle),
+                  child: const Icon(Icons.send, color: Colors.white, size: 24),
                 ),
               ),
             ],
