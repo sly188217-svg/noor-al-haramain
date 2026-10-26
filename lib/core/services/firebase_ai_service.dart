@@ -17,7 +17,6 @@ class FirebaseAiService {
     return text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '');
   }
 
-  // ✅ دالة مساعدة لاستخراج النص بأمان تام وتجنب أخطاء String? و String
   static String _extractContent(http.Response response) {
     try {
       final dynamic data = jsonDecode(response.body);
@@ -45,7 +44,12 @@ class FirebaseAiService {
         ..fields['model'] = 'whisper-large-v3-turbo'
         ..fields['language'] = 'ar'
         ..fields['response_format'] = 'json';
-      if (correctText != null && correctText.isNotEmpty) request.fields['prompt'] = correctText;
+      
+      final prompt = correctText;
+      if (prompt != null && prompt.isNotEmpty) {
+        request.fields['prompt'] = prompt;
+      }
+      
       request.files.add(await http.MultipartFile.fromPath('file', audioFilePath));
       final res = await request.send().timeout(const Duration(seconds: 90));
       if (res.statusCode == 200) {
@@ -69,7 +73,7 @@ class FirebaseAiService {
       
       if (response == null || response.statusCode != 200) return null;
       
-      String cleaned = _extractContent(response); // ✅ استخدام الدالة الآمنة
+      String cleaned = _extractContent(response);
       final start = cleaned.indexOf('{'); final end = cleaned.lastIndexOf('}');
       if (start >= 0 && end > start) cleaned = cleaned.substring(start, end + 1);
       
@@ -92,7 +96,7 @@ class FirebaseAiService {
 
       if (response == null) return '⚠️ تعذر الاتصال بالخادم. تأكد من الإنترنت.';
       if (response.statusCode == 200) {
-        final content = _extractContent(response); // ✅ استخدام الدالة الآمنة
+        final content = _extractContent(response);
         return content.isNotEmpty ? content : '⚠️ لا يوجد رد.';
       }
       return '⚠️ خطأ (${response.statusCode})';
@@ -130,7 +134,7 @@ class FirebaseAiService {
       
       if (response == null || response.statusCode != 200) return {'reconstructed': userText, 'words': {}};
       
-      String cleaned = _extractContent(response); // ✅ استخدام الدالة الآمنة
+      String cleaned = _extractContent(response);
       final start = cleaned.indexOf('{'); final end = cleaned.lastIndexOf('}');
       if (start >= 0 && end > start) cleaned = cleaned.substring(start, end + 1);
       
@@ -138,7 +142,8 @@ class FirebaseAiService {
     } catch (e) { return {'reconstructed': userText, 'words': {}}; }
   }
 
-  static Future<String?> _getActiveModel() async {
+  // ✅ إصلاح الخطأ: جعل النوع String بدلاً من String?
+  static Future<String> _getActiveModel() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('groq_active_model') ?? _models.first;
   }
@@ -146,6 +151,7 @@ class FirebaseAiService {
   static Future<http.Response?> _sendRequest(Map<String, dynamic> body, {Duration timeout = const Duration(seconds: 60)}) async {
     final isSecure = await CertificatePinningService.verifyConnection();
     if (!isSecure) return null;
+    
     final active = await _getActiveModel();
     final modelsToTry = [active, ..._models.where((m) => m != active)];
 
