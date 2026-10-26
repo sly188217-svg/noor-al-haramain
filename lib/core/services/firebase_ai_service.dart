@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +15,25 @@ class FirebaseAiService {
 
   static String removeTashkeel(String text) {
     return text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '');
+  }
+
+  // ✅ دالة مساعدة لاستخراج النص بأمان تام وتجنب أخطاء String? و String
+  static String _extractContent(http.Response response) {
+    try {
+      final dynamic data = jsonDecode(response.body);
+      if (data is! Map) return '';
+      final dynamic choices = data['choices'];
+      if (choices is! List || choices.isEmpty) return '';
+      final dynamic firstChoice = choices[0];
+      if (firstChoice is! Map) return '';
+      final dynamic message = firstChoice['message'];
+      if (message is! Map) return '';
+      final dynamic content = message['content'];
+      if (content == null) return '';
+      return content.toString().trim();
+    } catch (e) {
+      return '';
+    }
   }
 
   static Future<String?> transcribeAudio(String audioFilePath, {String? correctText}) async {
@@ -48,11 +66,13 @@ class FirebaseAiService {
         'temperature': 0.1,
         'response_format': {'type': 'json_object'},
       }, timeout: const Duration(seconds: 30));
+      
       if (response == null || response.statusCode != 200) return null;
-      final text = jsonDecode(response.body)['choices']?[0]?['message']?['content'] ?? '{}';
-      String cleaned = text.trim();
+      
+      String cleaned = _extractContent(response); // ✅ استخدام الدالة الآمنة
       final start = cleaned.indexOf('{'); final end = cleaned.lastIndexOf('}');
       if (start >= 0 && end > start) cleaned = cleaned.substring(start, end + 1);
+      
       final decoded = jsonDecode(cleaned);
       if (decoded is Map<String, dynamic> && decoded['surah'] != null) return decoded;
       return null;
@@ -72,7 +92,8 @@ class FirebaseAiService {
 
       if (response == null) return '⚠️ تعذر الاتصال بالخادم. تأكد من الإنترنت.';
       if (response.statusCode == 200) {
-        return jsonDecode(response.body)['choices']?[0]?['message']?['content']?.toString().trim() ?? '⚠️ لا يوجد رد.';
+        final content = _extractContent(response); // ✅ استخدام الدالة الآمنة
+        return content.isNotEmpty ? content : '⚠️ لا يوجد رد.';
       }
       return '⚠️ خطأ (${response.statusCode})';
     } catch (e) { return '⚠️ تعذر الاتصال: $e'; }
@@ -106,11 +127,13 @@ class FirebaseAiService {
         'temperature': 0.1,
         'response_format': {'type': 'json_object'},
       }, timeout: const Duration(seconds: 45));
+      
       if (response == null || response.statusCode != 200) return {'reconstructed': userText, 'words': {}};
-      final text = jsonDecode(response.body)['choices']?[0]?['message']?['content'] ?? '{}';
-      String cleaned = text.trim();
+      
+      String cleaned = _extractContent(response); // ✅ استخدام الدالة الآمنة
       final start = cleaned.indexOf('{'); final end = cleaned.lastIndexOf('}');
       if (start >= 0 && end > start) cleaned = cleaned.substring(start, end + 1);
+      
       return jsonDecode(cleaned) as Map<String, dynamic>? ?? {'reconstructed': userText, 'words': {}};
     } catch (e) { return {'reconstructed': userText, 'words': {}}; }
   }
