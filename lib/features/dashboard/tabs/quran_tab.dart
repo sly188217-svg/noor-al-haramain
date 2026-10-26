@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../../core/providers/language_provider.dart';
-import '../../../widgets/professional_ui.dart'; // ✅ التصميم الزجاجي
+import '../../../widgets/professional_ui.dart';
 import '../../quran/models/surah_model.dart';
 import '../../quran/services/quran_service.dart';
 import '../../quran/mushaf_screen.dart';
+import 'quran_surah_detail.dart';
 
 class QuranTab extends StatefulWidget {
   const QuranTab({super.key});
@@ -22,23 +26,34 @@ class _QuranTabState extends State<QuranTab> {
   bool _isLoading = true;
   String _errorMessage = '';
   String _selectedReciter = 'maher';
+  
   final AudioPlayer _audioPlayer = AudioPlayer();
   int? _playingSurah;
   bool _isPlaying = false;
-  SurahModel? _selectedSurah;
-  bool _showAyahs = false;
+  
+  // لتتبع السور التي تم تحميلها
+  Set<int> _downloadedSurahs = {};
+  int? _downloadingSurah;
 
   @override
   void initState() {
     super.initState();
     _loadReciterPreference();
     _loadQuran();
+    _checkDownloadedSurahs();
+    _setupAudioListeners();
   }
 
   @override
   void dispose() {
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  void _setupAudioListeners() {
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _isPlaying = false);
+    });
   }
 
   Future<void> _loadReciterPreference() async {
@@ -51,10 +66,7 @@ class _QuranTabState extends State<QuranTab> {
   }
 
   Future<void> _loadQuran() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+    setState(() { _isLoading = true; _errorMessage = ''; });
     try {
       final surahs = await QuranService.loadQuran();
       if (mounted) {
@@ -66,12 +78,29 @@ class _QuranTabState extends State<QuranTab> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _errorMessage = '⚠️ فشل تحميل المصحف: $e';
-          _isLoading = false;
-        });
+        setState(() { _errorMessage = '⚠️ فشل تحميل المصحف: $e'; _isLoading = false; });
       }
     }
+  }
+
+  Future<void> _checkDownloadedSurahs() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final folder = Directory('${dir.path}/quran_audio_full');
+    if (!await folder.exists()) return;
+
+    final files = folder.listSync();
+    final downloaded = <int>{};
+    for (var file in files) {
+      if (file.path.endsWith('.mp3')) {
+        final fileName = file.path.split('/').last;
+        final parts = fileName.split('_');
+        if (parts.length >= 2 && parts[0] == _selectedReciter) {
+          final surahNum = int.tryParse(parts[1].replaceAll('.mp3', ''));
+          if (surahNum != null) downloaded.add(surahNum);
+        }
+      }
+    }
+    if (mounted) setState(() => _downloadedSurahs = downloaded);
   }
 
   void _filterSurahs(String query) {
@@ -89,46 +118,84 @@ class _QuranTabState extends State<QuranTab> {
     });
   }
 
-  void _openSurah(SurahModel surah) {
-    setState(() {
-      _selectedSurah = surah;
-      _showAyahs = true;
-    });
-  }
-
-  void _goBackToSurahs() {
-    setState(() {
-      _showAyahs = false;
-      _selectedSurah = null;
-    });
-  }
-
   Future<void> _playRecitation(SurahModel surah) async {
     try {
-      final url = QuranService.getRecitationUrl(surah.number, _selectedReciter);
-
       if (_playingSurah == surah.number && _isPlaying) {
         await _audioPlayer.pause();
         if (mounted) setState(() => _isPlaying = false);
         return;
       }
 
-      await _audioPlayer.play(UrlSource(url));
+      final dir = await getApplicationDocumentsDirectory();
+      final surahStr = surah.number.toString().padLeft(3, '0');
+      final filePath = '${dir.path}/quran_audio_full/${_selectedReciter}_$surahStr.mp3';
+      final file = File(filePath);
 
-      if (mounted) {
-        setState(() {
-          _playingSurah = surah.number;
-          _isPlaying = true;
-        });
+      // ✅ إعدادات العمل في الخلفية
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+      await _audioPlayer.setAudioContext(AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          audioFocus: AndroidAudioFocus.gain,
+          usageType: AndroidUsageType.media,
+          contentType: AndroidContentType.music,
+        ),
+      ));
+
+      if (await file.exists()) {
+        await _audioPlayer.play(DeviceFileSource(filePath));
+      } else {
+        final url = QuranService.getRecitationUrl(surah.number, _selectedReciter);
+        await _audioPlayer.play(UrlSource(url));
       }
 
-      _audioPlayer.onPlayerComplete.listen((event) {
-        if (mounted) setState(() => _isPlaying = false);
-      });
+      if (mounted) {
+        setState(() { _playingSurah = surah.number; _isPlaying = true; });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('⚠️ تعذر تشغيل التلاوة، تأكد من الاتصال بالإنترنت')),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadSurah(SurahModel surah) async {
+    if (_downloadingSurah != null) return;
+    
+    setState(() => _downloadingSurah = surah.number);
+    
+    final dir = await getApplicationDocumentsDirectory();
+    final folder = Directory('${dir.path}/quran_audio_full');
+    if (!await folder.exists()) await folder.create(recursive: true);
+
+    final surahStr = surah.number.toString().padLeft(3, '0');
+    final filePath = '${folder.path}/${_selectedReciter}_$surahStr.mp3';
+    final url = QuranService.getRecitationUrl(surah.number, _selectedReciter);
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        if (mounted) {
+          setState(() {
+            _downloadedSurahs.add(surah.number);
+            _downloadingSurah = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ تم تحميل ${surah.name} بنجاح للاستماع بدون إنترنت')),
+          );
+        }
+      } else {
+        throw Exception('فشل التحميل');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _downloadingSurah = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ فشل تحميل السورة. حاول لاحقاً.')),
         );
       }
     }
@@ -163,9 +230,7 @@ class _QuranTabState extends State<QuranTab> {
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('quran_reciter', reciter['id']!);
 
-                    if (_isPlaying) {
-                      await _audioPlayer.stop();
-                    }
+                    if (_isPlaying) await _audioPlayer.stop();
 
                     if (!mounted) return;
                     setState(() {
@@ -173,12 +238,11 @@ class _QuranTabState extends State<QuranTab> {
                       _isPlaying = false;
                       _playingSurah = null;
                     });
+                    
+                    _checkDownloadedSurahs(); // إعادة فحص السور المحملة للقارئ الجديد
 
                     if (!context.mounted) return;
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('✅ تم اختيار ${reciter['name']}')),
-                    );
                   },
                 );
               },
@@ -193,73 +257,10 @@ class _QuranTabState extends State<QuranTab> {
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageProvider>().currentLang;
 
-    // ─── عرض الآيات (سورة مفتوحة) ───
-    if (_showAyahs && _selectedSurah != null) {
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1C2541),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF4A90E2)),
-            onPressed: _goBackToSurahs,
-          ),
-          title: Text(_selectedSurah!.name, style: const TextStyle(color: Colors.white, fontFamily: 'Amiri')),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _isPlaying && _playingSurah == _selectedSurah!.number ? Icons.pause : Icons.play_arrow,
-                color: const Color(0xFF4A90E2),
-              ),
-              onPressed: () => _playRecitation(_selectedSurah!),
-            ),
-          ],
-        ),
-        body: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _selectedSurah!.ayahs?.length ?? 0,
-          itemBuilder: (context, index) {
-            final ayah = _selectedSurah!.ayahs![index];
-            return ProCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4A90E2).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${ayah.number}',
-                        style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      ayah.text,
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontFamily: 'Amiri', height: 1.8),
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    // ─── قائمة السور ───
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          // ✅ بطاقة المصحف ككتاب (زجاجية)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: GestureDetector(
@@ -288,7 +289,6 @@ class _QuranTabState extends State<QuranTab> {
             ),
           ),
 
-          // ✅ شريط البحث والقارئ (زجاجي)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -333,7 +333,6 @@ class _QuranTabState extends State<QuranTab> {
             ),
           ),
 
-          // ✅ قائمة السور (زجاجية)
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
@@ -356,6 +355,9 @@ class _QuranTabState extends State<QuranTab> {
 
   Widget _buildSurahCard(SurahModel surah) {
     final isPlaying = _playingSurah == surah.number && _isPlaying;
+    final isDownloaded = _downloadedSurahs.contains(surah.number);
+    final isDownloading = _downloadingSurah == surah.number;
+
     return ProCard(
       child: ListTile(
         contentPadding: EdgeInsets.zero,
@@ -385,14 +387,35 @@ class _QuranTabState extends State<QuranTab> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ✅ زر التحميل
+            isDownloading
+                ? const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal)),
+                  )
+                : IconButton(
+                    icon: Icon(
+                      isDownloaded ? Icons.check_circle : Icons.download,
+                      color: isDownloaded ? Colors.green : Colors.teal,
+                    ),
+                    onPressed: isDownloaded ? null : () => _downloadSurah(surah),
+                    tooltip: isDownloaded ? 'تم التحميل' : 'تحميل السورة',
+                  ),
+            // ✅ زر التشغيل
             IconButton(
               icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: const Color(0xFF4A90E2)),
               onPressed: () => _playRecitation(surah),
             ),
+            // ✅ زر فتح السورة للقراءة
             const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 14),
           ],
         ),
-        onTap: () => _openSurah(surah),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => QuranSurahDetail(surah: surah)),
+          );
+        },
       ),
     );
   }

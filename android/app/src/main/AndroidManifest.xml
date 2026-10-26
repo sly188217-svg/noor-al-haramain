@@ -6,6 +6,7 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- 📍 الموقع والبوصلة -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -15,40 +16,21 @@
     <!-- 🎤 الميكروفون -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- 🔔 الإشعارات -->
+    <!-- 🔔 الإشعارات والمنبهات الدقيقة (مهم جداً للأذان) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- ⏰ الأذان في الخلفية (Exact Alarms) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- 🎵 خدمة الصوت في الخلفية -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-
-    <!-- 🔥 إذن عرض إشعار الأذان فوق الشاشة -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- 🔋 تحسين البطارية -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
         android:label="نور الحرمين"
         android:name="${applicationName}"
@@ -57,7 +39,7 @@
         android:requestLegacyExternalStorage="true">
 
         <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- 🚀 النشاط الرئيسي — مع دعم ملء الشاشة عند وصول الأذان -->
+        <!-- 🚀 النشاط الرئيسي -->
         <!-- ═══════════════════════════════════════════════════════ -->
         <activity
             android:name=".MainActivity"
@@ -69,9 +51,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
             android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true"
-            android:showOnLockScreen="true">
+            android:turnScreenOn="true">
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
@@ -80,12 +60,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <!-- 🎯 Intent لفتح الشاشة من الإشعار -->
-            <intent-filter>
-                <action android:name="SELECT_NOTIFICATION" />
-                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -139,13 +113,6 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
-
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- 🔥 Firebase Cloud Messaging -->
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="high_importance_channel" />
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- 📌 إعدادات Flutter -->

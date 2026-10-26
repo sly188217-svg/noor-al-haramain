@@ -667,14 +667,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ✅ بطاقة الوضع الداكن/المضيء
-        ProCard(
-          child: SwitchListTile(
-            title: const Text('🌙 الوضع الداكن', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            subtitle: Text(
-              context.watch<ThemeProvider>().isDarkMode ? 'مُفعل حالياً (الأزرق الملكي)' : 'الوضع المضيء مُفعل',
-              style: TextStyle(color: context.watch<ThemeProvider>().isDarkMode ? _primary : Colors.orange, fontSize: 12),
-            ),
+        
             value: context.watch<ThemeProvider>().isDarkMode,
             activeThumbColor: _primary,
             onChanged: (value) {

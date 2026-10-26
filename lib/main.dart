@@ -6,13 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:audio_service/audio_service.dart';
 
 import 'core/providers/language_provider.dart';
-import 'core/providers/theme_provider.dart'; // ✅
 import 'core/services/notification_service.dart';
 import 'core/services/periodic_azkar_service.dart';
 import 'core/services/premium_service.dart';
 import 'core/services/security_service.dart';
+import 'core/services/audio_handler.dart';
 import 'features/adhan/adhan_screen.dart';
 import 'features/security/security_block_screen.dart';
 import 'screens/splash_screen.dart';
@@ -20,6 +22,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   try { await dotenv.load(fileName: 'assets/.env'); } catch (e) {}
   
   SecurityReport? securityReport;
@@ -37,11 +40,28 @@ Future<void> main() async {
     await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug, appleProvider: AppleProvider.debug);
   } catch (e) {}
   try { await PremiumService.initialize(); } catch (e) {}
+  
   try {
     await NotificationService.initialize();
     await NotificationService.requestFullScreenIntentPermission();
+    final androidPlugin = FlutterLocalNotificationsPlugin();
+    await androidPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
   } catch (e) {}
+  
   try { await PeriodicAzkarService.start(); } catch (e) {}
+
+  try {
+    await AudioService.init(
+      builder: () => QuranAudioHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.apexsec.noor_al_haramain_global.channel.audio',
+        androidNotificationChannelName: 'تشغيل القرآن الكريم',
+        androidStopForegroundOnPause: true,
+      ),
+    );
+  } catch (e) {}
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
@@ -66,74 +86,53 @@ Future<void> main() async {
       ),
     );
   };
+  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'نور الحرمين',
-            debugShowCheckedModeBanner: false,
-            navigatorKey: navigatorKey,
-            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            
-            // ✅ الوضع الداكن (الأزرق الملكي)
-            darkTheme: ThemeData(
-              useMaterial3: false,
-              primarySwatch: Colors.blue,
-              scaffoldBackgroundColor: const Color(0xFF0B132B), // الأزرق الملكي الداكن
-              fontFamily: 'Amiri',
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF1C2541),
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-            
-            // ✅ الوضع المضيء (الأزرق الفاتح)
-            theme: ThemeData(
-              useMaterial3: false,
-              primarySwatch: Colors.blue,
-              scaffoldBackgroundColor: const Color(0xFFF5F7FA), // خلفية فاتحة مريحة
-              fontFamily: 'Amiri',
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF4A90E2), // أزرق ساطع
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-            
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
-            locale: const Locale('ar', 'SA'),
-            routes: {
-              '/adhan': (context) {
-                final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-                return AdhanScreen(
-                  prayerName: args?['prayerName'] ?? 'الصلاة',
-                  prayerTime: args?['prayerTime'] ?? '--:--',
-                  cityName: args?['cityName'] ?? '',
-                  muezzinName: args?['muezzinName'] ?? '',
-                  isIqamaOnly: args?['isIqamaOnly'] == true,
-                );
-              },
-            },
-            home: const SplashScreen(),
-          );
+    return ChangeNotifierProvider(
+      create: (_) => LanguageProvider(),
+      child: MaterialApp(
+        title: 'نور الحرمين',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        themeMode: ThemeMode.dark, // ✅ إجبار الوضع الداكن دائماً
+        darkTheme: ThemeData(
+          useMaterial3: false,
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: const Color(0xFF0B132B), // الأزرق الملكي
+          fontFamily: 'Amiri',
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1C2541),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+        ),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
+        locale: const Locale('ar', 'SA'),
+        routes: {
+          '/adhan': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+            return AdhanScreen(
+              prayerName: args?['prayerName'] ?? 'الصلاة',
+              prayerTime: args?['prayerTime'] ?? '--:--',
+              cityName: args?['cityName'] ?? '',
+              muezzinName: args?['muezzinName'] ?? '',
+              isIqamaOnly: args?['isIqamaOnly'] == true,
+            );
+          },
         },
+        home: const SplashScreen(),
       ),
     );
   }

@@ -22,12 +22,10 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
   bool _isLoading = true;
   bool _isPlaying = false;
   
-  // متغيرات التنزيل
   bool _isDownloading = false;
   bool _isDownloaded = false;
   double _downloadProgress = 0.0;
 
-  // القارئ الافتراضي (عبد الباسط)
   final String _reciter = 'afs'; 
   final String _reciterName = 'عبد الباسط عبد الصمد';
 
@@ -38,6 +36,8 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
   @override
   void initState() {
     super.initState();
+    // ✅ إعدادات تشغيل الصوت في الخلفية
+    _setupAudioContext();
     _loadAyahs();
     _checkIfDownloaded();
     _setupAudioListeners();
@@ -47,6 +47,19 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
   void dispose() {
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  // ✅ دالة إعداد الصوت في الخلفية
+  Future<void> _setupAudioContext() async {
+    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    await _audioPlayer.setAudioContext(AudioContext(
+      android: const AudioContextAndroid(
+        isSpeakerphoneOn: true,
+        audioFocus: AndroidAudioFocus.gain,
+        usageType: AndroidUsageType.media,
+        contentType: AndroidContentType.music,
+      ),
+    ));
   }
 
   void _setupAudioListeners() {
@@ -69,18 +82,16 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
     }
   }
 
-  // ✅ إصلاح الخطأ: فصل الـ await عن دالة setState
   Future<void> _checkIfDownloaded() async {
     final dir = await getApplicationDocumentsDirectory();
     final surahStr = widget.surah.number.toString().padLeft(3, '0');
     final file = File('${dir.path}/quran_audio_full/${_reciter}_$surahStr.mp3');
-    final exists = await file.exists(); // await هنا خارج setState
+    final exists = await file.exists();
     if (mounted) {
       setState(() => _isDownloaded = exists);
     }
   }
 
-  // دالة التشغيل (تقرأ من الملف المحلي إذا وُجد)
   Future<void> _togglePlay() async {
     if (_isPlaying) {
       await _audioPlayer.pause();
@@ -110,13 +121,11 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
     }
   }
 
-  // دالة تحميل السورة
   Future<void> _downloadSurah() async {
     if (_isDownloading || _isDownloaded) return;
     
-    // التحقق من الاشتراك (اختياري)
     if (!await UsageService.isPremium()) {
-      final canUse = await UsageService.canReadWithMe(); // نستخدم نفس عداد التجربة
+      final canUse = await UsageService.canReadWithMe();
       if (!canUse) {
          if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
@@ -127,10 +136,7 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
       }
     }
 
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
-    });
+    setState(() { _isDownloading = true; _downloadProgress = 0.0; });
 
     final dir = await getApplicationDocumentsDirectory();
     final folder = Directory('${dir.path}/quran_audio_full');
@@ -154,21 +160,16 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
           sink.add(chunk);
           downloaded += chunk.length;
           if (contentLength > 0 && mounted) {
-            setState(() {
-              _downloadProgress = downloaded / contentLength;
-            });
+            setState(() { _downloadProgress = downloaded / contentLength; });
           }
         }).asFuture();
 
         await sink.close();
         
         if (mounted) {
-          setState(() {
-            _isDownloading = false;
-            _isDownloaded = true;
-          });
+          setState(() { _isDownloading = false; _isDownloaded = true; });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ تم تحميل السورة بنجاح للاستماع بدون إنترنت')),
+            const SnackBar(content: Text('✅ تم تحميل السورة بنجاح')),
           );
         }
       } else {
@@ -196,7 +197,6 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // زر التنزيل في شريط العنوان العلوي
           if (_isDownloading)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -204,28 +204,16 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      value: _downloadProgress,
-                      color: _gold,
-                      strokeWidth: 3,
-                      backgroundColor: Colors.white24,
-                    ),
+                    width: 24, height: 24,
+                    child: CircularProgressIndicator(value: _downloadProgress, color: _gold, strokeWidth: 3, backgroundColor: Colors.white24),
                   ),
-                  Text(
-                    '${(_downloadProgress * 100).toInt()}%',
-                    style: const TextStyle(fontSize: 8, color: Colors.white),
-                  ),
+                  Text('${(_downloadProgress * 100).toInt()}%', style: const TextStyle(fontSize: 8, color: Colors.white)),
                 ],
               ),
             )
           else
             IconButton(
-              icon: Icon(
-                _isDownloaded ? Icons.check_circle : Icons.download,
-                color: _isDownloaded ? Colors.green : _gold,
-              ),
+              icon: Icon(_isDownloaded ? Icons.check_circle : Icons.download, color: _isDownloaded ? Colors.green : _gold),
               onPressed: _isDownloaded ? null : _downloadSurah,
               tooltip: _isDownloaded ? 'تم التحميل' : 'تحميل السورة',
             ),
@@ -235,7 +223,6 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
           ? const Center(child: CircularProgressIndicator(color: _gold))
           : Column(
               children: [
-                // شريط التشغيل
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
@@ -256,22 +243,14 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                         onTap: _togglePlay,
                         child: Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(
-                            color: _gold,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: _bg,
-                            size: 28,
-                          ),
+                          decoration: const BoxDecoration(color: _gold, shape: BoxShape.circle),
+                          child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: _bg, size: 28),
                         ),
                       ),
                     ],
                   ),
                 ),
                 
-                // عرض الآيات
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -294,26 +273,15 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: _gold.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '${ayah.number}',
-                                    style: const TextStyle(color: _gold, fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
+                                  decoration: BoxDecoration(color: _gold.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${ayah.number}', style: const TextStyle(color: _gold, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Text(
                               ayah.text,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontFamily: 'Amiri',
-                                height: 2.0,
-                              ),
+                              style: const TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'Amiri', height: 2.0),
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
                             ),
