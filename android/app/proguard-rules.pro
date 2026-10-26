@@ -11,3 +11,9 @@
 -keepattributes Exceptions
 -dontwarn org.jetbrains.annotations.**
 -dontwarn kotlin.**
+
+# ✅ إصلاح خطأ R8 لمكتبات Play Core المفقودة
+-dontwarn com.google.android.play.core.**
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
