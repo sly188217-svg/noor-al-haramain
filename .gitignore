@@ -58,3 +58,7 @@ Thumbs.db
 # ═══════════════════════════════════════════════════════════
 lib_backup_*/
 *backup*/
+build/
+.dart_tool/
+*.apk
+*.aab
