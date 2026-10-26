@@ -14,7 +14,6 @@ class FirebaseAiService {
 
   static const List<String> _models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
-  // ✅ دالة إزالة التشكيل للمقارنة
   static String removeTashkeel(String text) {
     return text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '');
   }
@@ -33,8 +32,29 @@ class FirebaseAiService {
       final res = await request.send().timeout(const Duration(seconds: 90));
       if (res.statusCode == 200) {
         final body = await res.stream.bytesToString();
-        return jsonDecode(body)['text']?.toString();
+        return jsonDecode(body)['text']?.toString() ?? '';
       }
+      return null;
+    } catch (e) { return null; }
+  }
+
+  static Future<Map<String, dynamic>?> identifyAyah(String spokenText) async {
+    if (spokenText.trim().isEmpty) return null;
+    try {
+      final prompt = 'قرأ المستخدم آية: "$spokenText"\nأعد JSON: {"surah": "...", "surahNumber": 1, "ayahNumber": 1} أو {"surah": null}';
+      final response = await _sendRequest({
+        'messages': [{'role': 'user', 'content': prompt}],
+        'max_tokens': 500,
+        'temperature': 0.1,
+        'response_format': {'type': 'json_object'},
+      }, timeout: const Duration(seconds: 30));
+      if (response == null || response.statusCode != 200) return null;
+      final text = jsonDecode(response.body)['choices']?[0]?['message']?['content'] ?? '{}';
+      String cleaned = text.trim();
+      final start = cleaned.indexOf('{'); final end = cleaned.lastIndexOf('}');
+      if (start >= 0 && end > start) cleaned = cleaned.substring(start, end + 1);
+      final decoded = jsonDecode(cleaned);
+      if (decoded is Map<String, dynamic> && decoded['surah'] != null) return decoded;
       return null;
     } catch (e) { return null; }
   }
@@ -60,7 +80,6 @@ class FirebaseAiService {
 
   static Future<Map<String, dynamic>> analyzeRecitation({required String userRecitation, required String correctAyah}) async {
     try {
-      // ✅ إزالة التشكيل من كلا النصين قبل المقارنة
       final cleanUser = removeTashkeel(userRecitation);
       final cleanCorrect = removeTashkeel(correctAyah);
       

@@ -1,12 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-// ✅ أضف هذه المكتبة لطلب إعفاء البطارية
-// import 'package:permission_handler/permission_handler.dart'; 
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -14,25 +13,29 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
   static const int _persistentId = 999999;
-  static const String _adhanChannelId = 'adhan_channel_v7';
-  static const String _iqamaChannelId = 'iqama_channel_v7';
-  static const String _persistentChannelId = 'persistent_channel_v7';
+  static const String _adhanChannelId = 'adhan_channel_v8';
+  static const String _iqamaChannelId = 'iqama_channel_v8';
+  static const String _persistentChannelId = 'persistent_channel_v8';
+  static const String _muezzinKey = 'selected_muezzin';
+  static const String _defaultMuezzin = 'adhan_sudais';
+  static const String _notifIcon = '@mipmap/launcher_icon';
+  static const String _largeIconAsset = '@drawable/ic_app_colored';
 
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
     {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
+    {'name': 'الشيخ ياسر الدوسري', 'file': 'adhan_yasser'},
+    {'name': 'الشيخ محمد مروان القصاص', 'file': 'adhan_qatami'},
+    {'name': 'الشيخ ناصر القطامي', 'file': 'adhan_qassas'},
   ];
 
   static Future<void> initialize() async {
     if (_initialized) return;
     tz.initializeTimeZones();
-
-    const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const androidSettings = AndroidInitializationSettings(_notifIcon);
     const initSettings = InitializationSettings(android: androidSettings);
-
     await _notifications.initialize(initSettings, onDidReceiveNotificationResponse: _onTap);
     await _createChannels();
-    await _requestPermissions();
     _initialized = true;
   }
 
@@ -40,25 +43,32 @@ class NotificationService {
     if (!Platform.isAndroid) return;
     final android = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (android == null) return;
-
     await android.createNotificationChannel(const AndroidNotificationChannel(
       _adhanChannelId, 'الأذان', importance: Importance.max, playSound: true, enableVibration: true,
     ));
     await android.createNotificationChannel(const AndroidNotificationChannel(
       _iqamaChannelId, 'الإقامة', importance: Importance.max, playSound: true, enableVibration: true,
     ));
+    await android.createNotificationChannel(const AndroidNotificationChannel(
+      _persistentChannelId, 'الصلاة القادمة', importance: Importance.low, playSound: false,
+    ));
   }
 
-  static Future<void> _requestPermissions() async {
-    if (!Platform.isAndroid) return;
-    final android = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await android?.requestNotificationsPermission();
-    await android?.requestExactAlarmsPermission();
-    // ✅ طلب إعفاء البطارية (مهم جداً للأندرويد)
-    // await Permission.ignoreBatteryOptimizations.request();
-  }
+  static Future<void> requestFullScreenIntentPermission() async {}
+  static Future<bool> canUseFullScreenIntent() async => true;
+  static Future<void> openFullScreenSettings() async {}
 
   static void _onTap(NotificationResponse response) {}
+
+  static Future<String> getSelectedMuezzin() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_muezzinKey) ?? _defaultMuezzin;
+  }
+
+  static Future<void> setSelectedMuezzin(String file) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_muezzinKey, file);
+  }
 
   static Future<void> schedulePrayerNotifications(Map<String, String> prayerTimes, String cityName, String muezzinName) async {
     if (!_initialized) await initialize();
@@ -82,18 +92,16 @@ class NotificationService {
           tz.TZDateTime.from(scheduledTime, tz.local),
           NotificationDetails(
             android: AndroidNotificationDetails(
-              _adhanChannelId, 'الأذان',
-              importance: Importance.max, priority: Priority.max,
+              _adhanChannelId, 'الأذان', importance: Importance.max, priority: Priority.max,
               fullScreenIntent: true, category: AndroidNotificationCategory.alarm,
               playSound: true, sound: const RawResourceAndroidNotificationSound('adhan_sudais'),
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime, // ✅ إصلاح الخطأ
         );
-      } catch (e) {
-        debugPrint('⚠️ فشل جدولة الأذان: $e');
-      }
+      } catch (e) {}
     }
   }
 
@@ -117,7 +125,10 @@ class NotificationService {
     ));
   }
 
-  static Future<void> showPersistentNotification({String? nextPrayer, DateTime? targetTime, Duration? remaining, String? city}) async {
+  static Future<void> showPersistentNotification({
+    String? title, String? body, String? nextPrayer, DateTime? targetTime,
+    Duration? remaining, String? hijriDate, String? city, int? minutesLeft, // ✅ إرجاع hijriDate
+  }) async {
     if (!_initialized) return;
     await _notifications.show(_persistentId, '🕌 الصلاة القادمة: $nextPrayer', '📍 $city', NotificationDetails(
       android: AndroidNotificationDetails(

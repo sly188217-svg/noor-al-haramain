@@ -4,13 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:provider/provider.dart'; // ✅
 
 import '../../../core/services/background_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/periodic_azkar_service.dart';
 import '../../../core/services/premium_service.dart';
-import '../../../core/providers/theme_provider.dart'; // ✅
 import '../../../widgets/saudi_flag.dart';
 import '../../../widgets/professional_ui.dart';
 import '../../premium/premium_screen.dart';
@@ -23,7 +21,6 @@ class SettingsTab extends StatefulWidget {
 }
 
 class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStateMixin {
-  String _searchQuery = "";
   late TabController _tabController;
 
   static const Color _primary = Color(0xFF4A90E2);
@@ -50,6 +47,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -667,14 +665,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        
-            value: context.watch<ThemeProvider>().isDarkMode,
-            activeThumbColor: _primary,
-            onChanged: (value) {
-              context.read<ThemeProvider>().toggleTheme(value);
-            },
-          ),
-        ),
+        // ✅ تم إزالة زر الوضع الداكن (التطبيق داكن دائماً)
         ProCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
