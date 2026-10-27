@@ -19,14 +19,11 @@ class NotificationService {
   static const String _muezzinKey = 'selected_muezzin';
   static const String _defaultMuezzin = 'adhan_sudais';
   static const String _notifIcon = '@mipmap/launcher_icon';
-  static const String _largeIconAsset = '@drawable/ic_app_colored';
 
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
     {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
     {'name': 'الشيخ ياسر الدوسري', 'file': 'adhan_yasser'},
-    {'name': 'الشيخ محمد مروان القصاص', 'file': 'adhan_qatami'},
-    {'name': 'الشيخ ناصر القطامي', 'file': 'adhan_qassas'},
   ];
 
   static Future<void> initialize() async {
@@ -57,7 +54,6 @@ class NotificationService {
   static Future<void> requestFullScreenIntentPermission() async {}
   static Future<bool> canUseFullScreenIntent() async => true;
   static Future<void> openFullScreenSettings() async {}
-
   static void _onTap(NotificationResponse response) {}
 
   static Future<String> getSelectedMuezzin() async {
@@ -99,7 +95,7 @@ class NotificationService {
           ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime, // ✅ إصلاح الخطأ
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         );
       } catch (e) {}
     }
@@ -125,16 +121,39 @@ class NotificationService {
     ));
   }
 
+  // ✅ إصلاح الإشعار الدائم (العد التنازلي)
   static Future<void> showPersistentNotification({
     String? title, String? body, String? nextPrayer, DateTime? targetTime,
-    Duration? remaining, String? hijriDate, String? city, int? minutesLeft, // ✅ إرجاع hijriDate
+    Duration? remaining, String? hijriDate, String? city, int? minutesLeft,
   }) async {
-    if (!_initialized) return;
-    await _notifications.show(_persistentId, '🕌 الصلاة القادمة: $nextPrayer', '📍 $city', NotificationDetails(
-      android: AndroidNotificationDetails(
-        _persistentChannelId, 'الصلاة القادمة', importance: Importance.low, priority: Priority.low,
-        ongoing: true, autoCancel: false, showWhen: true,
+    if (Platform.isLinux || !_initialized) return;
+
+    String t = title ?? (nextPrayer != null ? '🕌 الصلاة القادمة: $nextPrayer' : '🕌 الصلاة القادمة');
+    final buffer = StringBuffer();
+    if (city != null && city.isNotEmpty) { buffer.write('📍 $city'); }
+    if (hijriDate != null && hijriDate.isNotEmpty) { if (buffer.isNotEmpty) buffer.write(' • '); buffer.write('📅 $hijriDate'); }
+    
+    final b = buffer.toString().trim().isEmpty ? 'اقترب وقت الصلاة' : buffer.toString();
+    final whenMillis = targetTime?.millisecondsSinceEpoch;
+
+    await _notifications.show(
+      _persistentId, t, b,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _persistentChannelId, 'الصلاة القادمة',
+          channelDescription: 'إشعار الصلاة القادمة مع العد التنازلي',
+          icon: _notifIcon,
+          importance: Importance.low,
+          priority: Priority.low,
+          playSound: false, enableVibration: false,
+          ongoing: true, autoCancel: false,
+          when: whenMillis,
+          usesChronometer: whenMillis != null,
+          chronometerCountDown: true,
+          showWhen: whenMillis != null, onlyAlertOnce: true,
+          color: const Color(0xFF4A90E2), colorized: false,
+        ),
       ),
-    ));
+    );
   }
 }

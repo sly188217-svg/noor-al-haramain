@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'quran_themes.dart';
 
 class MushafScreen extends StatefulWidget {
@@ -15,7 +16,6 @@ class MushafScreen extends StatefulWidget {
 class _MushafScreenState extends State<MushafScreen> {
   late PageController _pageController;
   int _currentPage = 1;
-  double _fontSizeFactor = 1.0;
   bool _isLoading = true;
   QuranTheme _theme = QuranThemes.all.first;
 
@@ -29,13 +29,11 @@ class _MushafScreenState extends State<MushafScreen> {
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _fontSizeFactor = prefs.getDouble('quran_font_factor') ?? 1.0;
-        _theme = QuranThemes.getById(prefs.getString('quran_theme_id') ?? 'classic');
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _theme = QuranThemes.getById(prefs.getString('quran_theme_id') ?? 'classic');
+      _isLoading = false;
+    });
   }
 
   @override
@@ -49,23 +47,21 @@ class _MushafScreenState extends State<MushafScreen> {
         foregroundColor: _theme.appBarTextColor,
         title: const Text('المصحف الشريف', style: TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
       ),
-      // ✅ الحل: إضافة Padding لمنع تقطيع النص
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-          child: PageviewQuran(
-            controller: _pageController,
-            initialPageNumber: _currentPage,
-            onPageChanged: (page) => setState(() => _currentPage = page),
-            theme: QcfThemeData(
-              verseTextColor: _theme.verseTextColor,
-              verseNumberColor: _theme.verseNumberColor,
-              basmalaColor: _theme.basmalaColor,
-              headerTextColor: _theme.headerTextColor,
-              pageBackgroundColor: _theme.pageBackgroundColor,
-              showBasmala: true,
-              showHeader: true,
-            ),
+        child: PageviewQuran(
+          controller: _pageController,
+          initialPageNumber: _currentPage,
+          onPageChanged: (page) => setState(() => _currentPage = page),
+          sp: 1.sp, // ✅ إضافة معامل التحجيم للنص
+          h: 1.h,   // ✅ إضافة معامل التحجيم للارتفاع
+          theme: QcfThemeData(
+            verseTextColor: _theme.verseTextColor,
+            verseNumberColor: _theme.verseNumberColor,
+            basmalaColor: _theme.basmalaColor,
+            headerTextColor: _theme.headerTextColor,
+            pageBackgroundColor: _theme.pageBackgroundColor,
+            showBasmala: true,
+            showHeader: true,
           ),
         ),
       ),
