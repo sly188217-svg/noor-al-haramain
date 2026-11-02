@@ -49,7 +49,7 @@ ThemeData _buildDarkTheme() {
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: Color(0xFF1C2541),
     ),
-    dialogTheme: const DialogTheme(
+    dialogTheme: const DialogThemeData(
       backgroundColor: Color(0xFF1C2541),
     ),
     textTheme: const TextTheme(

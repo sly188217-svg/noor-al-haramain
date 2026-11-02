@@ -471,12 +471,12 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       if (duration != null) ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.access_time,
-                            color: Color(0xFF0B132B)38, size: 10),
+                            color: Colors.white38, size: 10),
                         const SizedBox(width: 2),
                         Text(
                           '$duration د',
                           style: const TextStyle(
-                              color: Color(0xFF0B132B)38, fontSize: 10),
+                              color: Colors.white38, fontSize: 10),
                         ),
                       ],
                     ],

@@ -177,4 +177,72 @@ class NotificationService {
       ),
     );
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // ✅ دوال مفقودة تمت إعادتها
+  // ═══════════════════════════════════════════════════════════
+
+  static Future<bool> canUseFullScreenIntent() async => true;
+  static Future<void> openFullScreenSettings() async {}
+
+  static Future<void> schedulePrayerNotifications(
+    Map<String, String> prayerTimes,
+    String cityName,
+    String muezzinName,
+  ) async {
+    if (!_initialized) await initialize();
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool('notifications_enabled') ?? true)) return;
+    
+    final muezzin = await getSelectedMuezzin();
+    final pending = await _notifications.pendingNotificationRequests();
+    for (final p in pending) {
+      if (p.id != _persistentId) await _notifications.cancel(p.id);
+    }
+    final now = DateTime.now();
+
+    for (final entry in prayerTimes.entries) {
+      if (entry.key == 'Sunrise') continue;
+      final parts = entry.value.split(':');
+      if (parts.length < 2) continue;
+      var scheduledTime = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+      if (scheduledTime.isBefore(now)) scheduledTime = scheduledTime.add(const Duration(days: 1));
+
+      final prayerNameAr = _translatePrayerName(entry.key);
+      final timeStr = '${scheduledTime.hour.toString().padLeft(2, '0')}:${scheduledTime.minute.toString().padLeft(2, '0')}';
+
+      try {
+        await _notifications.zonedSchedule(
+          entry.key.hashCode,
+          '🔔 حان وقت صلاة $prayerNameAr',
+          'صلاة $prayerNameAr في $cityName — $muezzinName',
+          tz.TZDateTime.from(scheduledTime, tz.local),
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              _adhanChannelId, 'الأذان',
+              importance: Importance.max, priority: Priority.max,
+              fullScreenIntent: true, category: AndroidNotificationCategory.alarm,
+              playSound: true, sound: RawResourceAndroidNotificationSound(muezzin),
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'صلاة|$prayerNameAr|$timeStr|$cityName|$muezzin',
+        );
+      } catch (e) {
+        debugPrint('⚠️ فشل جدولة $entry.key: $e');
+      }
+    }
+  }
+
+  static String _translatePrayerName(String key) {
+    const map = {
+      'Fajr': 'الفجر', 'Dhuhr': 'الظهر', 'Asr': 'العصر',
+      'Maghrib': 'المغرب', 'Isha': 'العشاء', 'Sunrise': 'الشروق',
+    };
+    return map[key] ?? key;
+  }
+
+
 }

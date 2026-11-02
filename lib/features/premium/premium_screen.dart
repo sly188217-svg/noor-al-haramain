@@ -189,7 +189,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       const Text(
                         'يمكنك إلغاء الاشتراك في أي وقت من إعدادات متجر التطبيقات',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Color(0xFF0B132B)38, fontSize: 11),
+                        style: TextStyle(color: Colors.white38, fontSize: 11),
                       ),
                     ],
                   ),
