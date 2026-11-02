@@ -186,7 +186,7 @@ class _AzkarTabState extends State<AzkarTab>
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: _primary, width: 1.5)),
         title: const Text('🔄 إعادة تعيين', style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
-        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟', style: const TextStyle(color: Color(0xFF0B132B)70)),
+        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟', style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
@@ -212,7 +212,7 @@ class _AzkarTabState extends State<AzkarTab>
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.orange, width: 1.5)),
         title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
-        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!', style: TextStyle(color: Color(0xFF0B132B)70)),
+        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
@@ -409,7 +409,7 @@ class _AzkarTabState extends State<AzkarTab>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('اضغط للمشاهدة', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 11)),
+                          const Text('اضغط للمشاهدة', style: TextStyle(color: Colors.white54, fontSize: 11)),
                         ],
                       ),
                     ],
@@ -523,7 +523,7 @@ class _AzkarTabState extends State<AzkarTab>
                       children: [
                         const Icon(Icons.circle, color: _primary, size: 10),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(dhikr, style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 16, fontFamily: 'Amiri'))),
+                        Expanded(child: Text(dhikr, style: const TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Amiri'))),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(10)),
@@ -585,7 +585,7 @@ class _AzkarTabState extends State<AzkarTab>
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF0B132B).withValues(alpha: 0.5),
-              border: const Border(bottom: BorderSide(color: Color(0xFF0B132B)12)),
+              border: const Border(bottom: BorderSide(color: Colors.white12)),
             ),
             child: TabBar(
               controller: _tabController,

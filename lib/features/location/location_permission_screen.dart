@@ -125,7 +125,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
               const Text(
                 'سنقوم بتحديد موقعك بدقة لحساب أوقات الصلاة واتجاه القبلة الصحيح.',
                 style: TextStyle(
-                  color: Color(0xFF0B132B)70,
+                  color: Colors.white70,
                   fontSize: 14,
                   height: 1.6,
                 ),

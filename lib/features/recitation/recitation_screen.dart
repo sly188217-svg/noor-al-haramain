@@ -684,7 +684,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         if (_ayahs.isNotEmpty)
           Text(
             'سورة ${_surahs.firstWhere((s) => s.number == _selectedSurah, orElse: () => _surahs.first).name} — ${_ayahs.length} آية',
-            style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 11),
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
           ),
       ],
     );
@@ -877,7 +877,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         ),
         const SizedBox(width: 4),
         Text(label,
-            style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 11)),
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
       ],
     );
   }
@@ -989,7 +989,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                     child: LinearProgressIndicator(
                       value: _accuracy / 100,
                       minHeight: 12,
-                      backgroundColor: Color(0xFF0B132B)12,
+                      backgroundColor: Colors.white12,
                       valueColor: AlwaysStoppedAnimation(_accuracyColor()),
                     ),
                   ),
@@ -1031,7 +1031,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _autoDetectMode
             ? '💡 اقرأ أي آية من أي سورة (114 سورة، 6236 آية)، وسيحوّلها Whisper إلى نص، ثم تتم المقارنة بدقة.'
             : '💡 اختر السورة (114) والآية من القائمة، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
-        style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 13),
+        style: const TextStyle(color: Colors.white70, fontSize: 13),
         textAlign: TextAlign.center,
       ),
     );

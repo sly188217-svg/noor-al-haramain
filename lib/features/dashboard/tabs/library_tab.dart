@@ -131,7 +131,7 @@ class _LibraryTabState extends State<LibraryTab> {
                 Text(
                   '📚 ${_filteredBooks.length} كتاب',
                   style: const TextStyle(
-                      color: Color(0xFF0B132B)54, fontSize: 12),
+                      color: Colors.white54, fontSize: 12),
                 ),
                 Text(
                   _selectedCategory == 'all'
@@ -210,7 +210,7 @@ class _LibraryTabState extends State<LibraryTab> {
           decoration: BoxDecoration(
             color: const Color(0xFF1C2541).withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color(0xFF0B132B)12),
+            border: Border.all(color: Colors.white12),
           ),
           child: Padding(
             padding:
@@ -286,7 +286,7 @@ class _LibraryTabState extends State<LibraryTab> {
 
                 const Icon(
                   Icons.arrow_forward_ios,
-                  color: Color(0xFF0B132B)24,
+                  color: Colors.white24,
                   size: 14,
                 ),
               ],
@@ -392,7 +392,7 @@ class _LibraryTabState extends State<LibraryTab> {
                   ? 'لا توجد كتب في هذه الفئة'
                   : 'لا نتائج لـ "$_searchQuery"',
               style:
-                  const TextStyle(color: Color(0xFF0B132B)54, fontSize: 16),
+                  const TextStyle(color: Colors.white54, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

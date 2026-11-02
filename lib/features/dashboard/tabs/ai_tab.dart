@@ -125,7 +125,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
                     child: Center(child: Text('${surah.number}', style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.bold))),
                   ),
                   title: Text(surah.name, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 17, fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
-                  subtitle: Text('${surah.numberOfAyahs} آية', style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 11)),
+                  subtitle: Text('${surah.numberOfAyahs} آية', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                   trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A90E2), size: 16),
                 ),
               );
@@ -199,7 +199,7 @@ class _ChatTabState extends State<_ChatTab> {
               ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const Icon(Icons.smart_toy, color: Color(0xFF4A90E2), size: 60),
                   const SizedBox(height: 16),
-                  Text(widget.isArabic ? '👋 اسأل المرشد أي سؤال ديني' : '👋 Ask Al-Murshid', style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 16)),
+                  Text(widget.isArabic ? '👋 اسأل المرشد أي سؤال ديني' : '👋 Ask Al-Murshid', style: const TextStyle(color: Colors.white54, fontSize: 16)),
                 ]))
               : ListView.builder(
                   controller: _scrollController, padding: const EdgeInsets.all(16), itemCount: _messages.length,

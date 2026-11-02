@@ -278,7 +278,7 @@ class _QuranTabState extends State<QuranTab> {
                         children: [
                           Text('📖 اقرأ المصحف ككتاب', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 16, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
-                          Text('604 صفحة بتصميم المصحف المدني', style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 12)),
+                          Text('604 صفحة بتصميم المصحف المدني', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -322,7 +322,7 @@ class _QuranTabState extends State<QuranTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('📖 ${_filteredSurahs.length} سورة', style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 12)),
+                    Text('📖 ${_filteredSurahs.length} سورة', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                     Text(
                       '🎙️ ${QuranService.reciters.firstWhere((r) => r['id'] == _selectedReciter, orElse: () => QuranService.reciters.first)['name']!}',
                       style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12),
@@ -407,7 +407,7 @@ class _QuranTabState extends State<QuranTab> {
               onPressed: () => _playRecitation(surah),
             ),
             // ✅ زر فتح السورة للقراءة
-            const Icon(Icons.arrow_forward_ios, color: Color(0xFF0B132B)24, size: 14),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 14),
           ],
         ),
         onTap: () {
@@ -429,7 +429,7 @@ class _QuranTabState extends State<QuranTab> {
           children: [
             const Icon(Icons.error_outline, color: Colors.orange, size: 60),
             const SizedBox(height: 16),
-            Text(_errorMessage, style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 14), textAlign: TextAlign.center),
+            Text(_errorMessage, style: const TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadQuran,
@@ -451,7 +451,7 @@ class _QuranTabState extends State<QuranTab> {
           children: [
             Icon(Icons.search_off, color: Colors.grey, size: 60),
             SizedBox(height: 16),
-            Text('لا توجد نتائج', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 16)),
+            Text('لا توجد نتائج', style: TextStyle(color: Colors.white54, fontSize: 16)),
           ],
         ),
       ),

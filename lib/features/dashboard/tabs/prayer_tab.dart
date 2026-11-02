@@ -595,7 +595,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🎙️ تغيير صوت الأذان:', style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14)),
+                  const Text('🎙️ تغيير صوت الأذان:', style: TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -617,7 +617,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('⏱️ تعديل وقت الأذان يدوياً:', style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14)),
+                  const Text('⏱️ تعديل وقت الأذان يدوياً:', style: TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -628,7 +628,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text('🕌 وقت الإقامة بعد الأذان:', style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14)),
+                  const Text('🕌 وقت الإقامة بعد الأذان:', style: TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -756,13 +756,13 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                Text('👤 $_userName', style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 12)),
+                                Text('👤 $_userName', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(gregorianDate, style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 12)),
+                                Text(gregorianDate, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                                 if (hijriDate.isNotEmpty) ...[
                                   const SizedBox(height: 2),
                                   Text(hijriDate, style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12, fontWeight: FontWeight.bold)),
@@ -779,7 +779,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                             children: [
                               const Icon(Icons.volume_up, color: Color(0xFF4A90E2), size: 16),
                               const SizedBox(width: 8),
-                              Text('المؤذن: $_selectedMuezzinName', style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 12)),
+                              Text('المؤذن: $_selectedMuezzinName', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                             ],
                           ),
                         ),
@@ -839,7 +839,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(day, style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 12)),
+                                        Text(day, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                                         Row(
                                           children: [
                                             _buildMiniTime('فجر', times['Fajr']?.toString() ?? '--'),
@@ -867,7 +867,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('الصلاة القادمة', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12)),
+                                      const Text('الصلاة القادمة', style: TextStyle(color: Colors.white54, fontSize: 12)),
                                       const SizedBox(height: 6),
                                       Text(_nextPrayer, style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 24, fontWeight: FontWeight.bold)),
                                     ],
@@ -886,7 +886,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('الوقت المتبقي', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 14)),
+                                  const Text('الوقت المتبقي', style: TextStyle(color: Colors.white54, fontSize: 14)),
                                   ValueListenableBuilder(
                                     valueListenable: _timeRemainingNotifier,
                                     builder: (context, value, child) {
@@ -901,7 +901,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
                               const SizedBox(height: 8),
                               LinearProgressIndicator(
                                 value: 1 - (_timeRemainingNotifier.value.inSeconds / 86400).clamp(0.0, 1.0),
-                                backgroundColor: Color(0xFF0B132B)12,
+                                backgroundColor: Colors.white12,
                                 color: const Color(0xFF4A90E2),
                                 minHeight: 4,
                                 borderRadius: BorderRadius.circular(4),
@@ -981,7 +981,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
       margin: const EdgeInsets.symmetric(horizontal: 2),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(color: const Color(0xFF0B132B).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
-      child: Text('$name: $time', style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 9)),
+      child: Text('$name: $time', style: const TextStyle(color: Colors.white54, fontSize: 9)),
     );
   }
 }

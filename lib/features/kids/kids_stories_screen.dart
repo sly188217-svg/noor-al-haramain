@@ -198,7 +198,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               const SizedBox(width: 8),
               Text(
                 '(${_allStories.length})',
-                style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 14),
+                style: const TextStyle(color: Colors.white54, fontSize: 14),
               ),
             ],
           ],
@@ -242,7 +242,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           SizedBox(height: 16),
           Text(
             '📚 جاري تحميل القصص...',
-            style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
@@ -263,7 +263,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             const SizedBox(height: 16),
             Text(
               _errorMsg,
-              style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 16),
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -346,7 +346,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             children: [
               Text(
                 '📖 ${_filteredStories.length} قصة',
-                style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 12),
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),
@@ -358,7 +358,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           child: _filteredStories.isEmpty
               ? const Center(
                   child: Text('لا توجد قصص',
-                      style: TextStyle(color: Color(0xFF0B132B)54)),
+                      style: TextStyle(color: Colors.white54)),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
@@ -455,7 +455,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   Text(
                     preview,
                     style: const TextStyle(
-                        color: Color(0xFF0B132B)54, fontSize: 11),
+                        color: Colors.white54, fontSize: 11),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -559,7 +559,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                         ),
                       ),
                     ],
-                    const Divider(color: Color(0xFF0B132B)24, height: 30),
+                    const Divider(color: Colors.white24, height: 30),
                     if (text.isEmpty)
                       const Center(
                         child: Padding(
@@ -568,7 +568,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                             'لا يوجد نص كامل لهذه القصة بعد.\n'
                             'سيتم إضافة النص الكامل قريباً.',
                             style: TextStyle(
-                              color: Color(0xFF0B132B)54,
+                              color: Colors.white54,
                               fontSize: 14,
                               height: 1.8,
                             ),

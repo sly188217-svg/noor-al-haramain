@@ -45,7 +45,7 @@ class SecurityBlockScreen extends StatelessWidget {
                 const Text(
                   'تم اكتشاف مشاكل أمنية خطيرة:',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 20),
                 ...issues.map((issue) => Padding(
@@ -75,7 +75,7 @@ class SecurityBlockScreen extends StatelessWidget {
                 const Text(
                   'التطبيق لن يعمل في هذه البيئة لحماية بياناتك.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12),
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ],
             ),

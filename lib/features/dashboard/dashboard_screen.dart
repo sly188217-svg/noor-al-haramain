@@ -211,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               'NOOR AL-HARAMAIN',
               style: TextStyle(
-                color: Color(0xFF0B132B)70,
+                color: Colors.white70,
                 fontSize: 7.5,
                 letterSpacing: 1.8,
                 fontWeight: FontWeight.w600,

@@ -255,7 +255,7 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             TranslationService.getText(lang, 'for_muslims'),
                             style: const TextStyle(
-                                color: Color(0xFF0B132B)24, fontSize: 11),
+                                color: Colors.white24, fontSize: 11),
                           ),
                           const SizedBox(height: 2),
                           Text(

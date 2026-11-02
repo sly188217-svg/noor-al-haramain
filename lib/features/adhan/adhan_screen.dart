@@ -355,7 +355,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                 const SizedBox(height: 8),
                 const Text(
                   'الوقت بين الأذان والإقامة',
-                  style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12),
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 16),
                 Slider(
@@ -526,7 +526,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                   Text(
                     widget.cityName,
                     style: const TextStyle(
-                      color: Color(0xFF0B132B)70,
+                      color: Colors.white70,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -557,7 +557,7 @@ class _AdhanScreenState extends State<AdhanScreen>
               Text(
                 _gregorianDate,
                 style:
-                    const TextStyle(color: Color(0xFF0B132B)54, fontSize: 12),
+                    const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               if (_hijriDate.isNotEmpty)
                 Text(

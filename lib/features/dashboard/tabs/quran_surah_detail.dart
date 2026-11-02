@@ -205,7 +205,7 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                 children: [
                   SizedBox(
                     width: 24, height: 24,
-                    child: CircularProgressIndicator(value: _downloadProgress, color: _gold, strokeWidth: 3, backgroundColor: Color(0xFF0B132B)24),
+                    child: CircularProgressIndicator(value: _downloadProgress, color: _gold, strokeWidth: 3, backgroundColor: Colors.white24),
                   ),
                   Text('${(_downloadProgress * 100).toInt()}%', style: const TextStyle(fontSize: 8, color: Color(0xFF0B132B))),
                 ],
@@ -227,7 +227,7 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
                     color: _surface,
-                    border: Border(bottom: BorderSide(color: Color(0xFF0B132B)12)),
+                    border: Border(bottom: BorderSide(color: Colors.white12)),
                   ),
                   child: Row(
                     children: [
@@ -235,7 +235,7 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(_reciterName, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 16, fontWeight: FontWeight.bold)),
-                          const Text('استماع للسورة كاملة', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12)),
+                          const Text('استماع للسورة كاملة', style: TextStyle(color: Colors.white54, fontSize: 12)),
                         ],
                       ),
                       const Spacer(),

@@ -122,7 +122,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               width: 250,
               child: LinearProgressIndicator(
                 value: _progress > 0 ? _progress : null,
-                backgroundColor: Color(0xFF0B132B)12,
+                backgroundColor: Colors.white12,
                 color: const Color(0xFF4A90E2),
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(4),
@@ -166,7 +166,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1C2541).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFF0B132B)12),
+        border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -242,7 +242,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             const SizedBox(height: 20),
             Text(
               _errorMessage,
-              style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 14),
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -267,7 +267,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return const Center(
       child: Text(
         '📭 لا توجد بيانات في هذا الكتاب',
-        style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 16),
+        style: TextStyle(color: Colors.white54, fontSize: 16),
       ),
     );
   }
