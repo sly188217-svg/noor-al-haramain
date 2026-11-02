@@ -198,7 +198,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
               const SizedBox(width: 8),
               Text(
                 '(${_allStories.length})',
-                style: const TextStyle(color: Colors.white54, fontSize: 14),
+                style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 14),
               ),
             ],
           ],
@@ -242,7 +242,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           SizedBox(height: 16),
           Text(
             '📚 جاري تحميل القصص...',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14),
           ),
         ],
       ),
@@ -263,7 +263,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             const SizedBox(height: 16),
             Text(
               _errorMsg,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
+              style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -296,7 +296,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           child: TextField(
             controller: _searchController,
             onChanged: (v) => setState(() => _searchQuery = v),
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Color(0xFF0B132B)),
             decoration: InputDecoration(
               hintText: '🔍 ابحث عن قصة...',
               hintStyle: const TextStyle(color: Colors.grey),
@@ -346,7 +346,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
             children: [
               Text(
                 '📖 ${_filteredStories.length} قصة',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 12),
               ),
             ],
           ),
@@ -358,7 +358,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
           child: _filteredStories.isEmpty
               ? const Center(
                   child: Text('لا توجد قصص',
-                      style: TextStyle(color: Colors.white54)),
+                      style: TextStyle(color: Color(0xFF0B132B)54)),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
@@ -443,7 +443,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   Text(
                     story['title']?.toString() ?? '',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF0B132B),
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Amiri',
@@ -455,7 +455,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                   Text(
                     preview,
                     style: const TextStyle(
-                        color: Colors.white54, fontSize: 11),
+                        color: Color(0xFF0B132B)54, fontSize: 11),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -471,12 +471,12 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       if (duration != null) ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.access_time,
-                            color: Colors.white38, size: 10),
+                            color: Color(0xFF0B132B)38, size: 10),
                         const SizedBox(width: 2),
                         Text(
                           '$duration د',
                           style: const TextStyle(
-                              color: Colors.white38, fontSize: 10),
+                              color: Color(0xFF0B132B)38, fontSize: 10),
                         ),
                       ],
                     ],
@@ -559,7 +559,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                         ),
                       ),
                     ],
-                    const Divider(color: Colors.white24, height: 30),
+                    const Divider(color: Color(0xFF0B132B)24, height: 30),
                     if (text.isEmpty)
                       const Center(
                         child: Padding(
@@ -568,7 +568,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                             'لا يوجد نص كامل لهذه القصة بعد.\n'
                             'سيتم إضافة النص الكامل قريباً.',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: Color(0xFF0B132B)54,
                               fontSize: 14,
                               height: 1.8,
                             ),
@@ -580,7 +580,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                       Text(
                         text,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0B132B),
                           fontSize: 19,
                           fontFamily: 'Amiri',
                           height: 2.0,

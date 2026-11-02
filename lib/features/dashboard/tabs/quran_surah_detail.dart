@@ -193,9 +193,9 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
         backgroundColor: _surface,
         title: Text(
           widget.surah.name,
-          style: const TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold, color: Color(0xFF0B132B)),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Color(0xFF0B132B)),
         actions: [
           if (_isDownloading)
             Padding(
@@ -205,9 +205,9 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                 children: [
                   SizedBox(
                     width: 24, height: 24,
-                    child: CircularProgressIndicator(value: _downloadProgress, color: _gold, strokeWidth: 3, backgroundColor: Colors.white24),
+                    child: CircularProgressIndicator(value: _downloadProgress, color: _gold, strokeWidth: 3, backgroundColor: Color(0xFF0B132B)24),
                   ),
-                  Text('${(_downloadProgress * 100).toInt()}%', style: const TextStyle(fontSize: 8, color: Colors.white)),
+                  Text('${(_downloadProgress * 100).toInt()}%', style: const TextStyle(fontSize: 8, color: Color(0xFF0B132B))),
                 ],
               ),
             )
@@ -227,15 +227,15 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
                     color: _surface,
-                    border: Border(bottom: BorderSide(color: Colors.white12)),
+                    border: Border(bottom: BorderSide(color: Color(0xFF0B132B)12)),
                   ),
                   child: Row(
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_reciterName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          const Text('استماع للسورة كاملة', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          Text(_reciterName, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text('استماع للسورة كاملة', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12)),
                         ],
                       ),
                       const Spacer(),
@@ -281,7 +281,7 @@ class _QuranSurahDetailState extends State<QuranSurahDetail> {
                             const SizedBox(height: 12),
                             Text(
                               ayah.text,
-                              style: const TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'Amiri', height: 2.0),
+                              style: const TextStyle(color: Color(0xFF0B132B), fontSize: 24, fontFamily: 'Amiri', height: 2.0),
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
                             ),

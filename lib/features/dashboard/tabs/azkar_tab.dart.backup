@@ -174,7 +174,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق', style: TextStyle(color: Colors.white)),
+            child: const Text('إغلاق', style: TextStyle(color: Color(0xFF0B132B))),
           ),
         ],
       ),
@@ -215,7 +215,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(
                   color: const Color(0xFF1C2541).withOpacity(0.6),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: Color(0xFF0B132B)12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -223,7 +223,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
                     Text(
                       item['text']!,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF0B132B),
                         fontSize: 17,
                         fontFamily: 'Amiri',
                         height: 1.8,
@@ -270,7 +270,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
           decoration: BoxDecoration(
             color: const Color(0xFF1C2541).withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: Color(0xFF0B132B)12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -278,7 +278,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
               Text(
                 dua['text']!,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF0B132B),
                   fontSize: 17,
                   fontFamily: 'Amiri',
                   height: 1.8,
@@ -314,7 +314,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
           decoration: BoxDecoration(
             color: const Color(0xFF1C2541).withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: Color(0xFF0B132B)12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -322,7 +322,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
               Text(
                 item['text']!,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF0B132B),
                   fontSize: 17,
                   fontFamily: 'Amiri',
                   height: 1.8,
@@ -377,7 +377,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
             title: Text(
               isArabic ? stream['name']! : stream['nameEn']!,
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFF0B132B),
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -428,7 +428,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
             child: DropdownButton<String>(
               value: _selectedDhikr,
               dropdownColor: const Color(0xFF1C2541),
-              style: const TextStyle(color: Colors.white, fontSize: 18),
+              style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18),
               underline: const SizedBox(),
               isExpanded: true,
               items: _dhikrList.map((dhikr) {
@@ -437,7 +437,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
                   child: Text(
                     dhikr,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF0B132B),
                       fontSize: 18,
                       fontFamily: 'Amiri',
                     ),
@@ -531,7 +531,7 @@ class _AzkarTabState extends State<AzkarTab> with SingleTickerProviderStateMixin
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white54,
+            color: Color(0xFF0B132B)54,
             fontSize: 12,
           ),
         ),

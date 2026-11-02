@@ -378,7 +378,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         ),
         content: const Text(
           'لقد استخدمت تصحيحيّن مجانيّين اليوم.\n⏰ يمكنك المحاولة مجدداً غداً.',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+          style: TextStyle(color: Color(0xFF0B132B), fontSize: 14),
         ),
         actions: [
           ElevatedButton(
@@ -610,7 +610,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
               child: DropdownButtonFormField<int>(
                 initialValue: _selectedSurah,
                 dropdownColor: const Color(0xFF1C2541),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF0B132B)),
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'السورة (1-114)',
@@ -643,7 +643,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                     ? _selectedAyah
                     : (_ayahs.isNotEmpty ? _ayahs.first.number : null),
                 dropdownColor: const Color(0xFF1C2541),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF0B132B)),
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'الآية (${_ayahs.length})',
@@ -684,7 +684,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         if (_ayahs.isNotEmpty)
           Text(
             'سورة ${_surahs.firstWhere((s) => s.number == _selectedSurah, orElse: () => _surahs.first).name} — ${_ayahs.length} آية',
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: const TextStyle(color: Color(0xFF0B132B)54, fontSize: 11),
           ),
       ],
     );
@@ -877,7 +877,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         ),
         const SizedBox(width: 4),
         Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 11)),
       ],
     );
   }
@@ -954,7 +954,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
           Text(
             _userRecitation,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF0B132B),
               fontSize: 20,
               fontFamily: 'Amiri',
               height: 1.8,
@@ -989,7 +989,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                     child: LinearProgressIndicator(
                       value: _accuracy / 100,
                       minHeight: 12,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: Color(0xFF0B132B)12,
                       valueColor: AlwaysStoppedAnimation(_accuracyColor()),
                     ),
                   ),
@@ -1031,7 +1031,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
         _autoDetectMode
             ? '💡 اقرأ أي آية من أي سورة (114 سورة، 6236 آية)، وسيحوّلها Whisper إلى نص، ثم تتم المقارنة بدقة.'
             : '💡 اختر السورة (114) والآية من القائمة، ثم اضغط "ابدأ التلاوة". يمكنك سماع الحصري أولاً.',
-        style: const TextStyle(color: Colors.white70, fontSize: 13),
+        style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 13),
         textAlign: TextAlign.center,
       ),
     );

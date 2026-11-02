@@ -219,7 +219,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 8),
                     const Text('Noor Al-Haramain',
                         style: TextStyle(
-                            color: Colors.white60,
+                            color: Color(0xFF0B132B)60,
                             fontSize: 18,
                             fontWeight: FontWeight.w300,
                             letterSpacing: 6)),
@@ -245,7 +245,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       TranslationService.getText(lang, 'preparing'),
                       style: const TextStyle(
-                          color: Colors.white38, fontSize: 12),
+                          color: Color(0xFF0B132B)38, fontSize: 12),
                     ),
                     const Spacer(),
                     Padding(
@@ -255,7 +255,7 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             TranslationService.getText(lang, 'for_muslims'),
                             style: const TextStyle(
-                                color: Colors.white24, fontSize: 11),
+                                color: Color(0xFF0B132B)24, fontSize: 11),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -268,7 +268,7 @@ class _SplashScreenState extends State<SplashScreen>
                           const SizedBox(height: 8),
                           Text('v1.0.0',
                               style: TextStyle(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Color(0xFF0B132B).withOpacity(0.1),
                                   fontSize: 8)),
                         ],
                       ),

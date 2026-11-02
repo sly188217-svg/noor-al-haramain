@@ -257,7 +257,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                     Text(
                       CompassService.getDirectionLabel(_qiblaBearing),
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Color(0xFF0B132B)70,
                         fontSize: 10,
                       ),
                     ),
@@ -320,17 +320,17 @@ class _QiblaScreenState extends State<QiblaScreen> {
         children: [
           _infoRow('🧭 اتجاه الهاتف',
               '${_deviceHeading.toStringAsFixed(1)}° — ${CompassService.getDirectionLabel(_deviceHeading)}'),
-          const Divider(color: Colors.white12, height: 16),
+          const Divider(color: Color(0xFF0B132B)12, height: 16),
           _infoRow('🕋 اتجاه القبلة',
               '${_qiblaBearing.toStringAsFixed(1)}° — ${CompassService.getDirectionLabel(_qiblaBearing)}'),
-          const Divider(color: Colors.white12, height: 16),
+          const Divider(color: Color(0xFF0B132B)12, height: 16),
           _infoRow('📏 المسافة إلى مكة',
               '${_distanceKm.toStringAsFixed(0)} كم'),
-          const Divider(color: Colors.white12, height: 16),
+          const Divider(color: Color(0xFF0B132B)12, height: 16),
           _infoRow('📐 ميل الهاتف', '${_pitch.toStringAsFixed(1)}°'),
-          const Divider(color: Colors.white12, height: 16),
+          const Divider(color: Color(0xFF0B132B)12, height: 16),
           _infoRow('🔄 دوران الهاتف', '${_roll.toStringAsFixed(1)}°'),
-          const Divider(color: Colors.white12, height: 16),
+          const Divider(color: Color(0xFF0B132B)12, height: 16),
           _infoRow('🎯 دقة البوصلة',
               CompassService.getAccuracyLabel(_accuracy)),
         ],
@@ -347,7 +347,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 13),
             ),
           ),
           Text(

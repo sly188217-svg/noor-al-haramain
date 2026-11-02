@@ -1,95 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/language_provider.dart';
-import '../../core/services/translation_service.dart';
-import '../auth/auth_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key});
-
   @override
   State<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
 }
 
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // ✅ إجبار اللغة العربية دائماً
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LanguageProvider>().setLanguage('ar');
-    });
-  }
+  static const Color _primary = Color(0xFF4A90E2);
+  static const Color _bg = Color(0xFF0B132B);
 
-  void _saveAndContinue() {
-    context.read<LanguageProvider>().setLanguage('ar');
+  final Map<String, String> _languages = {
+    'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'es': 'Español',
+    'tr': 'Türkçe', 'ur': 'اردو', 'id': 'Bahasa Indonesia', 'bn': 'বাংলা',
+    'fa': 'فارسی', 'de': 'Deutsch', 'ru': 'Русский', 'zh': '中文',
+    'hi': 'हिन्दी', 'sw': 'Kiswahili',
+  };
 
+  Future<void> _selectLanguage(String code) async {
+    final langProvider = context.read<LanguageProvider>();
+    await langProvider.changeLanguage(code);
     if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AuthScreen(selectedLang: 'ar'),
-      ),
-    );
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentLang = context.watch<LanguageProvider>().currentLang;
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
+      backgroundColor: _bg,
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.mosque,
-                  color: Color(0xFF4A90E2),
-                  size: 100,
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  'نور الحرمين',
-                  style: TextStyle(
-                    color: Color(0xFF4A90E2),
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  TranslationService.getText('ar', 'welcome') ??
-                      'مرحباً بك في تطبيق نور الحرمين',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                const SizedBox(height: 50),
-                SizedBox(
-                  width: 260,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A90E2),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              const Icon(Icons.mosque, color: _primary, size: 70),
+              const SizedBox(height: 12),
+              const Text('نور الحرمين', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Amiri')),
+              const SizedBox(height: 8),
+              const Text('اختر لغتك المفضلة', style: TextStyle(color: Colors.white70, fontSize: 15)),
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _languages.length,
+                  itemBuilder: (context, index) {
+                    final code = _languages.keys.elementAt(index);
+                    final name = _languages.values.elementAt(index);
+                    final isSelected = currentLang == code;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isSelected ? _primary : Colors.white24, width: isSelected ? 2 : 1),
                       ),
-                    ),
-                    onPressed: _saveAndContinue,
-                    child: const Text(
-                      'متابعة',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      child: ListTile(
+                        leading: Icon(isSelected ? Icons.check_circle : Icons.circle_outlined, color: isSelected ? _primary : Colors.white54),
+                        title: Text(name, style: TextStyle(color: isSelected ? _primary : Colors.white, fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        onTap: () => _selectLanguage(code),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

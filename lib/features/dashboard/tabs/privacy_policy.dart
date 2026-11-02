@@ -17,7 +17,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         elevation: 0,
         title: Text(
           isArabic ? 'سياسة الخصوصية' : 'Privacy Policy',
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Color(0xFF0B132B)),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF4A90E2)),
@@ -88,7 +88,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                       isArabic
                           ? '📧 للاستفسارات: support@noor-al-haramain.com'
                           : '📧 For inquiries: support@noor-al-haramain.com',
-                      style: const TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: Color(0xFF0B132B)70),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -125,7 +125,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           Text(
             content,
             style: const TextStyle(
-              color: Colors.white70,
+              color: Color(0xFF0B132B)70,
               fontSize: 15,
               height: 1.6,
             ),

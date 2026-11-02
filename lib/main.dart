@@ -6,9 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'core/providers/language_provider.dart';
 import 'core/services/notification_service.dart';
@@ -21,9 +19,54 @@ import 'features/security/security_block_screen.dart';
 import 'screens/splash_screen.dart';
 import 'firebase_options.dart';
 
+// ✅ سمة داكنة شاملة
+ThemeData _buildDarkTheme() {
+  return ThemeData(
+    useMaterial3: false,
+    brightness: Brightness.dark, // إجبار الداكنة
+    primarySwatch: Colors.blue,
+    scaffoldBackgroundColor: const Color(0xFF0B132B),
+    canvasColor: const Color(0xFF0B132B),
+    cardColor: const Color(0xFF1C2541),
+    dialogBackgroundColor: const Color(0xFF1C2541),
+    dividerColor: Colors.white12,
+    fontFamily: 'Amiri',
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF4A90E2),
+      secondary: Color(0xFF2E5C8A),
+      surface: Color(0xFF1C2541),
+      background: Color(0xFF0B132B),
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.white,
+      onBackground: Colors.white,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1C2541),
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1C2541),
+    ),
+    dialogTheme: const DialogTheme(
+      backgroundColor: Color(0xFF1C2541),
+    ),
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white),
+      bodySmall: TextStyle(color: Colors.white70),
+      titleLarge: TextStyle(color: Colors.white),
+      titleMedium: TextStyle(color: Colors.white),
+      titleSmall: TextStyle(color: Colors.white70),
+    ),
+    iconTheme: const IconThemeData(color: Colors.white),
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: 'assets/.env');
+  try { await dotenv.load(fileName: 'assets/.env'); } catch (e) {}
 
   SecurityReport? securityReport;
   try { securityReport = await SecurityService.runFullCheck(); } catch (e) {}
@@ -33,8 +76,14 @@ Future<void> main() async {
   }
 
   try { await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); } catch (e) {}
-  try { if (FirebaseAuth.instance.currentUser == null) await FirebaseAuth.instance.signInAnonymously(); } catch (e) {}
-  try { await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug, appleProvider: AppleProvider.debug); } catch (e) {}
+  try {
+    if (FirebaseAuth.instance.currentUser == null) await FirebaseAuth.instance.signInAnonymously();
+  } catch (e) {}
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug, appleProvider: AppleProvider.debug,
+    );
+  } catch (e) {}
   try { await PremiumService.initialize(); } catch (e) {}
   try { await NotificationService.initialize(); } catch (e) {}
   try { await PeriodicAzkarService.start(); } catch (e) {}
@@ -50,6 +99,29 @@ Future<void> main() async {
     );
   } catch (e) {}
 
+  ErrorWidget.builder = (details) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: _buildDarkTheme(),
+    home: Material(
+      color: const Color(0xFF0B132B),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              const Text('حدث خطأ', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Text(details.exceptionAsString(), style: const TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center, maxLines: 5, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -57,44 +129,38 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(360, 800),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
-        return ChangeNotifierProvider(
-          create: (_) => LanguageProvider(),
-          child: MaterialApp(
-            title: 'نور الحرمين',
-            debugShowCheckedModeBanner: false,
-            navigatorKey: navigatorKey,
-            themeMode: ThemeMode.dark,
-            darkTheme: ThemeData(
-              useMaterial3: false,
-              primarySwatch: Colors.blue,
-              scaffoldBackgroundColor: const Color(0xFF0B132B),
-              fontFamily: 'Amiri',
-              appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1C2541), foregroundColor: Colors.white, elevation: 0),
-            ),
-            localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-            supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
-            locale: const Locale('ar', 'SA'),
-            routes: {
-              '/adhan': (context) {
-                final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-                return AdhanScreen(
-                  prayerName: args?['prayerName'] ?? 'الصلاة',
-                  prayerTime: args?['prayerTime'] ?? '--:--',
-                  cityName: args?['cityName'] ?? '',
-                  muezzinName: args?['muezzinName'] ?? '',
-                  isIqamaOnly: args?['isIqamaOnly'] == true,
-                );
-              },
-            },
-            home: const SplashScreen(),
-          ),
-        );
-      },
+    final darkTheme = _buildDarkTheme();
+    return ChangeNotifierProvider(
+      create: (_) => LanguageProvider(),
+      child: MaterialApp(
+        title: 'نور الحرمين',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        // ✅ إجبار الوضع الداكن في كل مكان
+        theme: darkTheme,
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.dark,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
+        locale: const Locale('ar', 'SA'),
+        routes: {
+          '/adhan': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+            return AdhanScreen(
+              prayerName: args?['prayerName'] ?? 'الصلاة',
+              prayerTime: args?['prayerTime'] ?? '--:--',
+              cityName: args?['cityName'] ?? '',
+              muezzinName: args?['muezzinName'] ?? '',
+              isIqamaOnly: args?['isIqamaOnly'] == true,
+            );
+          },
+        },
+        home: const SplashScreen(),
+      ),
     );
   }
 }
@@ -104,6 +170,10 @@ class SecurityBlockApp extends StatelessWidget {
   const SecurityBlockApp({super.key, required this.issues});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, theme: ThemeData.dark(), home: SecurityBlockScreen(issues: issues));
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: _buildDarkTheme(),
+      home: SecurityBlockScreen(issues: issues),
+    );
   }
 }

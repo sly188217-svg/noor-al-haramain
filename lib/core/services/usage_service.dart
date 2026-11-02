@@ -8,15 +8,15 @@ import 'premium_service.dart';
 /// ✅ مجاني دائماً: كل التطبيق (صلاة، أذكار، مصحف، مكتبة، بث...)
 ///
 /// 💎 Premium (اشتراك):
-///   1. المساعد الذكي    → 2 محاولتان مجاناً يومياً
+///   1. المرشد الذكي     → 3 محاولات مجاناً يومياً
 ///   2. التصحيح الذكي   → محاولتان مجاناً يومياً
 ///   3. اقرأ معي         → محاولتان مجاناً يومياً
 /// ═══════════════════════════════════════════════════════════
 class UsageService {
   // ═══════════════════════════════════════════════════════════
-  // 📊 حدود التجربة المجانية — 2 لكل ميزة
+  // 📊 حدود التجربة المجانية
   // ═══════════════════════════════════════════════════════════
-  static const int freeChatsPerDay = 2;          // 🤖 2 أسئلة للمرشد
+  static const int freeChatsPerDay = 3;          // 🤖 3 أسئلة للمرشد
   static const int freeRecitationsPerDay = 2;    // 🎙️ محاولتان للتصحيح
   static const int freeReadWithMePerDay = 2;     // 📖 محاولتان لاقرأ معي
 
@@ -28,7 +28,7 @@ class UsageService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 🤖 المساعد الذكي — 2 مجاناً يومياً
+  // 🤖 المرشد الذكي — 3 مجاناً يومياً
   // ═══════════════════════════════════════════════════════════
   static Future<int> remainingChats() async {
     if (await isPremium()) return 999999;
@@ -119,6 +119,9 @@ class UsageService {
     await prefs.remove('chats_used_today');
     await prefs.remove('recitations_used_today');
     await prefs.remove('read_used_today');
+    await prefs.remove('chat_last_date');
+    await prefs.remove('recitation_last_date');
+    await prefs.remove('read_last_date');
     debugPrint('🧪 تم تصفير كل العدادات');
   }
 }

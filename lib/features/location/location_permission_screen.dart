@@ -125,7 +125,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
               const Text(
                 'سنقوم بتحديد موقعك بدقة لحساب أوقات الصلاة واتجاه القبلة الصحيح.',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Color(0xFF0B132B)70,
                   fontSize: 14,
                   height: 1.6,
                 ),
@@ -147,7 +147,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                       Text(
                         '📍 ${_locationData!['city']}',
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF0B132B),
                             fontSize: 18,
                             fontWeight: FontWeight.bold),
                       ),

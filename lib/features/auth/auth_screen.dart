@@ -77,7 +77,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const Text(
                 'مرحباً بك في نور الحرمين',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF0B132B),
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -94,7 +94,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 55,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: Color(0xFF0B132B),
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),

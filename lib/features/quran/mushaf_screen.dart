@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'quran_themes.dart';
 
 class MushafScreen extends StatefulWidget {
@@ -38,22 +37,35 @@ class _MushafScreenState extends State<MushafScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: _theme.pageBackgroundColor,
+        body: Center(child: CircularProgressIndicator(color: _theme.appBarColor)),
+      );
+    }
 
-    return Scaffold(
-      backgroundColor: _theme.pageBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: _theme.appBarColor,
-        foregroundColor: _theme.appBarTextColor,
-        title: const Text('المصحف الشريف', style: TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
+    // ═══════════════════════════════════════════════════════════
+    // ✅ الحل الجذري: إلغاء تحجيم ScreenUtil نهائياً في شاشة المصحف
+    // خطوط QCF مصممة بأحجام ثابتة ولا يجب تحجيمها
+    // ═══════════════════════════════════════════════════════════
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.noScaling, // ✅ إلغاء تحجيم النص
       ),
-      body: SafeArea(
-        child: PageviewQuran(
+      child: Scaffold(
+        backgroundColor: _theme.pageBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: _theme.appBarColor,
+          foregroundColor: _theme.appBarTextColor,
+          title: const Text(
+            'المصحف الشريف',
+            style: TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold),
+          ),
+        ),
+        body: PageviewQuran(
           controller: _pageController,
           initialPageNumber: _currentPage,
           onPageChanged: (page) => setState(() => _currentPage = page),
-          sp: 1.sp, // ✅ إضافة معامل التحجيم للنص
-          h: 1.h,   // ✅ إضافة معامل التحجيم للارتفاع
           theme: QcfThemeData(
             verseTextColor: _theme.verseTextColor,
             verseNumberColor: _theme.verseNumberColor,

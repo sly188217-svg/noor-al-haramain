@@ -190,7 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           'نور الحرمين',
           style: TextStyle(
-            color: Colors.white,
+            color: Color(0xFF0B132B),
             fontSize: 17,
             fontWeight: FontWeight.bold,
             fontFamily: 'Amiri',
@@ -211,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               'NOOR AL-HARAMAIN',
               style: TextStyle(
-                color: Colors.white70,
+                color: Color(0xFF0B132B)70,
                 fontSize: 7.5,
                 letterSpacing: 1.8,
                 fontWeight: FontWeight.w600,

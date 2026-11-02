@@ -186,7 +186,7 @@ class _AzkarTabState extends State<AzkarTab>
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: _primary, width: 1.5)),
         title: const Text('🔄 إعادة تعيين', style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
-        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟', style: const TextStyle(color: Colors.white70)),
+        content: Text('هل تريد إعادة تعيين عداد "$_selectedDhikr"؟', style: const TextStyle(color: Color(0xFF0B132B)70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
@@ -212,7 +212,7 @@ class _AzkarTabState extends State<AzkarTab>
         backgroundColor: const Color(0xFF1C2541),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.orange, width: 1.5)),
         title: const Text('⚠️ تحذير', style: TextStyle(color: Colors.orange)),
-        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!', style: TextStyle(color: Colors.white70)),
+        content: const Text('هل تريد حذف جميع العدادات لكل الأذكار؟\nلا يمكن التراجع!', style: TextStyle(color: Color(0xFF0B132B)70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
@@ -274,7 +274,7 @@ class _AzkarTabState extends State<AzkarTab>
             children: [
               Text(
                 item['text']!,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18, fontFamily: 'Amiri', height: 1.8),
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
               ),
@@ -310,7 +310,7 @@ class _AzkarTabState extends State<AzkarTab>
             children: [
               Text(
                 dua['text']!,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18, fontFamily: 'Amiri', height: 1.8),
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
               ),
@@ -335,7 +335,7 @@ class _AzkarTabState extends State<AzkarTab>
             children: [
               Text(
                 item['text']!,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri', height: 1.8),
+                style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18, fontFamily: 'Amiri', height: 1.8),
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
               ),
@@ -387,7 +387,7 @@ class _AzkarTabState extends State<AzkarTab>
                     children: [
                       Text(
                         isArabic ? stream['name']! : stream['nameEn']!,
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -409,7 +409,7 @@ class _AzkarTabState extends State<AzkarTab>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('اضغط للمشاهدة', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                          const Text('اضغط للمشاهدة', style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 11)),
                         ],
                       ),
                     ],
@@ -434,7 +434,7 @@ class _AzkarTabState extends State<AzkarTab>
             child: DropdownButton<String>(
               value: _selectedDhikr,
               dropdownColor: const Color(0xFF1C2541),
-              style: const TextStyle(color: Colors.white, fontSize: 18),
+              style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18),
               underline: const SizedBox(),
               isExpanded: true,
               items: _dhikrList.map((dhikr) {
@@ -443,13 +443,13 @@ class _AzkarTabState extends State<AzkarTab>
                   value: dhikr,
                   child: Row(
                     children: [
-                      Text(dhikr, style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Amiri')),
+                      Text(dhikr, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 18, fontFamily: 'Amiri')),
                       const Spacer(),
                       if (count > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(10)),
-                          child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          child: Text('$count', style: const TextStyle(color: Color(0xFF0B132B), fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),
@@ -468,11 +468,11 @@ class _AzkarTabState extends State<AzkarTab>
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Color(0xFF0B132B).withValues(alpha: 0.1),
                 border: Border.all(color: _primary, width: 3),
                 boxShadow: [
                   BoxShadow(color: _primary.withValues(alpha: 0.3), blurRadius: 30, spreadRadius: 10),
-                  BoxShadow(color: Colors.white.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(-5, -5)),
+                  BoxShadow(color: Color(0xFF0B132B).withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(-5, -5)),
                 ],
               ),
               child: Center(
@@ -481,10 +481,10 @@ class _AzkarTabState extends State<AzkarTab>
                   children: [
                     Text(
                       '$_tasbihCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))]),
+                      style: const TextStyle(color: Color(0xFF0B132B), fontSize: 60, fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))]),
                     ),
                     const SizedBox(height: 6),
-                    Text(isArabic ? 'اضغط للعد' : 'Tap to count', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text(isArabic ? 'اضغط للعد' : 'Tap to count', style: TextStyle(color: Color(0xFF0B132B).withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -509,7 +509,7 @@ class _AzkarTabState extends State<AzkarTab>
           if (_tasbihCounts.values.any((v) => v > 0)) ...[
             const Align(
               alignment: Alignment.centerRight,
-              child: Text('📊 سجل العدادات', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text('📊 سجل العدادات', style: TextStyle(color: Color(0xFF0B132B), fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 8),
             ProCard(
@@ -523,11 +523,11 @@ class _AzkarTabState extends State<AzkarTab>
                       children: [
                         const Icon(Icons.circle, color: _primary, size: 10),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(dhikr, style: const TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Amiri'))),
+                        Expanded(child: Text(dhikr, style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 16, fontFamily: 'Amiri'))),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(10)),
-                          child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                          child: Text('$count', style: const TextStyle(color: Color(0xFF0B132B), fontSize: 14, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -585,7 +585,7 @@ class _AzkarTabState extends State<AzkarTab>
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF0B132B).withValues(alpha: 0.5),
-              border: const Border(bottom: BorderSide(color: Colors.white12)),
+              border: const Border(bottom: BorderSide(color: Color(0xFF0B132B)12)),
             ),
             child: TabBar(
               controller: _tabController,

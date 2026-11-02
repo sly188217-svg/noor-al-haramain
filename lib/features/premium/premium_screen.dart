@@ -135,9 +135,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
         elevation: 0,
         title: const Text(
           '💎 الاشتراك المميز',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Color(0xFF0B132B), fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Color(0xFF0B132B)),
         actions: [
           IconButton(
             icon: const Icon(Icons.restore),
@@ -189,7 +189,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       const Text(
                         'يمكنك إلغاء الاشتراك في أي وقت من إعدادات متجر التطبيقات',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38, fontSize: 11),
+                        style: TextStyle(color: Color(0xFF0B132B)38, fontSize: 11),
                       ),
                     ],
                   ),
@@ -224,7 +224,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
             const Text(
               '🚀 الاشتراكات قادمة قريباً',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFF0B132B),
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -235,7 +235,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
               'يمكنك الاستمتاع بكل الميزات المجانية الآن:',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white70,
+                color: Color(0xFF0B132B)70,
                 fontSize: 14,
                 height: 1.8,
               ),
@@ -265,7 +265,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text(
                 '⬅️ العودة للاستمتاع بالميزات المجانية',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: Color(0xFF0B132B)70),
               ),
             ),
           ],
@@ -286,7 +286,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
+          style: const TextStyle(color: Color(0xFF0B132B)70, fontSize: 13),
         ),
       ),
     );
@@ -312,12 +312,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
       ),
       child: const Column(
         children: [
-          Icon(Icons.workspace_premium, color: Colors.white, size: 64),
+          Icon(Icons.workspace_premium, color: Color(0xFF0B132B), size: 64),
           SizedBox(height: 12),
           Text(
             'نور الحرمين Premium',
             style: TextStyle(
-              color: Colors.white,
+              color: Color(0xFF0B132B),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -325,7 +325,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
           SizedBox(height: 8),
           Text(
             'افتح 3 ميزات ذكية متقدمة',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: Color(0xFF0B132B)70, fontSize: 14),
           ),
         ],
       ),
@@ -381,7 +381,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                           Text(
                             f['title']!,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF0B132B),
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
@@ -389,7 +389,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                           Text(
                             f['desc']!,
                             style: const TextStyle(
-                              color: Colors.white54,
+                              color: Color(0xFF0B132B)54,
                               fontSize: 12,
                             ),
                           ),
@@ -454,7 +454,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       Text(
                         title,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0B132B),
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -465,7 +465,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Color(0xFF0B132B),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text(
@@ -497,7 +497,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                 Text(
                   price,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF0B132B),
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -507,7 +507,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Color(0xFF0B132B),
                       strokeWidth: 2,
                     ),
                   ),
@@ -525,7 +525,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
       decoration: BoxDecoration(
         color: _surface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: Color(0xFF0B132B)12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,7 +567,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                     Text(
                       f['title']!,
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Color(0xFF0B132B)70,
                         fontSize: 12,
                       ),
                     ),

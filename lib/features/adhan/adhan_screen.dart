@@ -347,7 +347,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                 Text(
                   '$tempMinutes دقيقة',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF0B132B),
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
@@ -355,7 +355,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                 const SizedBox(height: 8),
                 const Text(
                   'الوقت بين الأذان والإقامة',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(color: Color(0xFF0B132B)54, fontSize: 12),
                 ),
                 const SizedBox(height: 16),
                 Slider(
@@ -526,7 +526,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                   Text(
                     widget.cityName,
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Color(0xFF0B132B)70,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -543,7 +543,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                       tooltip: 'مدة الإقامة',
                     ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Color(0xFF0B132B)),
                     onPressed: _closeScreen,
                   ),
                 ],
@@ -557,7 +557,7 @@ class _AdhanScreenState extends State<AdhanScreen>
               Text(
                 _gregorianDate,
                 style:
-                    const TextStyle(color: Colors.white54, fontSize: 12),
+                    const TextStyle(color: Color(0xFF0B132B)54, fontSize: 12),
               ),
               if (_hijriDate.isNotEmpty)
                 Text(
@@ -591,14 +591,14 @@ class _AdhanScreenState extends State<AdhanScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.menu_book, color: Colors.white, size: 18),
+                  const Icon(Icons.menu_book, color: Color(0xFF0B132B), size: 18),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       _iqamaVerse,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF0B132B),
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Amiri',
@@ -713,7 +713,7 @@ class _AdhanScreenState extends State<AdhanScreen>
           Text(
             widget.prayerTime,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF0B132B),
               fontSize: 32,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
@@ -777,7 +777,7 @@ class _AdhanScreenState extends State<AdhanScreen>
                   Text(
                     _formatIqama(_iqamaRemaining),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF0B132B),
                       fontSize: 42,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 3,
