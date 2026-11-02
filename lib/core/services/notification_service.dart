@@ -169,17 +169,8 @@ class NotificationService {
   // ═══════════════════════════════════════════════════════════
 
   static Future<bool> canUseFullScreenIntent() async {
-    try {
-      if (Platform.isAndroid) {
-        final android = _notifications.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-        final canUse = await android?.canUseFullScreenIntent();
-        return canUse ?? true;
-      }
-      return true;
-    } catch (e) {
-      return true;
-    }
+    // ✅ إصلاح: الدالة غير مدعومة في هذه المكتبة، نعيد true
+    return true;
   }
 
   static Future<void> openFullScreenSettings() async {
