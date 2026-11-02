@@ -481,7 +481,7 @@ class _AzkarTabState extends State<AzkarTab>
                   children: [
                     Text(
                       '$_tasbihCount',
-                      style: const TextStyle(color: Color(0xFF0B132B), fontSize: 60, fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.white26, blurRadius: 8, offset: Offset(0, 3))]),
+                      style: const TextStyle(color: Color(0xFF0B132B), fontSize: 60, fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.white24, blurRadius: 8, offset: Offset(0, 3))]),
                     ),
                     const SizedBox(height: 6),
                     Text(isArabic ? 'اضغط للعد' : 'Tap to count', style: TextStyle(color: Color(0xFF0B132B).withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.bold)),

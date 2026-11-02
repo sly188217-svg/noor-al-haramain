@@ -163,4 +163,36 @@ class NotificationService {
       android: AndroidNotificationDetails(_persistentChannelId, 'الصلاة القادمة', icon: _notifIcon, importance: Importance.low, priority: Priority.low, playSound: false, enableVibration: false, ongoing: true, autoCancel: false, when: whenMillis, usesChronometer: true, chronometerCountDown: true, showWhen: true, onlyAlertOnce: true, color: const Color(0xFF4A90E2)),
     ));
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // ✅ دوال مفقودة تمت إعادتها
+  // ═══════════════════════════════════════════════════════════
+
+  static Future<bool> canUseFullScreenIntent() async {
+    try {
+      if (Platform.isAndroid) {
+        final android = _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        final canUse = await android?.canUseFullScreenIntent();
+        return canUse ?? true;
+      }
+      return true;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  static Future<void> openFullScreenSettings() async {
+    try {
+      if (Platform.isAndroid) {
+        final android = _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        await android?.requestFullScreenIntentPermission();
+      }
+    } catch (e) {
+      debugPrint('⚠️ فشل فتح إعدادات ملء الشاشة: $e');
+    }
+  }
+
+
 }
