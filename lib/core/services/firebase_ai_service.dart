@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -98,7 +99,7 @@ class FirebaseAiService {
           if (aiResponse != null && aiResponse.statusCode == 200) {
             tashkeelFeedback = (jsonDecode(aiResponse.body)['choices']?[0]?['message']?['content'] ?? '').toString();
           }
-        } catch (e) {}
+        } catch (e) { debugPrint("⚠️ $e"); }
       }
 
       String feedback = accuracy >= 95 ? '🌟 Excellent!' : (accuracy >= 70 ? '✅ Good!' : '⚠️ Needs practice.');

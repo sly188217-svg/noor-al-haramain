@@ -204,7 +204,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           final p = placemarks.first;
           city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'موقعك';
         }
-      } catch (e) {}
+      } catch (e) { debugPrint("⚠️ $e"); }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('user_lat', position.latitude);
       await prefs.setDouble('user_lng', position.longitude);
@@ -238,7 +238,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         _cityName = cachedCity;
         _buildPrayerListFromTimes();
         if (mounted) setState(() => _isLoading = false);
-      } catch (e) {}
+      } catch (e) { debugPrint("⚠️ $e"); }
     }
     if (DateTime.now().difference(_lastFetchTime).inHours >= 1) {
       if (mounted) setState(() => _isLoading = true);
@@ -286,7 +286,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
           await _updatePersistentNotification();
         }
       }
-    } catch (e) {}
+    } catch (e) { debugPrint("⚠️ $e"); }
   }
 
   String _applyOffset(String prayerName, String timeStr) {
@@ -330,7 +330,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
             };
           }
         }
-      } catch (e) {}
+      } catch (e) { debugPrint("⚠️ $e"); }
     }
     if (mounted) setState(() => _weeklyPrayers = weekly);
   }
@@ -421,7 +421,7 @@ class _PrayerTabState extends State<PrayerTab> with WidgetsBindingObserver {
         hijriDate: hijri,
         city: _cityName,
       );
-    } catch (e) {}
+    } catch (e) { debugPrint("⚠️ $e"); }
   }
 
   DateTime? _calculateNextPrayerTime() {

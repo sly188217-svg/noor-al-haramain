@@ -20,6 +20,7 @@ class QuranTab extends StatefulWidget {
 }
 
 class _QuranTabState extends State<QuranTab> {
+  // ignore: unused_field
   String _searchQuery = "";
   List<SurahModel> _surahs = [];
   List<SurahModel> _filteredSurahs = [];

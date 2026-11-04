@@ -47,7 +47,9 @@ class _ReadWithMeScreenState extends State<ReadWithMeScreen> {
   String _lastTranscription = '';
 
   bool _isPremium = false;
+  // ignore: unused_field
   double _accuracy = 0;
+  // ignore: unused_field
   int _remainingReadWithMe = 2;
   bool _isLocked = false;
 

@@ -45,7 +45,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
   void dispose() {
     try {
       _tts.stop();
-    } catch (e) {}
+    } catch (e) { debugPrint("⚠️ $e"); }
     _searchController.dispose();
     super.dispose();
   }
@@ -140,7 +140,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
     if (_isSpeaking) {
       try {
         await _tts.stop();
-      } catch (e) {}
+      } catch (e) { debugPrint("⚠️ $e"); }
       if (mounted) setState(() => _isSpeaking = false);
       return;
     }
@@ -164,13 +164,13 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
     });
     try {
       _tts.stop();
-    } catch (e) {}
+    } catch (e) { debugPrint("⚠️ $e"); }
   }
 
   void _closeStory() {
     try {
       _tts.stop();
-    } catch (e) {}
+    } catch (e) { debugPrint("⚠️ $e"); }
     setState(() {
       _activeStory = null;
       _isSpeaking = false;
@@ -637,7 +637,7 @@ class _KidsStoriesScreenState extends State<KidsStoriesScreen> {
                           setState(() => _speechRate = v);
                           try {
                             await _tts.setSpeechRate(v);
-                          } catch (e) {}
+                          } catch (e) { debugPrint("⚠️ $e"); }
                         }
                       : null,
                 ),

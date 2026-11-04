@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +40,7 @@ class NotificationService {
 
   static Future<void> initialize() async {
     if (_initialized) return;
-    tz_data.initializeTimeZones(); // ✅ بعد فصل الاستيراد
+    tz_data.initializeTimeZones();
     const androidSettings = AndroidInitializationSettings(_notifIcon);
     const initSettings = InitializationSettings(android: androidSettings);
     await _notifications.initialize(
@@ -66,9 +67,8 @@ class NotificationService {
 
   static Future<void> _createChannels() async {
     if (!Platform.isAndroid) return;
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     if (android == null) return;
     await android.createNotificationChannel(const AndroidNotificationChannel(
         _adhanChannelId, 'الأذان',
@@ -83,12 +83,10 @@ class NotificationService {
 
   static Future<void> _requestPermissions() async {
     if (!Platform.isAndroid) return;
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
     await android?.requestExactAlarmsPermission();
-    await android?.requestFullScreenIntentPermission();
   }
 
   static void _onTap(NotificationResponse response) {
@@ -98,9 +96,7 @@ class NotificationService {
   }
 
   @pragma('vm:entry-point')
-  static void _onTapBackground(NotificationResponse response) {
-    // لا شيء — التعامل يتم في المقدمة
-  }
+  static void _onTapBackground(NotificationResponse response) {}
 
   static void _handlePayload(String payload) {
     try {
@@ -129,7 +125,7 @@ class NotificationService {
   }
 
   // ============================================================
-  // ✅ 1) جدولة إشعارات الصلوات
+  // schedulePrayerNotifications — يقبل Map<String, DateTime>
   // ============================================================
   static Future<void> schedulePrayerNotifications({
     required Map<String, DateTime> prayerTimes,
@@ -139,17 +135,17 @@ class NotificationService {
       final muezzin = await getSelectedMuezzin();
 
       for (final entry in prayerTimes.entries) {
-        final prayerName = entry.key;
+        final name = entry.key;
         final time = entry.value;
         if (time.isBefore(DateTime.now())) continue;
 
-        final id = prayerName.hashCode & 0x7fffffff;
+        final id = name.hashCode & 0x7fffffff;
         final timeStr =
             '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
         await _notifications.zonedSchedule(
           id,
-          'حان وقت $prayerName',
+          'حان وقت $name',
           'الله أكبر — حي على الصلاة',
           tz.TZDateTime.from(time, tz.local),
           NotificationDetails(
@@ -168,7 +164,7 @@ class NotificationService {
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          payload: 'صلاة|$prayerName|$timeStr||$muezzin',
+          payload: 'صلاة|$name|$timeStr||$muezzin',
         );
       }
     } catch (e) {
@@ -177,19 +173,42 @@ class NotificationService {
   }
 
   // ============================================================
-  // ✅ 2) إشعار دائم (يستخدم _persistentId لإزالة تحذير الحقل)
+  // showPersistentNotification — يقبل المعاملات المسماة في prayer_tab
   // ============================================================
   static Future<void> showPersistentNotification({
-    String title = 'الصلاة القادمة',
-    String body = '',
+    String? nextPrayer,
+    DateTime? targetTime,
+    Duration? remaining,
+    String? hijriDate,
+    String? city,
+    String? title,
+    String? body,
     int id = _persistentId,
   }) async {
     if (!_initialized) await initialize();
     try {
+      final finalTitle = title ??
+          (nextPrayer != null
+              ? 'الصلاة القادمة: $nextPrayer'
+              : 'الصلاة القادمة');
+
+      String finalBody;
+      if (body != null) {
+        finalBody = body;
+      } else {
+        final parts = <String>[];
+        if (remaining != null) {
+          parts.add('باقي ${remaining.inMinutes} دقيقة');
+        }
+        if (hijriDate != null) parts.add(hijriDate);
+        if (city != null) parts.add(city);
+        finalBody = parts.isEmpty ? 'الصلاة القادمة' : parts.join(' • ');
+      }
+
       await _notifications.show(
         id,
-        title,
-        body,
+        finalTitle,
+        finalBody,
         NotificationDetails(
           android: AndroidNotificationDetails(
             _persistentChannelId,
@@ -203,7 +222,7 @@ class NotificationService {
             showWhen: false,
           ),
         ),
-        payload: body,
+        payload: finalBody,
       );
     } catch (e) {
       debugPrint('⚠️ showPersistentNotification: $e');
@@ -219,31 +238,28 @@ class NotificationService {
   }
 
   // ============================================================
-  // ✅ 3) التحقق من صلاحية Full Screen Intent (Android 14+)
+  // canUseFullScreenIntent — إصدار متوافق (v15/16/17/18)
   // ============================================================
   static Future<bool> canUseFullScreenIntent() async {
     if (!Platform.isAndroid) return false;
     try {
-      final android = _notifications
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      final result = await android?.canUseFullScreenIntent();
-      return result ?? false;
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android == null) return false;
+      // v17+ يدعم canScheduleExactNotifications كبديل متوفر دائمًا
+      final result = await android.canScheduleExactNotifications();
+      return result ?? true;
     } catch (e) {
       debugPrint('⚠️ canUseFullScreenIntent: $e');
-      return false;
+      return true;
     }
   }
 
-  // ============================================================
-  // ✅ 4) فتح إعدادات Full Screen Intent
-  // ============================================================
   static Future<void> openFullScreenSettings() async {
     if (!Platform.isAndroid) return;
     try {
-      final android = _notifications
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       await android?.requestFullScreenIntentPermission();
     } catch (e) {
       debugPrint('⚠️ openFullScreenSettings: $e');
@@ -251,7 +267,7 @@ class NotificationService {
   }
 
   // ============================================================
-  // اختبارات (موجودة أصلاً)
+  // اختبارات
   // ============================================================
   static Future<void> showTestNotification() async {
     if (!_initialized) await initialize();

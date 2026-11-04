@@ -47,6 +47,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
+  // ignore: unused_field
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 

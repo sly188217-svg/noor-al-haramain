@@ -20,7 +20,9 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  // ignore: unused_field
   String _userName = "مستخدم";
+  // ignore: unused_field
   String _userCity = "مكة المكرمة";
   int _currentIndex = 0;
   int _currentBackground = 0;
