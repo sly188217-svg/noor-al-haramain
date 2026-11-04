@@ -13,13 +13,12 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
   static const int _persistentId = 999999;
-  static const String _adhanChannelId = 'adhan_channel_v15';
-  static const String _iqamaChannelId = 'iqama_channel_v15';
-  static const String _persistentChannelId = 'persistent_channel_v15';
+  static const String _adhanChannelId = 'adhan_channel_v16';
+  static const String _iqamaChannelId = 'iqama_channel_v16';
+  static const String _persistentChannelId = 'persistent_channel_v16';
   static const String _notifIcon = '@mipmap/launcher_icon';
   static const String _muezzinKey = 'selected_muezzin';
 
-  // ✅ تم إصلاح الأسماء هنا (القصاص والقطامي)
   static const List<Map<String, String>> muezzins = [
     {'name': 'الشيخ عبد الرحمن السديس', 'file': 'adhan_sudais'},
     {'name': 'الشيخ ماهر المعيقلي', 'file': 'adhan_almuaiqly'},
@@ -43,10 +42,27 @@ class NotificationService {
     tz.initializeTimeZones();
     const androidSettings = AndroidInitializationSettings(_notifIcon);
     const initSettings = InitializationSettings(android: androidSettings);
-    await _notifications.initialize(initSettings, onDidReceiveNotificationResponse: _onTap, onDidReceiveBackgroundNotificationResponse: _onTapBackground);
+    await _notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onTap,
+      onDidReceiveBackgroundNotificationResponse: _onTapBackground,
+    );
     await _createChannels();
     await _requestPermissions();
     _initialized = true;
+  }
+
+  // ✅ دالة لجلب الـ Payload عند فتح التطبيق من الإشعار
+  static Future<String?> getLaunchPayload() async {
+    try {
+      final details = await _notifications.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp == true) {
+        return details!.notificationResponse?.payload;
+      }
+    } catch (e) {
+      debugPrint('⚠️ $e');
+    }
+    return null;
   }
 
   static Future<void> _createChannels() async {
@@ -109,81 +125,4 @@ class NotificationService {
       android: AndroidNotificationDetails(_iqamaChannelId, 'الإقامة', importance: Importance.max, priority: Priority.max, fullScreenIntent: true, category: AndroidNotificationCategory.alarm, playSound: true, sound: RawResourceAndroidNotificationSound(muezzin), enableVibration: true),
     ), payload: 'إقامة|العصر|15:45|مكة المكرمة|$muezzin');
   }
-
-  static Future<void> schedulePrayerNotifications(Map<String, String> prayerTimes, String cityName, String muezzinName) async {
-    if (!_initialized) await initialize();
-    final prefs = await SharedPreferences.getInstance();
-    if (!(prefs.getBool('notifications_enabled') ?? true)) return;
-    
-    final muezzin = await getSelectedMuezzin();
-    final pending = await _notifications.pendingNotificationRequests();
-    for (final p in pending) {
-      if (p.id != _persistentId) await _notifications.cancel(p.id);
-    }
-    final now = DateTime.now();
-
-    for (final entry in prayerTimes.entries) {
-      if (entry.key == 'Sunrise') continue;
-      final parts = entry.value.split(':');
-      if (parts.length < 2) continue;
-      var scheduledTime = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
-      if (scheduledTime.isBefore(now)) scheduledTime = scheduledTime.add(const Duration(days: 1));
-
-      final prayerNameAr = _translatePrayerName(entry.key);
-      final timeStr = '${scheduledTime.hour.toString().padLeft(2, '0')}:${scheduledTime.minute.toString().padLeft(2, '0')}';
-
-      try {
-        await _notifications.zonedSchedule(
-          entry.key.hashCode, '🔔 حان وقت صلاة $prayerNameAr', 'صلاة $prayerNameAr في $cityName — $muezzinName',
-          tz.TZDateTime.from(scheduledTime, tz.local), NotificationDetails(
-            android: AndroidNotificationDetails(_adhanChannelId, 'الأذان', importance: Importance.max, priority: Priority.max, fullScreenIntent: true, category: AndroidNotificationCategory.alarm, playSound: true, sound: RawResourceAndroidNotificationSound(muezzin)),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, matchDateTimeComponents: DateTimeComponents.time,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-          payload: 'صلاة|$prayerNameAr|$timeStr|$cityName|$muezzin',
-        );
-      } catch (e) { debugPrint('⚠️ $e'); }
-    }
-  }
-
-  static String _translatePrayerName(String key) {
-    const map = {'Fajr': 'الفجر', 'Dhuhr': 'الظهر', 'Asr': 'العصر', 'Maghrib': 'المغرب', 'Isha': 'العشاء', 'Sunrise': 'الشروق'};
-    return map[key] ?? key;
-  }
-
-  static Future<void> showPersistentNotification({String? title, String? body, String? nextPrayer, DateTime? targetTime, Duration? remaining, String? hijriDate, String? city, int? minutesLeft}) async {
-    if (Platform.isLinux || !_initialized) return;
-    String t = title ?? (nextPrayer != null ? '🕌 الصلاة القادمة: $nextPrayer' : '🕌 الصلاة القادمة');
-    final buffer = StringBuffer();
-    if (city != null && city.isNotEmpty) buffer.write('📍 $city');
-    final b = buffer.toString().trim().isEmpty ? 'اقترب وقت الصلاة' : buffer.toString();
-    final finalTarget = targetTime ?? DateTime.now().add(remaining ?? const Duration(hours: 1));
-    final whenMillis = finalTarget.millisecondsSinceEpoch;
-    await _notifications.show(_persistentId, t, b, NotificationDetails(
-      android: AndroidNotificationDetails(_persistentChannelId, 'الصلاة القادمة', icon: _notifIcon, importance: Importance.low, priority: Priority.low, playSound: false, enableVibration: false, ongoing: true, autoCancel: false, when: whenMillis, usesChronometer: true, chronometerCountDown: true, showWhen: true, onlyAlertOnce: true, color: const Color(0xFF4A90E2)),
-    ));
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // ✅ دوال مفقودة تمت إعادتها
-  // ═══════════════════════════════════════════════════════════
-
-  static Future<bool> canUseFullScreenIntent() async {
-    // ✅ إصلاح: الدالة غير مدعومة في هذه المكتبة، نعيد true
-    return true;
-  }
-
-  static Future<void> openFullScreenSettings() async {
-    try {
-      if (Platform.isAndroid) {
-        final android = _notifications.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-        await android?.requestFullScreenIntentPermission();
-      }
-    } catch (e) {
-      debugPrint('⚠️ فشل فتح إعدادات ملء الشاشة: $e');
-    }
-  }
-
-
 }

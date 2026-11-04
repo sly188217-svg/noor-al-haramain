@@ -6,7 +6,12 @@ import 'quran_themes.dart';
 class MushafScreen extends StatefulWidget {
   final int initialPage;
   final int? initialSurah;
-  const MushafScreen({super.key, this.initialPage = 1, this.initialSurah});
+
+  const MushafScreen({
+    super.key,
+    this.initialPage = 1,
+    this.initialSurah,
+  });
 
   @override
   State<MushafScreen> createState() => _MushafScreenState();
@@ -37,34 +42,42 @@ class _MushafScreenState extends State<MushafScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return Scaffold(backgroundColor: _theme.pageBackgroundColor, body: Center(child: CircularProgressIndicator(color: _theme.appBarColor)));
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: _theme.pageBackgroundColor,
+        body: Center(child: CircularProgressIndicator(color: _theme.appBarColor)),
+      );
+    }
 
-    return Scaffold(
-      backgroundColor: _theme.pageBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: _theme.appBarColor, foregroundColor: _theme.appBarTextColor,
-        title: const Text('المصحف الشريف', style: TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
+    // ✅ الحل الجذري: استخدام MediaQuery لإلغاء تحجيم النص الخارجي
+    // والسماح لمكتبة QCF بالتحكم في الحجم بنفسها لتناسب الشاشة
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.noScaling, // إلغاء تحجيم خطوط الهاتف
       ),
-      // ✅ الحل الجذري: FittedBox لإجبار الصفحة على أخذ الأبعاد الصحيحة بدون تقطيع
-      body: Center(
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: SizedBox(
-            width: 360, // العرض القياسي لصفحة المصحف
-            height: 550, // الارتفاع القياسي
-            child: PageviewQuran(
-              controller: _pageController,
-              initialPageNumber: _currentPage,
-              onPageChanged: (page) => setState(() => _currentPage = page),
-              theme: QcfThemeData(
-                verseTextColor: _theme.verseTextColor,
-                verseNumberColor: _theme.verseNumberColor,
-                basmalaColor: _theme.basmalaColor,
-                headerTextColor: _theme.headerTextColor,
-                pageBackgroundColor: _theme.pageBackgroundColor,
-                showBasmala: true, showHeader: true,
-              ),
-            ),
+      child: Scaffold(
+        backgroundColor: _theme.pageBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: _theme.appBarColor,
+          foregroundColor: _theme.appBarTextColor,
+          title: const Text(
+            'المصحف الشريف',
+            style: TextStyle(fontFamily: 'Amiri', fontWeight: FontWeight.bold),
+          ),
+        ),
+        // ✅ إزالة FittedBox و SizedBox والسماح للمصحف بأخذ الشاشة كاملة
+        body: PageviewQuran(
+          controller: _pageController,
+          initialPageNumber: _currentPage,
+          onPageChanged: (page) => setState(() => _currentPage = page),
+          theme: QcfThemeData(
+            verseTextColor: _theme.verseTextColor,
+            verseNumberColor: _theme.verseNumberColor,
+            basmalaColor: _theme.basmalaColor,
+            headerTextColor: _theme.headerTextColor,
+            pageBackgroundColor: _theme.pageBackgroundColor,
+            showBasmala: true,
+            showHeader: true,
           ),
         ),
       ),

@@ -300,13 +300,13 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                               Image.asset(bg['imagePath'] as String, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: _surface, child: const Icon(Icons.image, color: Colors.white24, size: 40)))
                             else
                               Container(decoration: BoxDecoration(gradient: LinearGradient(colors: bg['colors'] as List<Color>, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                            Container(color: Colors.black.withValues(alpha: 0.35)),
+                            Container(color: Colors.white.withValues(alpha: 0.35)),
                             Positioned(top: 8, left: 8, child: Icon(bg['icon'] as IconData, color: Color(0xFF0B132B).withValues(alpha: 0.7), size: 24)),
                             Positioned(
                               bottom: 6, left: 6, right: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 4),
-                                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(6)),
+                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(6)),
                                 child: Text(bg['name'] as String, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                               ),
                             ),
@@ -677,7 +677,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                   Expanded(
                     child: Container(
                       height: 80,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: _primary.withValues(alpha: 0.4)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))]),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: _primary.withValues(alpha: 0.4)), boxShadow: [BoxShadow(color: Colors.white.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))]),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(9),
                         child: Stack(
@@ -687,7 +687,7 @@ class _SettingsTabState extends State<SettingsTab> with SingleTickerProviderStat
                               Image.asset(BackgroundService.backgrounds[_selectedBackground]['imagePath'] as String, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: _surface, child: const Icon(Icons.image, color: Colors.white24, size: 40)))
                             else
                               Container(decoration: BoxDecoration(gradient: LinearGradient(colors: (BackgroundService.backgrounds[_selectedBackground]['colors'] as List<Color>), begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                            Container(color: Colors.black.withValues(alpha: 0.4)),
+                            Container(color: Colors.white.withValues(alpha: 0.4)),
                             Center(child: Text(BackgroundService.backgrounds[_selectedBackground]['name'] as String, style: const TextStyle(color: Color(0xFF0B132B), fontWeight: FontWeight.bold, fontSize: 14))),
                           ],
                         ),

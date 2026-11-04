@@ -1,12 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/firebase_ai_service.dart';
 import '../../../core/services/usage_service.dart';
 import '../../../widgets/professional_ui.dart';
-import '../../premium/premium_screen.dart';
 import '../../recitation/recitation_screen.dart';
 import '../../quran/read_with_me_screen.dart';
 import '../../quran/services/quran_service.dart';
@@ -31,13 +28,13 @@ class _AiTabState extends State<AiTab> with SingleTickerProviderStateMixin {
     final lang = context.watch<LanguageProvider>().currentLang;
     final isArabic = lang == 'ar';
     return Scaffold(
-      backgroundColor: const Color(0xFF0B132B), // ✅ إجبار الخلفية على أن تكون داكنة
+      backgroundColor: const Color(0xFF0B132B),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C2541),
         title: Row(children: [
           const Icon(Icons.bolt, color: Color(0xFF4A90E2)),
           const SizedBox(width: 8),
-          Text(isArabic ? 'المساعد الذكي "المرشد"' : 'Al-Murshid Assistant', style: const TextStyle(color: Color(0xFF0B132B), fontSize: 16)),
+          Text(isArabic ? 'المساعد الذكي "المرشد"' : 'Al-Murshid Assistant', style: const TextStyle(color: Colors.white, fontSize: 16)),
         ]),
         bottom: TabBar(
           controller: _tabController, indicatorColor: const Color(0xFF4A90E2),
@@ -65,7 +62,7 @@ class _ReadWithMeTab extends StatefulWidget {
 }
 
 class _ReadWithMeTabState extends State<_ReadWithMeTab> {
-  bool _isLoading = true;
+  bool _isLoadingSurahs = true;
   List<SurahModel> _surahs = [];
   List<SurahModel> _filteredSurahs = [];
   final TextEditingController _searchController = TextEditingController();
@@ -79,8 +76,8 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
     try {
       final surahs = await QuranService.loadQuran();
       if (!mounted) return;
-      setState(() { _surahs = surahs; _filteredSurahs = surahs; _isLoading = false; });
-    } catch (e) { if (mounted) setState(() => _isLoading = false); }
+      setState(() { _surahs = surahs; _filteredSurahs = surahs; _isLoadingSurahs = false; });
+    } catch (e) { if (mounted) setState(() => _isLoadingSurahs = false); }
   }
 
   void _filterSurahs(String query) {
@@ -91,7 +88,6 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)));
     return Column(
       children: [
         Padding(
@@ -100,7 +96,7 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
             padding: EdgeInsets.zero,
             child: TextField(
               controller: _searchController, onChanged: _filterSurahs,
-              style: const TextStyle(color: Color(0xFF0B132B)), // ✅ النص أبيض
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: '🔍 ابحث عن سورة...', hintStyle: const TextStyle(color: Colors.grey),
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF4A90E2)), border: InputBorder.none,
@@ -110,27 +106,29 @@ class _ReadWithMeTabState extends State<_ReadWithMeTab> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _filteredSurahs.length,
-            itemBuilder: (context, index) {
-              final surah = _filteredSurahs[index];
-              return ProCard(
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReadWithMeScreen(surahNumber: surah.number))),
-                  leading: Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(color: const Color(0xFF4A90E2).withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4A90E2))),
-                    child: Center(child: Text('${surah.number}', style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.bold))),
-                  ),
-                  title: Text(surah.name, style: const TextStyle(color: Color(0xFF0B132B), fontSize: 17, fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
-                  subtitle: Text('${surah.numberOfAyahs} آية', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A90E2), size: 16),
+          child: _isLoadingSurahs
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF4A90E2)))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _filteredSurahs.length,
+                  itemBuilder: (context, index) {
+                    final surah = _filteredSurahs[index];
+                    return ProCard(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReadWithMeScreen(surahNumber: surah.number))),
+                        leading: Container(
+                          width: 48, height: 48,
+                          decoration: BoxDecoration(color: const Color(0xFF4A90E2).withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4A90E2))),
+                          child: Center(child: Text('${surah.number}', style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.bold))),
+                        ),
+                        title: Text(surah.name, style: const TextStyle(color: Colors.white, fontSize: 17, fontFamily: 'Amiri', fontWeight: FontWeight.bold)),
+                        subtitle: Text('${surah.numberOfAyahs} آية', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                        trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A90E2), size: 16),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -185,7 +183,7 @@ class _ChatTabState extends State<_ChatTab> {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: const Color(0xFF0B132B), // ✅ لون داكن
+          color: const Color(0xFF0B132B),
           child: Row(children: [
             const Icon(Icons.chat_bubble_outline, color: Color(0xFF4A90E2), size: 16),
             const SizedBox(width: 6),
@@ -235,7 +233,7 @@ class _ChatTabState extends State<_ChatTab> {
                 padding: EdgeInsets.zero,
                 child: TextField(
                   controller: _controller,
-                  style: const TextStyle(color: Color(0xFF0B132B)), // ✅ حل مشكلة الكتابة
+                  style: const TextStyle(color: Colors.white),
                   onSubmitted: (_) => _send(),
                   decoration: InputDecoration(
                     hintText: widget.isArabic ? 'اكتب سؤالك هنا...' : 'Type your question...',
@@ -248,7 +246,7 @@ class _ChatTabState extends State<_ChatTab> {
             const SizedBox(width: 8),
             GestureDetector(
               onTap: _send,
-              child: Container(width: 48, height: 48, decoration: const BoxDecoration(color: Color(0xFF4A90E2), shape: BoxShape.circle), child: const Icon(Icons.send, color: Color(0xFF0B132B), size: 24)),
+              child: Container(width: 48, height: 48, decoration: const BoxDecoration(color: Color(0xFF4A90E2), shape: BoxShape.circle), child: const Icon(Icons.send, color: Colors.white, size: 24)),
             ),
           ]),
         ),
