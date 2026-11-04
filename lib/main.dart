@@ -31,17 +31,31 @@ ThemeData _buildDarkTheme() {
     dividerColor: Colors.white12,
     fontFamily: 'Amiri',
     colorScheme: const ColorScheme.dark(
-      primary: Color(0xFF4A90E2), secondary: Color(0xFF2E5C8A),
-      surface: Color(0xFF1C2541), background: Color(0xFF0B132B),
-      onPrimary: Colors.white, onSecondary: Colors.white, onSurface: Colors.white, onBackground: Colors.white,
+      primary: Color(0xFF4A90E2),
+      secondary: Color(0xFF2E5C8A),
+      surface: Color(0xFF1C2541),
+      background: Color(0xFF0B132B),
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.white,
+      onBackground: Colors.white,
     ),
-    appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1C2541), foregroundColor: Colors.white, elevation: 0),
-    bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Color(0xFF1C2541)),
-    dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1C2541)),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1C2541),
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    bottomSheetTheme:
+        const BottomSheetThemeData(backgroundColor: Color(0xFF1C2541)),
+    dialogTheme:
+        const DialogThemeData(backgroundColor: Color(0xFF1C2541)),
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white), bodyMedium: TextStyle(color: Colors.white),
-      bodySmall: TextStyle(color: Colors.white70), titleLarge: TextStyle(color: Colors.white),
-      titleMedium: TextStyle(color: Colors.white), titleSmall: TextStyle(color: Colors.white70),
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white),
+      bodySmall: TextStyle(color: Colors.white70),
+      titleLarge: TextStyle(color: Colors.white),
+      titleMedium: TextStyle(color: Colors.white),
+      titleSmall: TextStyle(color: Colors.white70),
     ),
     iconTheme: const IconThemeData(color: Colors.white),
   );
@@ -49,52 +63,128 @@ ThemeData _buildDarkTheme() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try { await dotenv.load(fileName: 'assets/.env'); } catch (e) {}
 
+  // ---------- .env ----------
+  try {
+    await dotenv.load(fileName: 'assets/.env');
+  } catch (e, stack) {
+    debugPrint('⚠️ dotenv load failed: $e\n$stack');
+  }
+
+  // ---------- Security check ----------
   SecurityReport? securityReport;
-  try { securityReport = await SecurityService.runFullCheck(); } catch (e) {}
+  try {
+    securityReport = await SecurityService.runFullCheck();
+  } catch (e, stack) {
+    debugPrint('⚠️ SecurityService.runFullCheck failed: $e\n$stack');
+  }
   if (securityReport != null && !securityReport.isSafe && !kDebugMode) {
     runApp(SecurityBlockApp(issues: securityReport.issues));
     return;
   }
 
-  try { await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); } catch (e) {}
-  try { if (FirebaseAuth.instance.currentUser == null) await FirebaseAuth.instance.signInAnonymously(); } catch (e) {}
-  try { await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug, appleProvider: AppleProvider.debug); } catch (e) {}
-  try { await PremiumService.initialize(); } catch (e) {}
-  try { await NotificationService.initialize(); } catch (e) {}
-  try { await PeriodicAzkarService.start(); } catch (e) {}
+  // ---------- Firebase ----------
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e, stack) {
+    debugPrint('⚠️ Firebase.initializeApp failed: $e\n$stack');
+  }
+  try {
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+  } catch (e, stack) {
+    debugPrint('⚠️ anonymous sign-in failed: $e\n$stack');
+  }
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+    );
+  } catch (e, stack) {
+    debugPrint('⚠️ AppCheck.activate failed: $e\n$stack');
+  }
 
+  // ---------- Services ----------
+  try {
+    await PremiumService.initialize();
+  } catch (e, stack) {
+    debugPrint('⚠️ PremiumService.initialize failed: $e\n$stack');
+  }
+  try {
+    await NotificationService.initialize();
+  } catch (e, stack) {
+    debugPrint('⚠️ NotificationService.initialize failed: $e\n$stack');
+  }
+  try {
+    await PeriodicAzkarService.start();
+  } catch (e, stack) {
+    debugPrint('⚠️ PeriodicAzkarService.start failed: $e\n$stack');
+  }
+
+  // ---------- AudioService ----------
   try {
     await AudioService.init(
       builder: () => QuranAudioHandler(),
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.apexsec.noor_al_haramain_global.channel.audio',
+        androidNotificationChannelId:
+            'com.apexsec.noor_al_haramain_global.channel.audio',
         androidNotificationChannelName: 'تشغيل القرآن الكريم',
         androidStopForegroundOnPause: true,
       ),
     );
-  } catch (e) {}
+  } catch (e, stack) {
+    debugPrint('⚠️ AudioService.init failed: $e\n$stack');
+  }
 
-  // ✅ جلب الـ Payload عند فتح التطبيق من الإشعار (ملء الشاشة)
+  // ---------- Launch payload (full-screen notif) ----------
   String? initialPayload;
   try {
     initialPayload = await NotificationService.getLaunchPayload();
-  } catch (e) {}
+  } catch (e, stack) {
+    debugPrint('⚠️ getLaunchPayload failed: $e\n$stack');
+  }
 
+  // ---------- Global ErrorWidget ----------
   ErrorWidget.builder = (details) => MaterialApp(
-    debugShowCheckedModeBanner: false, theme: _buildDarkTheme(),
-    home: Material(
-      color: const Color(0xFF0B132B),
-      child: Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.error_outline, color: Colors.red, size: 60),
-        const SizedBox(height: 16),
-        const Text('حدث خطأ', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Text(details.exceptionAsString(), style: const TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center, maxLines: 5, overflow: TextOverflow.ellipsis),
-      ]))),
-    ),
-  );
+        debugShowCheckedModeBanner: false,
+        theme: _buildDarkTheme(),
+        home: Material(
+          color: const Color(0xFF0B132B),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: Colors.red, size: 60),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'حدث خطأ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    details.exceptionAsString(),
+                    style: const TextStyle(
+                        color: Colors.grey, fontSize: 12),
+                    textAlign: TextAlign.center,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
   runApp(MyApp(initialPayload: initialPayload));
 }
@@ -110,7 +200,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialPayload != null && widget.initialPayload!.isNotEmpty) {
+    if (widget.initialPayload != null &&
+        widget.initialPayload!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _handlePayload(widget.initialPayload!);
       });
@@ -122,10 +213,15 @@ class _MyAppState extends State<MyApp> {
       final parts = payload.split('|');
       if (parts.length < 5) return;
       navigatorKey.currentState?.pushNamed('/adhan', arguments: {
-        'prayerName': parts[1], 'prayerTime': parts[2], 'cityName': parts[3],
-        'muezzinName': parts[4], 'isIqamaOnly': parts[0] == 'إقامة',
+        'prayerName': parts[1],
+        'prayerTime': parts[2],
+        'cityName': parts[3],
+        'muezzinName': parts[4],
+        'isIqamaOnly': parts[0] == 'إقامة',
       });
-    } catch (e) {}
+    } catch (e, stack) {
+      debugPrint('⚠️ _handlePayload failed: $e\n$stack');
+    }
   }
 
   @override
@@ -134,16 +230,32 @@ class _MyAppState extends State<MyApp> {
     return ChangeNotifierProvider(
       create: (_) => LanguageProvider(),
       child: MaterialApp(
-        title: 'نور الحرمين', debugShowCheckedModeBanner: false,
-        navigatorKey: navigatorKey, theme: darkTheme, darkTheme: darkTheme, themeMode: ThemeMode.dark,
-        localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-        supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')], locale: const Locale('ar', 'SA'),
+        title: 'نور الحرمين',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        theme: darkTheme,
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.dark,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('ar', 'SA'),
+          Locale('en', 'US'),
+        ],
+        locale: const Locale('ar', 'SA'),
         routes: {
           '/adhan': (context) {
-            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+            final args = ModalRoute.of(context)!.settings.arguments
+                as Map<String, dynamic>?;
             return AdhanScreen(
-              prayerName: args?['prayerName'] ?? 'الصلاة', prayerTime: args?['prayerTime'] ?? '--:--',
-              cityName: args?['cityName'] ?? '', muezzinName: args?['muezzinName'] ?? '', isIqamaOnly: args?['isIqamaOnly'] == true,
+              prayerName: args?['prayerName'] ?? 'الصلاة',
+              prayerTime: args?['prayerTime'] ?? '--:--',
+              cityName: args?['cityName'] ?? '',
+              muezzinName: args?['muezzinName'] ?? '',
+              isIqamaOnly: args?['isIqamaOnly'] == true,
             );
           },
         },
@@ -158,6 +270,10 @@ class SecurityBlockApp extends StatelessWidget {
   const SecurityBlockApp({super.key, required this.issues});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, theme: _buildDarkTheme(), home: SecurityBlockScreen(issues: issues));
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: _buildDarkTheme(),
+      home: SecurityBlockScreen(issues: issues),
+    );
   }
 }
